@@ -1,0 +1,6 @@
+[submodule "src/teg"]
+	path = src/teg
+	url = git@git.tejat.net:teg
+[submodule "src/tinytext"]
+	path = src/tinytext
+	url = git@git.tejat.net:tinytext
