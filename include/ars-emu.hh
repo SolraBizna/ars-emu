@@ -191,16 +191,17 @@ namespace ARS {
   extern std::unique_ptr<Controller> controller1, controller2;
   extern class MessageImp {
     std::ostringstream stream;
+    void outputLine(std::string line, int lifespan_value);
+    void outputBuffer();
   public:
     template<class T> MessageImp& operator<<(const T& i) {
       stream << i;
       return *this;
     }
     MessageImp& operator<<(MessageImp&) {
-      outputLine();
+      outputBuffer();
       return *this;
     }
-    void outputLine();
   } ui;
   void triggerReset() __attribute__((noreturn));
   void triggerQuit() __attribute__((noreturn));

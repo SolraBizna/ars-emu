@@ -10,6 +10,7 @@
 #include <list>
 #include <chrono>
 #include <thread>
+#include <algorithm>
 
 using namespace ARS;
 
@@ -103,7 +104,8 @@ namespace {
       auto cit = msg.string.cbegin();
       while(cit != msg.string.cend()) {
         uint32_t c = getNextCodePoint(cit, msg.string.cend());
-        if(c == 32) width += 8;
+        if(c == 0x20) width += 8;
+        else if(c == 0x3000) width += 16;
         else {
           auto& glyph = Font::GetGlyph(c);
           width += glyph.wide ? 16 : 8;
@@ -137,7 +139,8 @@ namespace {
         auto cit = msg.string.cbegin();
         while(cit != msg.string.cend()) {
           uint32_t c = getNextCodePoint(cit, msg.string.cend());
-          if(c == 32) x += 8;
+          if(c == 0x20) x += 8;
+          else if(c == 0x3000) x += 16;
           else {
             auto& glyph = Font::GetGlyph(c);
             if(x + (glyph.wide ? 16 : 8) > messages_local_rect.w) break;
@@ -214,7 +217,7 @@ namespace {
       case SDL_QUIT: quit = true; triggerReset();
       case SDL_KEYDOWN:
         switch(evt.key.keysym.sym) {
-        case SDLK_F1:
+        case SDLK_F3:
           PPU::show_overlay = !PPU::show_overlay;
           ui << sn.Get(PPU::show_overlay?"OVERLAY_SHOWN"_Key
                        :"OVERLAY_HIDDEN"_Key) << ui;
@@ -224,7 +227,7 @@ namespace {
           ui << sn.Get(PPU::show_sprites?"SPRITES_SHOWN"_Key
                        :"SPRITES_HIDDEN"_Key) << ui;
           break;
-        case SDLK_F3:
+        case SDLK_F1:
           PPU::show_background = !PPU::show_background;
           ui << sn.Get(PPU::show_background?"BACKGROUND_SHOWN"_Key
                        :"BACKGROUND_HIDDEN"_Key) << ui;
@@ -318,13 +321,23 @@ namespace {
   }
 }
 
-void MessageImp::outputLine() {
+void MessageImp::outputLine(std::string line, int lifespan_value) {
+  std::cerr << sn.Get("UI_MESSAGE_STDERR"_Key, {line}) << std::endl;
+  logged_messages.emplace_back(std::move(line), lifespan_value);
+}
+
+void MessageImp::outputBuffer() {
   std::string msg = stream.str();
   int lifespan = MESSAGE_LIFESPAN;
-  for(auto& msg : logged_messages)
-    lifespan -= msg.lifespan;
-  std::cerr << sn.Get("UI_MESSAGE_STDERR"_Key, {msg}) << std::endl;
-  logged_messages.emplace_back(std::move(msg), lifespan);
+  for(auto& lmsg : logged_messages)
+    lifespan -= lmsg.lifespan;
+  auto begin = msg.begin();
+  do {
+    auto it = std::find(begin, msg.end(), '\n');
+    outputLine(std::string(begin, it), lifespan);
+    if(it != msg.end()) ++it;
+    begin = it;
+  } while(begin != msg.end());
   stream.clear();
   stream.str("");
   messages_dirty = true;

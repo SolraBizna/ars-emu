@@ -165,6 +165,21 @@ SRAM_WRITE_FAILURE
 SRAM write failure
 .
 
+MISSING_CHIP_READ
+bad read from \$$2
+(maps to missing $1 chip)
+.
+
+ROM_CHIP_WRITE
+bad write of \$$3 to \$$2
+(maps to $1 chip)
+.
+
+MISSING_CHIP_WRITE
+bad write of \$$3 to \$$2
+(maps to missing $1 chip)
+.
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : TEG messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -266,20 +281,4 @@ ARS-emu.
 UNSUPPORTED_PIN_MAPPING
 ROM file requests pin mapping that is not comprehensible to this version of
 ARS-emu.
-.
-
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-: Cartridge diagnostic messages
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-MISSING_CHIP_READ
-Invalid read from \$$2, which maps to the missing $1 chip
-.
-
-ROM_CHIP_WRITE
-Ignoring write of \$$3 to \$$2, which maps to the (read-only) $1 chip
-.
-
-MISSING_CHIP_WRITE
-Ignoring write of \$$3 to \$$2, which maps to the missing $1 chip
 .
