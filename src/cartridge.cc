@@ -1,5 +1,3 @@
-/* TODO: This entire file uses die() for error handling. */
-
 #include "ars-emu.hh"
 #include "teg.hh"
 #include <iomanip>
@@ -32,7 +30,7 @@ namespace {
   public:
     zbuf(std::istream& src, uint8_t* red, size_t red_len)
       : src(src) {
-      assert(red_len <= sizeof(inbuf));
+      SDL_assert(red_len <= sizeof(inbuf));
       memcpy(inbuf, red, red_len);
       z.next_in = inbuf;
       z.avail_in = red_len;
@@ -42,8 +40,8 @@ namespace {
       z.zfree = nullptr;
       z.opaque = nullptr;
       // |16 = decode gzip instead of zlib
-      if(inflateInit2(&z, MAX_WBITS|16) != Z_OK)
-        die("inflateInit2 failed");
+      auto result = inflateInit2(&z, MAX_WBITS|16);
+      SDL_assert(result == Z_OK);
     }
     zbuf(std::istream& src, uint8_t* red, size_t red_len, std::string& romname)
       : zbuf(src, red, red_len) {
@@ -54,20 +52,20 @@ namespace {
       header.extra = nullptr;
       header.name = reinterpret_cast<Bytef*>(filenamebuf);
       header.name_max = sizeof(filenamebuf)-1;
-      if(inflateGetHeader(&z, &header) != Z_OK)
-        die("logic error");
+      auto result = inflateGetHeader(&z, &header);
+      SDL_assert(result == Z_OK);
       do {
         if(z.avail_in == 0)
           get_more_input();
         if(z.avail_in == 0)
-          die("EOF while reading gzip header");
+          throw sn.Get("GZIP_HEADER_EOF"_Key);
         int res = inflate(&z, 0);
         if(res == Z_OK)
           ; // do nothing
         else if(res == Z_STREAM_END)
-          die("EOS while reading gzip header");
+          throw sn.Get("GZIP_HEADER_EOS"_Key);
         else
-          die("error while reading gzip header");
+          throw sn.Get("GZIP_HEADER_ERROR"_Key);
       } while(header.done == 0 && z.next_out == outbuf);
       if(header.done == 1 && filenamebuf[0]) romname = filenamebuf;
     }
@@ -97,7 +95,7 @@ namespace {
         if(res == Z_OK || res == Z_STREAM_END)
           ; // do nothing
         else
-          die("zlib error while reading compressed ROM");
+          throw sn.Get("ZLIB_ERROR"_Key);
       }
       if(z.next_out != outbuf) {
         setg(reinterpret_cast<char*>(outbuf), reinterpret_cast<char*>(outbuf),
@@ -109,10 +107,10 @@ namespace {
   };
   void parse_size(uint8_t in, uint32_t& size, bool& has) {
     if(in == 0x80)
-      die("ETARS image claims to contain a 0-byte initialization image");
+      throw sn.Get("BLANK_INIT"_Key);
     has = !!(in&0x80);
     if((in&0x7F) > 0x18)
-      die("ETARS image contains excessively large initialization data");
+      throw sn.Get("HUGE_INIT"_Key);
     else if(in&0x7F)
       size = 1<<((in&0x7F)-1);
     else
@@ -130,7 +128,8 @@ void ARS::Cartridge::loadRom(const std::string& rom_path, std::istream& f) {
   }
   uint8_t header[IMAGE_HEADER_SIZE];
   f.read(reinterpret_cast<char*>(header), IMAGE_HEADER_SIZE);
-  if(!f) die("Error while reading ROM header");
+  if(f.eof()) throw sn.Get("FILE_TOO_SMALL"_Key);
+  if(!f) throw sn.Get("HEADER_READ_ERROR"_Key);
   zbuf* z = nullptr;
   std::istream* rom_image_stream;
   if(header[0] == 0x1F && header[1] == 0x8B) {
@@ -138,65 +137,66 @@ void ARS::Cartridge::loadRom(const std::string& rom_path, std::istream& f) {
     rom_image_stream = new std::istream(z);
     rom_image_stream->read(reinterpret_cast<char*>(header), IMAGE_HEADER_SIZE);
     if(!rom_image_stream || rom_image_stream->gcount() != IMAGE_HEADER_SIZE)
-      die("Error while reading compressed ROM header");
+      throw sn.Get("COMPRESSED_HEADER_READ_ERROR"_Key);
   }
   else rom_image_stream = &f;
   if(header[0] != 'A' || header[1] != 'R' || header[2] != 'S'
-     || header[3] != 26) die("Invalid ETARS image");
-  if(header[15] != 0) die("Unsupported ETARS image header extension");
-  if(header[4] != 0) die("Unsupported ETARS image bus mapping");
+     || header[3] != 26) throw sn.Get("FILE_NOT_ETARS"_Key);
+  if(header[15] != 0) throw sn.Get("EXTENDED_HEADER"_Key);
+  if(header[4] != 0) throw sn.Get("EXOTIC_BUS_MAPPING"_Key);
   uint32_t rom1_size, rom2_size, sram_size, dram_size;
   bool has_rom1, has_rom2, has_sram, has_dram;
   parse_size(header[6], rom1_size, has_rom1);
   parse_size(header[7], rom2_size, has_rom2);
   parse_size(header[8], sram_size, has_sram);
   parse_size(header[9], dram_size, has_dram);
-  if(rom1_size && !has_rom1) die("ETARS image has uninitialized ROM1");
-  if(rom2_size && !has_rom2) die("ETARS image has uninitialized ROM2");
+  if(rom1_size && !has_rom1) throw sn.Get("ROM_UNINITIALIZED"_Key, {"ROM1"});
+  if(rom2_size && !has_rom2) throw sn.Get("ROM_UNINITIALIZED"_Key, {"ROM2"});
   if(!has_rom1 && !has_rom2 && !has_sram && !has_dram)
-    die("ETARS image is empty");
-  if(has_dram) ui << "Warning: ROM image contains initialized DRAM" << ui;
+    throw sn.Get("EMPTY_ROM"_Key);
+  if(has_dram) ui << sn.Get("DRAM_INITIALIZED"_Key) << ui;
   uint8_t* rom1_data, *rom2_data, *dram_data, *sram_data;
   if(has_rom1) {
-    assert(rom1_size != 0);
+    SDL_assert(rom1_size != 0);
     rom1_data = new uint8_t[rom1_size];
     if(!rom_image_stream->read(reinterpret_cast<char*>(rom1_data),
                                rom1_size))
-      die("Error while reading ROM1 data");
+      throw sn.Get("ROM_INIT_DATA_FAIL"_Key, {"ROM1"});
   }
   else rom1_data = nullptr;
   if(has_rom2) {
-    assert(rom2_size != 0);
+    SDL_assert(rom2_size != 0);
     rom2_data = new uint8_t[rom2_size];
     if(!rom_image_stream->read(reinterpret_cast<char*>(rom2_data),
                                rom2_size))
-      die("Error while reading ROM2 data");
+      throw sn.Get("ROM_INIT_DATA_FAIL"_Key, {"ROM2"});
   }
   else rom2_data = nullptr;
   if(has_dram) {
-    assert(dram_size != 0);
+    SDL_assert(dram_size != 0);
     dram_data = new uint8_t[dram_size];
     if(!rom_image_stream->read(reinterpret_cast<char*>(dram_data),
                                dram_size))
-      die("Error while reading DRAM data");
+      throw sn.Get("ROM_INIT_DATA_FAIL"_Key, {"DRAM"});
   }
   else dram_data = nullptr;
   if(has_sram) {
-    assert(sram_size != 0);
+    SDL_assert(sram_size != 0);
     sram_data = new uint8_t[sram_size];
     if(!rom_image_stream->read(reinterpret_cast<char*>(sram_data),
                                sram_size))
-      die("Error while reading SRAM data");
+      throw sn.Get("ROM_INIT_DATA_FAIL"_Key, {"SRAM"});
   }
   else sram_data = nullptr;
-  if(header[5] & 0x7E) die("Unsupported expansion hardware");
-  if(header[10] & 0x30) die("Unsupported pin mapping");
+  if(header[5] & ~SUPPORTED_EXPANSION_HARDWARE)
+    throw sn.Get("UNSUPPORTED_EXPANSION_HARDWARE"_Key);
+  if(header[10] & 0x30) throw sn.Get("UNSUPPORTED_PIN_MAPPING"_Key);
   cartridge = new Cartridge(rom_name,
                             rom1_size, rom1_data, rom2_size, rom2_data,
                             dram_size, dram_data, sram_size, sram_data,
                             header[10]&0xF, header[10]>>6, header[11],
                             header[12], header[5], header[13]);
-  assert(cartridge != nullptr);
+  SDL_assert(cartridge != nullptr);
   if(rom_image_stream != &f) delete rom_image_stream;
   if(z != nullptr) delete z;
 }
@@ -214,7 +214,7 @@ ARS::Cartridge::Cartridge(const std::string& rom_path,
     expansion_hardware(expansion_hardware), overlay_bank(overlay_bank) {
   if(rom1_size != 0) {
     uint8_t* copy = new uint8_t[rom1_size];
-    assert(rom1_data != nullptr);
+    SDL_assert(rom1_data != nullptr);
     memcpy(copy, rom1_data, rom1_size);
     rom1 = copy;
     rom1_mask = rom1_size - 1;
@@ -225,7 +225,7 @@ ARS::Cartridge::Cartridge(const std::string& rom_path,
   }
   if(rom2_size != 0) {
     uint8_t* copy = new uint8_t[rom2_size];
-    assert(rom2_data != nullptr);
+    SDL_assert(rom2_data != nullptr);
     memcpy(copy, rom2_data, rom2_size);
     rom2 = copy;
     rom2_mask = rom2_size - 1;
@@ -281,17 +281,23 @@ ARS::Cartridge::Cartridge(const std::string& rom_path,
     std::unique_ptr<std::istream> f = IO::OpenConfigFileForRead(sram_path);
     if(f && *f) f->read(reinterpret_cast<char*>(sram), sram_size);
   }
-  if(rom1_size != 0 || rom2_size != 0) {
-    if(rom1_size != 0)
-      ui << (rom1_size>>10);
-    if(rom1_size != 0 && rom2_size != 0)
-      ui << "+";
-    if(rom2_size != 0)
-      ui << (rom2_size>>10);
-    ui << "KiB ROM" << ui;
+  if(rom1_size != 0 && rom2_size != 0) {
+    ui << sn.Get("DUAL_CHIP_SIZE"_Key,
+                 {"ROM", std::to_string(rom1_size>>10),
+                     std::to_string(rom2_size>>10)}) << ui;
   }
-  if(sram_size != 0) ui << (sram_size>>10) << "KiB SRAM" << ui;
-  if(dram_size != 0) ui << (dram_size>>10) << "KiB DRAM" << ui;
+  else if(rom1_size != 0)
+    ui << sn.Get("SINGLE_CHIP_SIZE"_Key,
+                 {"ROM", std::to_string(rom1_size>>10)}) << ui;
+  else if(rom2_size != 0)
+    ui << sn.Get("SINGLE_CHIP_SIZE"_Key,
+                 {"ROM", std::to_string(rom2_size>>10)}) << ui;
+  if(sram_size != 0)
+    ui << sn.Get("SINGLE_CHIP_SIZE"_Key,
+                 {"SRAM", std::to_string(sram_size>>10)}) << ui;
+  if(dram_size != 0)
+    ui << sn.Get("SINGLE_CHIP_SIZE"_Key,
+                 {"DRAM", std::to_string(dram_size>>10)}) << ui;
 }
 
 ARS::Cartridge::~Cartridge() {
@@ -322,8 +328,10 @@ void ARS::Cartridge::flushSRAM() {
     f.reset();
     IO::UpdateConfigFile(sram_path);
   }
-  else
-    ui << "Unable to write SRAM: " << strerror(errno) << ui;
+  else {
+    ui << sn.Get("SRAM_WRITE_FAILURE"_Key) << ui;
+    ui << strerror(errno) << ui;
+  }
 }
 
 uint32_t ARS::Cartridge::map_addr(uint8_t bank, uint16_t addr,
@@ -339,33 +347,29 @@ uint8_t ARS::Cartridge::read(uint8_t bank, uint16_t addr, bool OL, bool VPB,
   case 0:
     if(rom1 != nullptr) return rom1[raw_addr & rom1_mask];
     else {
-      ui << "Invalid read from $" << std::hex << std::setfill('0')
-         << std::setw(6) << raw_addr << std::dec << " on nonexistent ROM1 chip"
-         << ui;
+      ui << sn.Get("MISSING_CHIP_READ"_Key,
+                   {"ROM1", TEG::format("%06X",raw_addr)}) << ui;
       break;
     }
   case 1:
     if(rom2 != nullptr) return rom2[raw_addr & rom2_mask];
     else {
-      ui << "Invalid read from $" << std::hex << std::setfill('0')
-         << std::setw(6) << raw_addr << std::dec << " on nonexistent ROM2 chip"
-         << ui;
+      ui << sn.Get("MISSING_CHIP_READ"_Key,
+                   {"ROM2", TEG::format("%06X",raw_addr)}) << ui;
       break;
     }
   case 2:
     if(dram != nullptr) return dram[raw_addr & dram_mask];
     else {
-      ui << "Invalid read from $" << std::hex << std::setfill('0')
-         << std::setw(6) << raw_addr << std::dec << " on nonexistent DRAM chip"
-         << ui;
+      ui << sn.Get("MISSING_CHIP_READ"_Key,
+                   {"DRAM", TEG::format("%06X",raw_addr)}) << ui;
       break;
     }
   case 3:
     if(sram != nullptr) return sram[raw_addr & sram_mask];
     else {
-      ui << "Invalid read from $" << std::hex << std::setfill('0')
-         << std::setw(6) << raw_addr << std::dec << " on nonexistent SRAM chip"
-         << ui;
+      ui << sn.Get("MISSING_CHIP_READ"_Key,
+                   {"SRAM", TEG::format("%06X",raw_addr)}) << ui;
       break;
     }
   }
@@ -376,23 +380,21 @@ void ARS::Cartridge::write(uint8_t bank, uint16_t addr, uint8_t value) {
   uint32_t raw_addr = map_addr(bank, addr, false, false, false, true);
   switch((dip_switches >> (bank >> 6 << 1)) & 3) {
   case 0:
-    ui << "Ignoring write of $" << std::hex << std::setw(2)
-       << std::setfill('0') << value << " to $" << std::setfill('0')
-       << std::setw(6) << raw_addr << " on ROM1 chip" << ui;
+    ui << sn.Get("ROM_CHIP_WRITE"_Key, {"ROM1", TEG::format("%06X",raw_addr),
+          TEG::format("%02X",value)}) << ui;
     return;
   case 1:
-    ui << "Ignoring write of $" << std::hex << std::setw(2)
-       << std::setfill('0') << value << " to $" << std::setfill('0')
-       << std::setw(6) << raw_addr << " on ROM2 chip" << ui;
+    ui << sn.Get("ROM_CHIP_WRITE"_Key, {"ROM2", TEG::format("%06X",raw_addr),
+          TEG::format("%02X",value)}) << ui;
     return;
   case 2:
     if(dram != nullptr) {
       dram[raw_addr & dram_mask] = value;
     }
     else {
-      ui << "Ignoring write of $" << std::hex << std::setw(2)
-         << std::setfill('0') << value << " to $" << std::setfill('0')
-         << std::setw(6) << raw_addr << " on nonexistent DRAM chip" << ui;
+      ui << sn.Get("MISSING_CHIP_WRITE"_Key,
+                   {"DRAM", TEG::format("%06X",raw_addr),
+                       TEG::format("%02X",value)}) << ui;
     }
     return;
   case 3:
@@ -401,9 +403,9 @@ void ARS::Cartridge::write(uint8_t bank, uint16_t addr, uint8_t value) {
       sram[raw_addr & sram_mask] = value;
     }
     else {
-      ui << "Ignoring write of $" << std::hex << std::setw(2)
-         << std::setfill('0') << value << " to $" << std::setfill('0')
-         << std::setw(6) << raw_addr << " on nonexistent SRAM chip" << ui;
+      ui << sn.Get("MISSING_CHIP_WRITE"_Key,
+                   {"SRAM", TEG::format("%06X",raw_addr),
+                       TEG::format("%02X",value)}) << ui;
     }
     return;
   }

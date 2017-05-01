@@ -1,0 +1,140 @@
+; Start of Plane 1
+; Linear B Syllabary
+; Linear B Ideograms
+; Aegean Numbers
+; Ancient Greek Numbers
+; Ancient Symbols
+; Phaistos Disc
+010200 01027F
+; Lycian
+; Carian
+; Coptic Epact Numbers
+; Old Italic
+; Gothic
+; Old Permic
+; Ugaritic
+; Old Persian
+0103E0 0103FF
+; Deseret
+; Shavian
+; Osmanya
+; Osage
+; Elbasan
+; Caucasian Albanian
+010570 0105FF
+; Linear A
+010780 0107FF
+; Cypriot Syllabary
+; Imperial Aramaic
+; Palmyrene
+; Nabataean
+0108B0 0108DF
+; Hatran
+; Phoenecian
+; Lydian
+010940 01097F
+; Meroitic Hieroglyphs
+; Meroitic Cursive
+; Kharoshthi
+; Old South Arabian
+; Old North Arabian
+010AA0 010ABF
+; Manichaean
+; Avestan
+; Inscriptional Parthian
+; Inscriptional Pahlavi
+; Psalter Pahlavi
+010BB0 010BFF
+; Old Turkic
+010C50 010C7F
+; Old Hungarian
+010D00 010E5F
+; Rumi Numeral Symbols
+010E80 010FFF
+; Brahmi
+; Kaithi
+; Sora Sompeng
+; Chakma
+; Mahajani
+; Sharada
+; Sinhala Archaic Numbers
+; Khojki
+011250 01127F
+; Multani
+; Khudawadi
+; Grantha
+011380 0113FF
+; Newa
+; Tirhuta
+0114E0 01157F
+; Siddham
+; Modi
+; Mongolian Supplement
+; Takri
+0116D0 0116FF
+; Ahom
+011740 01189F
+; Warang Citi
+011900 011ABF
+; Pau Cin Hau
+011B00 011AFF
+; Bhaiksuki
+' Marchen
+011CC0 011FFF
+; Cuneiform
+; Cuneiform Numbers and Punctuation
+; Early Dynastic Cuneiform
+012550 012FFF
+; Egyptian Hieroglyphs
+013430 0143FF
+; Anatolian Hieroglyphs
+014680 0167FF
+; Bamum Supplement
+; Mro
+016A70 016ACF
+; Bassa Vah
+; Pahawh Hmong
+016B90 016EFF
+; Miao
+016FA0 016FDF
+; Ideographic Symbols and Punctuation
+; Tangut
+; Tangut Components
+018B00 01AFFF
+; Kana Supplement
+01B100 01BBFF
+; Duployan
+; Shorthand Format Controls
+01BCB0 01CFFF
+; Byzantine Musical Symbols
+; Musical Symbols
+; Ancient Greek Musical Notation
+01D250 01D2FF
+; Tai Xuan Jing Symbols
+; Counting Rod Numerals
+01D380 01D3FF
+; Mathematical Alphanumeric Symbols
+; Sutton SignWriting
+01DAB0 01DFFF
+; Glagolitic Supplement
+01E030 01E7FF
+; Mende Kikakui
+01E8E0 01E8FF
+; Adlam
+01E960 01EDFF
+; Arabic Mathematical Alphabetic Symbols
+01EF00 01EFFF
+; Mahjong Tiles
+; Domino Tiles
+; Playing Cards
+; Enclosed Alphanumeric Supplement
+; Enclosed Ideographic Supplement
+; Miscellaneous Symbols and Pictographs
+; Emoticons
+; Ornamental Dingbats
+; Transport and Map Symbols
+; Alchemical Symbols
+; Geometric Shapes Extended
+;  Supplemental Arrows - C
+; Supplemental Symbols and Pictographs
+01FA00 01FFFD

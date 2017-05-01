@@ -1,0 +1,329 @@
+Covered      Range       Script
+-------      -----       ------
+
+ 100.0%  U+0000..U+007F  C0 Controls and Basic Latin
+
+ 100.0%  U+0080..U+00FF  C1 Controls and Latin-1 Supplement
+
+ 100.0%  U+0100..U+017F  Latin Extended - A
+
+ 100.0%  U+0180..U+024F  Latin Extended - B
+
+ 100.0%  U+0250..U+02AF  IPA Extensions
+
+ 100.0%  U+02B0..U+02FF  Spacing Modifier Letters
+
+ 100.0%  U+0300..U+036F  Combining Diacritical Marks
+
+ 100.0%  U+0370..U+03FF  Greek and Coptic
+
+ 100.0%  U+0400..U+04FF  Cyrillic
+
+ 100.0%  U+0500..U+052F  Cyrillic Supplement
+
+ 100.0%  U+0530..U+058F  Armenian
+
+ 100.0%  U+0590..U+05FF  Hebrew
+
+ 100.0%  U+0600..U+06FF  Arabic
+
+ 100.0%  U+0700..U+074F  Syriac
+
+ 100.0%  U+0750..U+077F  Arabic Supplement
+
+ 100.0%  U+0780..U+07BF  Thaana
+
+ 100.0%  U+07C0..U+07FF  N'Ko
+
+ 100.0%  U+0800..U+083F  Samaritan
+
+ 100.0%  U+0840..U+085F  Mandaic
+
+ 100.0%  U+0860..U+089F  Unassigned
+
+ 100.0%  U+08A0..U+08FF  Arabic Extended - A
+
+ 100.0%  U+0900..U+097F  Devanagari
+
+ 100.0%  U+0980..U+09FF  Bengali
+
+ 100.0%  U+0A00..U+0A7F  Gurmukhi
+
+ 100.0%  U+0A80..U+0AFF  Gujarati
+
+ 100.0%  U+0B00..U+0B7F  Oriya
+
+ 100.0%  U+0B80..U+0BFF  Tamil
+
+ 100.0%  U+0C00..U+0C7F  Telugu
+
+ 100.0%  U+0C80..U+0CFF  Kannada
+
+ 100.0%  U+0D00..U+0D7F  Malayalam
+
+ 100.0%  U+0D80..U+0DFF  Sinhala
+
+ 100.0%  U+0E00..U+0E7F  Thai
+
+ 100.0%  U+0E80..U+0EFF  Lao
+
+ 100.0%  U+0F00..U+0FFF  Tibetan
+
+ 100.0%  U+1000..U+109F  Myanmar
+
+ 100.0%  U+10A0..U+10FF  Georgian
+
+ 100.0%  U+1100..U+11FF  Hangul Jamo
+
+ 100.0%  U+1200..U+137F  Ethiopic
+
+ 100.0%  U+1380..U+139F  Ethiopic Supplement
+
+ 100.0%  U+13A0..U+13FF  Cherokee
+
+ 100.0%  U+1400..U+167F  Unified Canadian Aboriginal Syllabics
+
+ 100.0%  U+1680..U+169F  Ogham
+
+ 100.0%  U+16A0..U+16FF  Runic
+
+ 100.0%  U+1700..U+171F  Tagalog
+
+ 100.0%  U+1720..U+173F  Hanunoo
+
+ 100.0%  U+1740..U+175F  Buhid
+
+ 100.0%  U+1760..U+177F  Tagbanwa
+
+ 100.0%  U+1780..U+17FF  Khmer
+
+ 100.0%  U+1800..U+18AF  Mongolian
+
+ 100.0%  U+18B0..U+18FF  Unified Canadian Aboriginal Syllabics Extended
+
+ 100.0%  U+1900..U+194F  Limbu
+
+ 100.0%  U+1950..U+197F  Tai Le
+
+ 100.0%  U+1980..U+19DF  New Tai Lue
+
+ 100.0%  U+19E0..U+19FF  Khmer Symbols
+
+ 100.0%  U+1A00..U+1A1F  Buginese
+
+ 100.0%  U+1A20..U+1AAF  Tai Tham
+
+ 100.0%  U+1AB0..U+1AFF  Combining Diacritical Marks Extended
+
+ 100.0%  U+1B00..U+1B7F  Balinese
+
+ 100.0%  U+1B80..U+1BBF  Sundanese
+
+ 100.0%  U+1BC0..U+1BFF  Batak
+
+ 100.0%  U+1C00..U+1C4F  Lepcha
+
+ 100.0%  U+1C50..U+1C7F  Ol Chiki
+
+ 100.0%  U+1C80..U+1C8F  Cyrillic Extended - C
+
+ 100.0%  U+1C90..U+1CBF  Unassigned
+
+ 100.0%  U+1CC0..U+1CCF  Sundanese Supplement
+
+ 100.0%  U+1CD0..U+1CFF  Vedic Extensions
+
+ 100.0%  U+1D00..U+1D7F  Phonetic Extensions
+
+ 100.0%  U+1D80..U+1DBF  Phonetic Extensions Supplement
+
+ 100.0%  U+1DC0..U+1DFF  Combining Diacritical Marks Supplement
+
+ 100.0%  U+1E00..U+1EFF  Latin Extended Additional
+
+ 100.0%  U+1F00..U+1FFF  Greek Extended
+
+ 100.0%  U+2000..U+206F  General Punctuation
+
+ 100.0%  U+2070..U+209F  Superscripts and Subscripts
+
+ 100.0%  U+20A0..U+20CF  Currency Symbols
+
+ 100.0%  U+20D0..U+20FF  Combining Diacritical Marks for Symbols
+
+ 100.0%  U+2100..U+214F  Letterlike Symbols
+
+ 100.0%  U+2150..U+218F  Number Forms
+
+ 100.0%  U+2190..U+21FF  Arrows
+
+ 100.0%  U+2200..U+22FF  Mathematical Operators
+
+ 100.0%  U+2300..U+23FF  Miscellaneous Technical
+
+ 100.0%  U+2400..U+243F  Control Pictures
+
+ 100.0%  U+2440..U+245F  Optical Character Recognition
+
+ 100.0%  U+2460..U+24FF  Enclosed Alphanumerics
+
+ 100.0%  U+2500..U+257F  Box Drawing
+
+ 100.0%  U+2580..U+259F  Block Elements
+
+ 100.0%  U+25A0..U+25FF  Geometric Shapes
+
+ 100.0%  U+2600..U+26FF  Miscellaneous Symbols
+
+ 100.0%  U+2700..U+27BF  Dingbats
+
+ 100.0%  U+27C0..U+27EF  Miscellaneous Mathematical Symbols - A
+
+ 100.0%  U+27F0..U+27FF  Supplemental Arrows - A
+
+ 100.0%  U+2800..U+28FF  Braille Patterns
+
+ 100.0%  U+2900..U+297F  Supplemental Arrows - B
+
+ 100.0%  U+2980..U+29FF  Miscellaneous Mathematical Symbols - B
+
+ 100.0%  U+2A00..U+2AFF  Supplemental Mathematical Operators
+
+ 100.0%  U+2B00..U+2BFF  Miscellaneous Symbols and Arrows
+
+ 100.0%  U+2C00..U+2C5F  Glagolitic
+
+ 100.0%  U+2C60..U+2C7F  Latin Extended - C
+
+ 100.0%  U+2C80..U+2CFF  Coptic
+
+ 100.0%  U+2D00..U+2D2F  Georgian Supplement
+
+ 100.0%  U+2D30..U+2D7F  Tifinagh
+
+ 100.0%  U+2D80..U+2DDF  Ethiopic Extended
+
+ 100.0%  U+2DE0..U+2DFF  Cyrillic Extended - A
+
+ 100.0%  U+2E00..U+2E7F  Supplemental Punctuation
+
+ 100.0%  U+2E80..U+2EFF  CJK Radicals Supplement
+
+ 100.0%  U+2F00..U+2FDF  Kangxi Radicals
+
+ 100.0%  U+2FE0..U+2FEF  Unassigned
+
+ 100.0%  U+2FF0..U+2FFF  Ideographic Description Characters
+
+ 100.0%  U+3000..U+303F  CJK Symbols and Punctuation
+
+ 100.0%  U+3040..U+309F  Hiragana
+
+ 100.0%  U+30A0..U+30FF  Katakana
+
+ 100.0%  U+3100..U+312F  Bopomofo
+
+ 100.0%  U+3130..U+318F  Hangul Compatibility Jamo
+
+ 100.0%  U+3190..U+319F  Kanbun
+
+ 100.0%  U+31A0..U+31BF  Bopomofo Extended
+
+ 100.0%  U+31C0..U+31EF  CJK Strokes
+
+ 100.0%  U+31F0..U+31FF  Katakana Phonetic Extensions
+
+ 100.0%  U+3200..U+32FF  Enclosed CJK Letters and Months
+
+ 100.0%  U+3300..U+33FF  CJK Compatibility
+
+ 100.0%  U+3400..U+4DBF  CJK Unified Ideographs Extension A
+
+ 100.0%  U+4DC0..U+4DFF  Yijing Hexagram Symbols
+
+ 100.0%  U+4E00..U+9FCF  CJK Unified Ideographs
+
+ 100.0%  U+9FD0..U+9FFF  Unassigned
+
+ 100.0%  U+A000..U+A48F  Yi Syllables
+
+ 100.0%  U+A490..U+A4CF  Yi Radicals
+
+ 100.0%  U+A4D0..U+A4FF  Lisu
+
+ 100.0%  U+A500..U+A63F  Vai
+
+ 100.0%  U+A640..U+A69F  Cyrillic Extended - B
+
+ 100.0%  U+A6A0..U+A6FF  Bamum
+
+ 100.0%  U+A700..U+A71F  Modifier Tone Letters
+
+ 100.0%  U+A720..U+A7FF  Latin Extended - D
+
+ 100.0%  U+A800..U+A82F  Syloti Nagri
+
+ 100.0%  U+A830..U+A83F  Common Indic Number Forms
+
+ 100.0%  U+A840..U+A87F  Phags-pa
+
+ 100.0%  U+A880..U+A8DF  Saurashtra
+
+ 100.0%  U+A8E0..U+A8FF  Devanagari Extended
+
+ 100.0%  U+A900..U+A92F  Kayah Li
+
+ 100.0%  U+A930..U+A95F  Rejang
+
+ 100.0%  U+A960..U+A97F  Hangul Jamo Extended - A
+
+ 100.0%  U+A980..U+A9DF  Javanese
+
+ 100.0%  U+A9E0..U+A9FF  Myanmar Extended - B
+
+ 100.0%  U+AA00..U+AA5F  Cham
+
+ 100.0%  U+AA60..U+AA7F  Myanmar Extended - A
+
+ 100.0%  U+AA80..U+AADF  Tai Viet
+
+ 100.0%  U+AAE0..U+AAFF  Meetei Mayek Extensions
+
+ 100.0%  U+AB00..U+AB2F  Ethiopic Extended - A
+
+ 100.0%  U+AB30..U+AB6F  Latin Extended - E
+
+ 100.0%  U+AB70..U+ABBF  Cherokee Supplement
+
+ 100.0%  U+ABC0..U+ABFF  Meetei Mayek
+
+ 100.0%  U+AC00..U+D7AF  Hangul Syllables
+
+ 100.0%  U+D7B0..U+D7FF  Hangul Jamo Extended - B
+
+   0.0%  U+D800..U+DFFF  Surrogate Pairs - Not Used
+
+ 100.0%  U+E000..U+F8FF  Private Use Area
+
+ 100.0%  U+F900..U+FAFF  CJK Compatibility Ideographs
+
+ 100.0%  U+FB00..U+FB4F  Alphabetic Presentation Forms
+
+ 100.0%  U+FB50..U+FDFF  Arabic Presentation Forms - A
+
+ 100.0%  U+FE00..U+FE0F  Variation Selectors
+
+ 100.0%  U+FE10..U+FE1F  Vertical Forms
+
+ 100.0%  U+FE20..U+FE2F  Combining Half Marks
+
+ 100.0%  U+FE30..U+FE4F  CJK Compatibility Forms
+
+ 100.0%  U+FE50..U+FE6F  Small Form Variants
+
+ 100.0%  U+FE70..U+FEFF  Arabic Presentation Forms - B
+
+ 100.0%  U+FF00..U+FFEF  Halfwidth and Fullwidth Forms
+
+ 100.0%  U+FFF0..U+FFFF  Specials
+

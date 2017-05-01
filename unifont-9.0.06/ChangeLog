@@ -1,0 +1,781 @@
+2016-12-22 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.06.
+	* Makefiles, src/unifontpic.c - changed version number to 9.0.06.
+	* font/plane00/unifont-base.hex:
+	  - U+22F5: Added missing dot; thanks to Johnnie Weaver for noticing
+	    this error.
+	* font/plane01/plane01.hex:
+	  - Osage: Glyphs U+0104D9 and U+0104DA were swapped; Johnnie Weaver
+	    corrected them.  Shifted glyphs that were 7 pixels wide left one
+	    pixel to line up on the leftmost column.
+	* font/plane0Fcsur/plane0Fcsur.hex:
+	  - Pikto: Paul Hardy modified about 50 glyphs to improve shapes.
+
+2016-12-10 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.05.
+	* font/plane00/unifont-base.hex:
+	  - Modified upper-case Cherokee (U+13A0..U+13FF) to better reflect
+	    changes in latest Unicode Consortium Cherokee font.  Removed
+	    most serifs to make glyphs easier to read.
+	  - Modified lower-case Cherokee (U+AB70..U+ABBF) to better reflect
+	    changes in latest Unicode Consortium Cherokee font.  Removed
+	    most serifs to make glyphs easier to read.
+	* font/plane01/plane01.hex: modified U+011449, Newa OM glyph.
+	* font/plane0Fcsur/plane0Fcsur.hex: modified glyphs after comparison
+	  with scans from two copies of the Basic Pikto book.
+
+2016-10-29 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.04.
+	* font/plane00/unifont-base.hex:
+	  - Extended "{" and "}" by one pixel to add a point in the center.
+	  - Swapped U+2A05 and U+2A06; they were in reverse order.
+	* Added omitted ChangeLog entry for Unifont 9.0.03 for the addition
+	  of Pikto glyphs to font/plane0Fcsur/plane0Fcsur.hex.
+
+2016-10-21 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.03.
+	* NEWS: changed 2015 to 2016 for 9.0.02 release year.
+	* Makefile:
+	  - Revised to include ConScript Unicode Registry (CSUR) Private
+	    Use Area (PUA) glyphs in width functions in lib directory.
+	  - Revised to treat nonprinting code points as having zero width,
+	    though they have glyphs defined in font/plane00/nonprinting.hex.
+	* font/Makefile:
+	  - Add Plane 0 CSUR glyphs to giant Plane 0 unifont-<version>.bmp
+	    picture even though they are an optional part of the font in
+	    a separate file.
+	* font/plane00/nonprinting.hex:
+	  - Changed the dotted border around all glyphs (where necessary)
+	    to match Roman's control character borders.
+	* font/plane00csur/plane00csur.hex:
+	  - Tonal System: added Under CSUR Tonal script at U+E8E0..U+E8F4.
+	    This is the base 16 system devised by John William Nystrom in
+	    the mid-19th century.
+	  - Aiha: Added doubling combining glyph at U+F8C8, which was omitted
+	    from the original CSUR code chart but is being added to the
+	    Under CSUR code chart.
+	  - Added remainder of Kinya glyphs that Andrew Miller drew.
+	* font/plane00csur/plane00csur-combining.txt:
+	  - Added combining code points for newly added Kinya combining glyphs.
+	* font/plane00csur/plane00csur-spaces.hex:
+	  - Created file to contain Kinya Alternate Space, U+E16E.
+	* font/plane0Fcsur/plane0Fcsur.hex: added Pikto CSUR glyphs after
+	  Kinya syllables.
+	* src/hexkinya:
+	  - Added copyright and license header.
+	  - Added comments with Unicode CSUR code points of each syllable
+	    component.
+	* src/unigenwidth.c:
+	  - Modified to cover widths for CSUR glyphs up through and including
+	    Plane 15, to cover the newly-added Pikto glyphs.  If someone
+	    is using this file but not using CSUR glyphs, simply ignore
+	    the Private Use Area glyph ranges or set the width to 2 for
+	    all glyphs in that range.
+
+2016-08-27 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.02.
+	* Makefiles: fonts copyright updated to 2016 if not already done.
+	* NEWS: fixed date for 9.0.01 release.
+	* doc: updated as per man/*.[15] man page changes of "\-" back to "-".
+	* font/Makefile:
+	  - Cleaned up (removed commented out lines, etc.)
+	  - Removed compiled/unifont_all_csur* and compiled/unifont_upper_csur*
+	    files.
+	  - Created compiled/unifont_csur_lower-*.hex to contain Plane 0
+	    CSUR glyphs and Plane 0 non-CSUR glyphs, for building BDF and
+	    PCF fonts.
+	  - unifont_csur-*.ttf only includes CSUR glyphs, not other Plane 0
+	    glyphs, decreasing size of CSUR TTF font by about 14 Megabytes.
+	    Plane 0 glyphs are still in the BDF and PCF CSUR fonts, because
+	    they are used in the X Window System, where one font is used
+	    for an entire window.
+	* font/plane00/unifont-base.hex:
+	  - U+0030: slash changed to a perfectly straight pixel line;
+	    now it looks less like the zero on an ASR-33 teletype.
+	  - U+A7AE: moved from U+A72E (where it was accidentally placed)
+	  - Discrepancies noticed by Johnnie Weaver:
+	    U+2766 (Floral Heart) and U+2767 (Rotated Floral Heart Bullet)
+	    redrawn to use the same base glyph as U+2619 (Reversed Rotated
+	    Floral Heart Bullet) for consistency
+	  - Changes requested by Michael Walden:
+	    - U+2906: moved vertical bar to edge of arrow so it is now
+	              a mirror image of U+2907.
+	    - U+2BC7, U+2BC8, U+2BEC, and U+2BEE: moved up one pixel.
+	* font/plane00csur/csur.hex:
+	  - Name changed to plane00csur.hex to resemble the name of
+	    font/plane0Fcsur/plane0Fcsur.hex.
+	  - U+E1B0..U+E1CF: Ilianóre drawn by Paul Hardy
+	  - U+E200..U+E26F: Verdurian drawn by Paul Hardy, with advice from
+	                    the script's creator, Mark Rosenfelder.
+	  - U+E630..U+E64F: Seussian Latin Extensions drawn by Johnnie Weaver
+	* font/plane00csur/csur-combining.txt: name changed to
+	  plane00csur-combining.txt to resemble the name of
+	  font/plane0Fcsur/plane0Fcsur-combining.txt.
+	* font/plane01/plane01.hex:
+	  - Changes requested by Johnnie Weaver:
+	    - Osage: U+0104B6 and U+0104DE made single-width.
+	    - Adlam: U+01E95F made single-width.
+	  - Fixed error found by Johnnie Weaver: U+01F67F flipped horizontally.
+	* man/*.[15]: changed "\-" back to "-".
+
+2016-07-01 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 9.0.01, implementing changes in Unicode 9.0.0.
+	* Makefiles: updated version to 9.0.01; fonts now Copyright 2016.
+	* doc: updated as per man/*.[15] man page changes of "-" to "\-".
+	* font/Makefile: now creates both bmp and png graphics outputs.
+	* font/plane00/README: updated "wc -l *.hex" output.
+	* font/plane00/unifont-base.hex: Paul Hardy made these changes except
+	  for new power symbols, which Terrence Eden contributed:
+	  - Michael Walden drew my attention (pun intended) to many glyphs,
+	    providing very detailed feedback that resulted in my changing
+	    these glyphs:
+	       - U+00A4 (currency symbol)
+	       - U+2426 (reverse question mark)
+	       - U+2543 (box drawing glyph)
+	       - U+249C..U+24B5 (lower-case letters in parentheses), and
+	       - Many arrow glyphs in the U+21xx, U+27xx, U+29xx, and U+2Bxx
+	         blocks to align horizontal arrows with U+2500 (horizontal
+	         line) for extension.
+	  - Added a slash to '0' (U+0030) and U+FF10 to distinguish from
+	    letter 'O' following multiple requests.
+	  - Increased height of U+0220 to Latin cap height.
+	  - Unified Canadian Aboriginal Syllabics (U+1400..U+167F) and
+	    Unified Canadian Aboriginal Syllabics Exnteded (U+18B0..U+18FF)
+	    redrawn; this was precipitated by The Unicode Consortium changing
+	    a number of those glyphs.
+	  - Rotated Mongolian script as per Unicode change to switch from
+	    traditional vertical writing to left-to-right horizontal writing.
+	  - Modified U+1B8F as per Unicode errata.
+	  - U+2FF9 no longer identical to U+2FF7.
+	  - U+202F (NARROW NO-BREAK SPACE) now is a space glyph.
+	  - U+20BA (Turkish Lira) moved down 2 rows--thanks to Johnny Weaver
+	    for noticing that.
+	  - Rotated Mongolian script (U+1800..U+18AF) as per Unicode change
+	    from traditional vertical writing to horizontal writing.
+	  - Rotated Phags Pa script (U+A840..U+A87F) as per Unicode change
+	    from traditional vertical writing to horizontal writing.
+	  - All additions for Unicode 9.0.0 made:
+	    to horizontal writing):
+	    - Added glyphs in Arabic Extended-A, Kannada,
+	          Malayalam, Cyrillic Extended-C, Combining Diacritical
+	          Marks Supplement, Supplemental Punctuation, and Saurashtra.
+	    - Terrence Eden contributed the 4 Miscellaneous Technical glyphs
+	      (he was the author of the Unicode proposal to add those glyphs).
+	    - Paul Hardy updated Currency Symbols and Latin Extended-D glyphs.
+	      (Control Pictures "Shift Out" glyph did not need to be modified;
+	      it was incorrectly rendered in the Unicode Standard but was
+	      correctly rendered in Unifont.)
+	  - Vertically flipped U+301C as per Unicode errata for 8.0.0.
+	* font/plane01/:
+	  - Removed noscript-hex.txt and noscript-ranges-hex.txt.  They
+	    are no longer used.
+	* font/plane01/Makefile:
+	  - Now places noscript.hex in the font/plane01 directory rather than
+	    in the font/plane01/all directory.
+	  - Now depend on unassigned-ranges.txt rather than depending on
+	    plane01-unassigned.hex, since plane01-unassigned.hex is generated
+	    from unassigned-ranges.txt.
+	  - The "clean" target now removes plane01-unassigned.hex and
+	    noscript.hex, but leaves all/plane01-all.hex.  The "distclean"
+	    target additionally removes all/plane01-all.hex.
+	* font/plane01/README: added file to describe how to add new Plane 1
+	  glyphs to the distribution.
+	* font/plane01/plane01.hex:
+	  - Johnny Weaver made these additions:
+	    - Osage       (U+0104B0..U+0104FF)
+	    - Multani     (U+011280..U+0112AF)
+	    - Khudawadi   (U+0112B0..U+0112FF)
+	    - Modi        (U+011600..U+01165F)
+	    - Ahom        (U+011700..U+01173F)
+	    - Warang Citi (U+0118A0..U+0118FF) [Allan Gardner began script]
+	    - Pau Cin Hau (U+011AC0..U+011AFF)
+	    - Bhaiksuki   (U+011C00..U+011C6F)
+	    - Marchen     (U+011C70..U+011CBF)
+	    - Mro         (U+016A40..U+016A6F)
+	    - Bassa Vah   (U+016AD0..U+016A6F)
+	    - Glagolitic Supplement (U+01E000..U+01E02F)
+	    - Adlam       (U+01E900..U+01E95F)
+	  - Paul Hardy made these additions:
+	    - Modified Miao       (U+016F2C..U+016F32) as per Unicode errata.
+	    - Modified Sharada    (U+0111BA..U+0111BB) as per Unicode errata.
+	    - Added Duployan      (U+01BC00..U+01BC9F)
+	    - Added Mende Kikakui (U+01E800..U+01E8DF)
+	    - Enclosed Ideographic Supplement:
+	      - Modified U+01F210, U+01F221, U+01F231, U+01F23A
+	      - Added    U+01F23B
+	* man/unifont.5: changed typo "exmaple" to "example".
+	* man/*.[15]: changed "-" to "\-".
+	* src/unibmp2hex.c: added new scripts to force to double-width;
+	  Unified Canadian Aboriginal Syllabics and Extended block are now
+	  all double-width.
+	* src/unicoverage.c: removed non-supported "-p" flag and empty
+	  example from help printout.
+	* src/unifontpic.c: changed header string from "8.0" to "9.0".
+	* src/unigenwidth.c: changed typo "tihs" to "this".
+
+2015-06-28 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 8.0.01.
+	* Makefiles: updated version to 8.0.01; fonts now Copyright 2015.
+	* font/Makefile:
+	  - No longer create BDF or PCF fonts from glyphs above Plane 0.
+	* font/plane00:
+	  - Tibetan: Modified "nga" glyphs (U+0F44 and U+0F94) so they would not
+	    resemble "da" (U+0F51 and U+0FA1, respectively) as closely.
+	  - Made U+202F a single-width space glyph rather than nonprinting;
+	    its entry was moved from nonprinting.hex to spaces.hex.
+	  - Modified U+2FF* and moved block from wqy.hex to unifont-base.hex;
+	    U+2FF7 was incorrect, and others in the range weren't symmetrical.
+	* font/plane00/bmp-combining.hex: 4 new combining characters from
+	  above scripts added and 19 combining characters from New Tai Lue
+	  removed.
+	* font/plane00/unassigned.hex: newly assigned code points removed
+	  from list of unassigned code points.
+	* font/plane00/unifont-base.hex:
+	  - Paul Hardy added changes to these scripts for Unicode 8.0:
+	    Arabic Extended-A, Gujarati, Telugu, Malayalam, Cherokee,
+	    New Tai Lue (all combining characters are no longer combining),
+	    Currency Symbols, Number Forms, Miscellaneous Symbols and Arrows,
+	    Cyrillic Extended-B, Latin Extended-D, Devanagari Extended,
+	    Latin Extended-E, Cherokee Supplement (new in Unicode 8.0.0),
+	    and Combining Half Marks.
+	* font/plane00/wqy.hex:
+	  - Umbreon126 drew U+9FCD..U+9FD5, new in Unicode 8.0.
+	  - Moved U+2FF* to unifont-base.hex following modification; see above.
+	* font/plane01/noscript-ranges.txt: updated to remove scripts that are
+	  new in Uniocde 8.0.0.  "noscript-hex.txt" is generated from this.
+	* font/plane01/plane01.hex:
+	  - Paul Hardy added the scripts Linear A, Palmyrene, Nabataean, Hatran,
+	    Meroitic Cursive, Manichaean, Old Hungarian, Mahajani, Sharada,
+	    Sinhala Archaic Numbers.
+	  - Paul Hardy added the new Unicode 8.0 glyphs in Siddham,
+	    Musical Symbols, Miscellaneous Symbols and Pictographs, Emoticons,
+	    and Transport and Map Symbols.
+	  - Umbreon126 drew most of the Blackletter (Fraktur) in the
+	    Mathematical Alphanumeric Symbols block.  Currently the regular and
+	    bold versions of those glyphs are identical, from limitations of
+	    Unifont's bitmap format.
+	* font/plane01/plane01-combining.txt: added code points that are new
+	  combining characters in Unicode 8.0.0.
+	* font/plane01/plane01-nonprinting.hex: updated with new nonprinting
+	  code points that are new in Unicode 8.0.0.
+	* font/plane01/noscript-ranges-hex.txt: removed script ranges that
+	  are new in Unicode 8.0.0.  "noscript-hex.txt" is generated from
+	  this file.
+	* font/plane01/plane01-unassigned-ranges.txt: removed code points that
+	  are newly assigned in scripts in Unicode 8.0.0.
+	  "unassigned-ranges.txt" is generated from this file.
+	* src/hex2bdf: improved hex string pattern match to go beyond Plane 0.
+	* src/unifontpic.c:
+	  - Changed version string from "7.0" to "8.0".
+	  - Line 129: moved "(i < 9)" range check before use of i in array.
+
+2014-10-23 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 7.0.06.
+	* Makefiles:
+	  - Updated version to 7.0.06.
+	  - Added "GZFLAGS = -f -9 -n" to use with gzip in all cases.
+	  - Changed ';' to "&&" for multiple shell commands, to fail if
+	    a preceding step caused an error.
+	  - Use "install -s" instead of "install" on C binaries.
+	* Makefile: regenerated .PHONY: target entries.
+	* font/Makefile:
+	  - Added GRAPHICS declaration, settable to "png" or "bmp" depending
+	    on the type of Unifont font pages desired.  The default is set
+	    to "png".
+	  - Added bmp: target to create bitmapped graphics (.bmp) images of
+	    Unifont.
+	  - Create font/compiled/plane00.html along with
+	    font/compiled/plane01.html in "png" and "bmp" targets.
+	* font/plane01/plane01.hex:
+          - Added one glyph inadvertently omitted from Old Italic:
+            U+01031F (Paul Hardy).
+          - Improved animals in U+01F400..U+01F43F (Nils Dagsson Moskopp).
+	  - Added more scripts:
+	     U+010350..U+01037F Old Permic (Paul Hardy)
+	     U+01F650..U+01F67F Ornamental Dingbats (Paul Hardy)
+	     U+01F780..U+01F7FF Geometric Shapes Extended (Paul Hardy)
+	     U+01F800..U+01F8FF Supplemental Arrows-C (Paul Hardy)
+	  - Emoticons (Paul Hardy)
+	     U+01F608: made horns look more like horns
+	* src/: in all Perl scripts, added "or die" for open, close, and
+	  print system calls.  Made some error messages more descriptive.
+	* src/Makefile: Changed CFLAGS parameter "-O" to explicitly be "-O2".
+	* src/unihexfill: added "set -e" at beginning of bash script.
+
+2014-10-17 Paul Hardy <unifoundry@unifoundry.com>
+
+	* Version: 7.0.05.
+	* ChangeLog: updated list of Plane 1 scripts added in 7.0.04 entry.
+	* font/Makefile:
+	  - Put plane01.html in font/compiled/ instead of font/.
+	* font/plane00.hex:
+	  Following Umbreon126's discovery that the ASCII letter 'k' was
+	  one pixel too short, Paul Hardy examined the rest of the ASCII
+	  alphabet and made these changes:
+	  - The letter 'l' was raised by one pixel to make it the same
+	    height as all other lower-case letters with ascenders:
+	    'b', 'd', 'f', 'h', 'k', and also the same height as 'i' and 'j'.
+	    These are all one pixel taller than the upper-case letters.
+	  - The horizontal stroke of the letter 't' was lowered by one
+	    pixel row to line up with the horizontal stroke in 'f'.
+	    This is one pixel shorter than the font's x-height, and
+	    is a compromise.
+	  - The following scripts were modified where appropriate to
+	    include the changes to the letters 'k', 'l', and 't':
+	       U+00A0..U+00FF Latin-1 Supplement [no changes]
+	       U+0100..U+017F Latin Extended-A
+	       U+0180..U+024F Latin Extended-B
+	       U+0250..U+02A0 IPA Extensions
+	       U+1E00..U+1EFF Latin Extended Additional
+	       U+2C60..U+2C7F Latin Extended-C
+	       U+3300..U+33FF CJK Compatibility
+	       U+A720..U+A7FF Latin Extended-D
+	       U+FB00..U+FB4F Alphabetic Presentation Forms
+	       U+FF00..U+FFEF Halfwidth and Fullwidth Forms.
+	* font/plane01.hex:
+	- Paul Hardy and Nils Dagsson Moskopp completed Miscellaneous
+	  Symbols and Pictographs (U+01F300..U+01F5FF).
+	- Nils modified several Plane 1 glyphs from what were in the
+	  Unifont-7.0.04 release in these scripts:
+	     U+01F300..U+01F5FF Miscellaneous Symbols and Pictographs
+	     U+01F600..U+01F4F Emoticons
+	     U+01F680..U+01F6FF and Transport and Map Symbols scripts.
+	* man/Makefile: remove $(MANPAGES) from "install" target.
+
+2014-10-11  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 7.0.04.
+	* Makefiles: bumped version to 7.0.04.
+	* ChangeLog: added "Version" line at the start of all past entries,
+	  since the version number now no longer includes a date as of
+	  Version 7.0.01.  Fixed spelling of "Umbreon126" in 7.0.02 entry.
+	* doc/: updates to include man/unipagecount.1 changes.
+	* font/Makefile:
+	  - Incorporates all font/plane01 glyphs in generated
+	    font/compiled/png/plane01/*.png files, including six-digit
+	    hexadecimal glyphs for code points that the Unicode Consortium
+	    has not yet assigned to scripts.
+	  - Generate font/plane01/all/plane01.html, showing current coverage
+	    and what remains to be done in a color-coded table.
+	  - Modified distclean target to do a "make clean" in font/plane01.
+	* font/plane00/unifont-base.hex:
+	  - Copied U+0070 (lower-case Latin "p") to U+0440 (Cyrillic
+	    small letter "er").  Thanks to Umbreon126 for spotting that.
+	  - Made the angle in symbol U+26BC (SESQUIQUADRATE) a 45 degree
+	    angle, since the symbol is supposed to represent 135 degrees
+	    (so 90 + 45 = 135).  Thanks to Artur Quaglio for noticing that.
+	    The depiction in the Unicode Standard code chart is inaccurate.
+	  - Umbreon126 improved the following glyphs:
+	    U+0026, U+006B, U+0111, U+0127, U+040F, U+041A, U+0444, U+0452,
+	    U+045B, U+045F, U+066F, U+0950, U+1E00, U+1E01, U+20AB, U+2103,
+	    U+2109, U+2118, U+211C, U+213C, U+213D, U+2169, U+26F6, U+2721,
+	    U+A4D2, U+3005, U+3006.
+	* font/plane00/wqy.hex: Umbreon126 improved the following glyphs:
+	  U+3116, U+3464, U+35CA, U+4EAE, U+533F, U+53D7, U+5404, U+569F,
+	  U+56B9, U+56DE, U+5909, U+5967, U+5E38, U+6238, U+796D, U+7981,
+	  U+7A3F, U+7C21, U+7F60, U+840C, U+8276, U+9055, U+907A, U+9089,
+	  U+9EA5, U+9F20.
+	* font/plane01/Makefile:
+	  - Changed name of generated unassigned.hex to plane01-unassigned.hex.
+	  - Added a line to create noscript-ranges-hex.txt from
+	    noscript-ranges.txt.
+	  - Create font/plane01/all/ directory for generating PNG files
+	    when font is compiled.
+	* font/plane01/noscript-ranges.txt: added file that contains
+	  start and stop code points of all ranges in Unicode Plane 1
+	  where Unicode scripts have not yet been assigned.  font/Makefile
+	  uses this to generate filler glyphs for those unassigned script
+	  ranges; they are not included in the main font, but are included
+	  in the PNG graphics files in the font/compiled directory.
+	* font/plane01/plane01-combining.txt: added all Unicode combining
+	  code points in the Unicode 7.0 Plane 1 range, not just ones for
+	  scripts that Unifont Upper contains.
+	* font/plane01/plane01.hex:
+	  - Artur Quaglio added Elbasan and Caucasian Albanian.
+	  - Paul Hardy added Sora Sompeng, Chakma, Sharada, Takri, Miao,
+	    Arabic Mathematical Alphabetic Supplement, and Transport and
+	    Map Symbols.
+	  - Umbreon126 added Siddham and the script letters in the Mathematical
+	    Alphanumeric Symbols block.
+	  - Paul Hardy, Nils Dagsson Moskopp, and Umbreon126 added more
+	    to the Miscellaneous Symbols and Pictographs, and Nils improved
+	    existing glyphs.
+	  - Nils Dagsson Moskopp made improvements to some Transport and
+	    Map Symbols.
+	  - Umbreon126 improved U+01F200.
+	* font/plane01/plane01-nonprinting.hex: new file contains the
+	  non-printing Unicode Plane 01 glyphs.
+	* font/plane01/unassigned-ranges.txt: fixed a typo; under the
+	  Khojki script, 011122 should have been 011212.
+	* man/Makefile: added unifont-viewer.1 to MAN1PAGES variable.
+	* man/unipagecount.1: updated to reflect src/unipagecount.c changes.
+	* src/hex2sfd:
+	  - Modified comments to include Luis Alejandro González Miranda's
+	    full name.
+	  - Now supports combining characters for glyphs above Plane 0.
+	  - Properly marks fonts with glyphs above Plane 0 as "Unicode"
+	    instead of "UnicodeBmp".
+	  - Explicitly defines glyphs for ".notdef", ".null", and
+	    "nonmarkingreturn" rather than use the Fontforge-supplied defaults.
+	  - Calculate exact number of glyphs in the font for BeginChars entry.
+	  - Moved pixel-outlining portion to a separate subroutine, "outline".
+	  - Add "uni" prefix to StartChar description of code points.
+	* src/unipagecount.c: modified to handle glyphs for any Unicode plane.
+	  Now takes a "-Pnn" parameter, where "nn" is the desired plane
+	  number (0 through 16, inclusive).  The default is Plane 0.
+	  The previous version would only take one command-line argument;
+	  this version can take multiple arguments.
+
+2014-07-01  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 7.0.03.
+	* doc/unifont.texi: include unihexfill.texi.
+	* doc/unihexfill.texi: added file.
+	* doc/*.texi: updated all files to cross-reference unihexfill(1).
+	* font/Makefile: removed spurious "DF" element in "for"
+	  loop to create "compiled/png/csur/" glyphs.
+	* font/plane00/unifont-base.hex: changed "y" glyph (U+0079)
+	  back to previous version.  Added modification to the
+	  German double s glyph (U+00DF) submitted by Joshua Krämer.
+	* font/plane01/Makefile: corrected a comment line.
+	* man/unihexfill.1: created missing man page.  Without that,
+	  this version did not conform to Debian Policy.  The
+	  omission drove this release.
+	* man/*.[15]: updated all man pages to cross-reference unihexfill(1).
+
+2014-06-29  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 7.0.02.
+	* ChangeLog:
+	  - File now begins with UTF-8 encoded Byte Order Mark (U+FEFF),
+	    which is 0xEF, 0xBB, 0xBF.  This will alert some less than
+	    well behaved text applications to expect non-ASCII UTF-8
+	    characters in this file.
+	  - Corrected date in previous ChangeLog entry.
+	* font/Makefile: removed an extra "done" in a "for" loop.
+	* font/plane00/unifont-base.hex:
+	  - Joshua Krämer redrew U+0079 ('y') and U+00B5 (mu).
+	  - Paul Hardy redrew U+00DF (German double s), and Gujarati
+	    characters U+0ACB and U+0ACC.
+	  - Umbreon126 redrew symbols U+2672, U+267B, U+267C, U+267D, U+269B,
+	    and U+269C.
+	  - Umbreon126 and Paul Hardy redrew U+262F (yin-yang).
+	* font/plane01/plane01.hex:
+	  - Paul Hardy added [in order of appearance in Uniocde Plane 1 /
+            the SMP]: Meroitic Hieroglyphs, Meroitic Cursive, Avestan,
+	    Inscriptional Parthian, Inscriptional Pahlavi, Psalter Pahlavi,
+	    Old Turkic, Rumi Numeral Symbols, Brahmi, Kaithi, Kana Supplement,
+	    Shorthand Format Controls, Emoticons, and Alchemical Symbols.
+	    He also redrew U+01F195 ("NEW").
+	  - Nils Dagsson Moskopp drew more glyphs in the Miscellaneous
+	    Symbols and Pictographs block.
+	  - Umbreon126 contributed the Pahawh Hmong glyphs.  He contributed
+	    new Mah Jong glyphs: U+01F010, U+01F022 through U+01F02A.  He
+	    also redrew U+01F16A ("MC") and U+01F198 ("SOS").
+
+2014-06-21  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 7.0.01.
+	* Changed version numbering from a date at the end to a two-digit
+	  release number for a given Unicode version, where a Unicode version
+	  consists of a major number and a minor number.  So this version is
+	  Unifont 7.0.01, because it is the first revision to implement the
+	  Unifont 7.0 glyphs.  Richard Stallman made this request.
+	* INSTALL: changed "hexsrc" to "plane00" to refer to the new
+	  directory name.
+	* README:
+	  - Changed "hexsrc" to "plane00" to refer to the new directory name.
+	  - Added mention of Andrew Miller writing unifont-viewer.
+	* doc/: incorporated unifont-viewer.texi into unifont.texi.
+	* doc/Makefile: corrected comments for building texinfo output files,
+	  and simplified docprep target.
+	* doc/unifont-viewer.texi: added file.
+	* doc/unifont.texi:
+	  - Corrected naming of section "Using Graphical Tools"; it was
+	    incorrectly named "Hex File Format", which is the name of the
+	    preceding section.
+	  - Added new section on "Dynamically Viewing a Unifont File" to
+	    describe using the unifont-viewer Perl utility.
+	  - Added unifont-viewer man page sub-section to Reference section.
+	* doc/unifontpic.texi: changed "hexsrc" to "plane00" to refer to
+	  the new directory name.
+	* doc/unigencircles.texi: changed "hexsrc" to "plane00" to refer to
+	  the new directory name.
+	* font/Makefile:
+	  - Added font/plane0[1-F]csur/*.hex in hex: target to sort input
+	    for building fonts containing CSUR glyphs above Plane 0.
+	  - Added all combining character code points in uppercsurttf target.
+	  - Added creation of unifont_upper_sample-$(VERSION).hex.  This
+	    involved the creation of combining and nonprinting files in
+	    "font/compiled/" directory.  Also added creation of
+	    unifont_upper_sample-$(VERSION).bdf and
+	    the SBIT font unifont_upper_sample-$(VERSION).ttf.
+	  - Added generation of Supplemental Multilingual Plane glyphs
+	    to "font/compiled/bmp/" directory.
+	  - Renamed "font/compiled/bmp/uni??.bmp" to
+	    "font/compiled/bmp/uni00??.bmp" to appear before SMP bitmap files.
+	  - compiled/bmp no longer created; replaced with compiled/png.
+	  - compiled/png now contains sample glyphs in Portable Network
+	    Graphics format (with combining circles where appropriate),
+	    in subdirectories "plane00", "plane01", "plane0E", and "csur".
+	  - clean target now also removes "$(COMPILED_DIR)/*.sfd.gz".
+	* font/index.html: added table for Supplemental Multilingual Plane.
+	* font/plane00: Added the 327 new glyphs introduced to Plane 0 in
+	  Unicode 7.0.  This involved adding glyphs to unifont-base.hex,
+	  adding combining code points to bmp-combining.txt, and removing
+	  newly-defined glyphs from unassigned.hex.
+	* font/plane00/README: changed "hexsrc" to "plane00" to refer to
+	  the new directory name.
+	* font/plane00/unifont-base.hex:
+	  - Redrew U+0D00 and U+2702.
+	  - Redrew Halfwidth Katakana Variants, U+FF65 through U+FF9F, because
+	    the original glyphs were too tall compared to the rest of Unifont.
+	  - Using new versions of U+2619 (the "Aldus leaf"), U+2622,
+	    and U+26DF that Nils Moskopp submitted.
+	* font/plane00csur/csur.hex: removed U+EFFF as a Copyleft symbol, as
+	  it is not part of the ConScript Unicode Registry.
+	* font/plane01/Makefile: created Makefile to generate "unassigned.hex"
+	  from "unassigned-ranges.txt".
+	* font/plane01/plane01.hex:
+	  - Paul Hardy added these scripts: Phaistos Disc, Coptic Epact
+	    Numbers, Imperial Aramaic, Lydian, Old South Arabian, Old North
+	    Arabian, and Enclosed Ideographic Supplement (modeled after glyphs
+	    in Wen Quan Yi).  Also added new glyphs to complete Phoenician.
+	    Also added glyphs to complete the 7.0 additions for Ancient Greek
+	    Numbers, Ancient Symbols, and Old Italic.
+	  - Andrew Miller added new glyphs for Playing Cards and Enclosed
+	    Alphanumeric Supplement.  Also drew more glyphs for Mathematical
+	    Alphanumeric Supplement.
+	  - Nils Moskopp drew the new Miscellaneous Symbols and Pictographs.
+	* font/plane01/unassigned-ranges.txt: completed all unassigned ranges
+	  for scripts that the Unicode Consortium has assigned.
+	* font/plane01/plane01-nonprinting.hex: created file.
+	* man/:
+	  - Added references to unifont-viewer in all other man pages.
+	  - Removed an extraneous ".PP" that appeared in some man pages before
+	    a new section header.
+	* man/unifont.5: changed "hexsrc" to "plane00".
+	* man/unifont-viewer.1: created file.
+	* man/unifontpic.1: changed "hexsrc" to "plane00".
+	* man/unigencircles.1: changed "hexsrc" to "plane00".
+	* src/unifont-viewer: added new program to view Unifont hex files.
+	* src/unifontpic.c: changed "6.3" version number to "7.0".
+	* src/unigencircles.c: extended to cover the entire Unicode range.
+	* src/unihexfill: new program to pad a script with glyphs that are
+	  four or six digits.  Among other uses, this will allow Debian
+	  GNU/Linux's font review script to report Unicode script completion
+	  percentage accurately for Unifont.
+
+2014-02-14  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20140214.
+	* COPYING: added GNU Free Documentation License 1.3, which covers
+	  the files "doc/unifont.*".
+	* ChangeLog: fixed a typo in 2014-02-04 entry.
+
+2014-02-04  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20140204.
+	* Makefiles:
+	  - Updated date for new release.
+	  - Added Qianqian Fang's name to COPYRIGHT strings, for his glyph
+            contributions in "font/plane00/wqy.hex".
+	* hangul/hangul-generation.html: removed references to three footer
+	  "<img>" links that pointed to external websites.  Those external
+	  icons were saved locally when the original web page
+	  http://unifoundry.com/hangul/hangul-generation.html was saved in
+	  the "hangul/" directory.  That web page is the most comprehensive
+	  documentation of the effort to create the Hangul Syllables block
+	  from scratch.
+	* hangul/hangul-generation_files: removed three external icon files
+	  ("valid-html401.png", "vccs.gif", and "w3c_ab.gif") that were saved
+	  locally when http://unifoundry.com/hangul/hangul-generation.html
+	  was saved.
+	* src/unibmp2hex.c: increased size of "wide" array to be 0x200000,
+	  to cover the entire range of Unicode.
+
+2014-02-02  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20140202.
+        * Makefiles: updated date for new release.
+	* NEWS: updated for new release.
+	* README: updated for new release, notably mentioning that
+	  "font/hexsrc" has been renamed to "font/plane00".
+	* doc/: regenerated unifont.txt, unifont.info, and unifont.pdf files
+	  after addition of doc/hexkinya.texi.
+	* doc/Makefile (docprep): added new target to remove the files
+	  created by "make doc", in preparation for running "make doc" again.
+	* doc/hexkinya.texi: added Texinfo file for hexkinya Perl script.
+	* doc/unifont.texi: updated file to reflect "font/hexsrc" being
+	  renamed to "font/plane00" and made other changes to reflect
+	  support beyond the Unicode Basic Multilingual Plane.
+	* font/Makefile:
+	  - Added Andrew Miller's name to COPYRIGHT string.
+	  - Add unifont_upper font files for Plane 1 through Plane 14 glyphs.
+	  - Add unifont_upper_csur font files for Plane 1 through Plane 15
+	    glyphs (currently there are no glyphs for Plane 16, the highest
+	    plane that the  Unicode Standard allows).
+	  - Create Unifont-APL8x16.psf.gz console font file, to support
+	    running GNU APL and other APL implementations in console mode.
+	    This font is a 512 glyph subset of Unifont.
+	* font/Makefile (bigpic): construct giant glyph picture using
+	  font/plane00/*.hex rather than font/compiled/unifont_sample*.hex,
+	  because the latter doesn't contain glyphs for U+FFFE or U+FFFF
+	  (removed to appease MS Windows).
+	* font/Makefile (hex): added egrep -v "^FFF[EF]" to make sure
+          U+FFFE and U+FFFF are removed from font, for Windows XP.
+	* font/plane00: new name of previous "font/hexsrc" directory, now
+	  that this package contains multiple Unicode planes.
+	* font/plane00/README: updated to mention new "omit.hex" file.
+	* font/plane00/bmp-combining.txt: formerly "font/ttfsrc/combining.txt".
+        * font/plane00/nonprinting.hex: removed U+FFFE and U+FFFF to
+          appease MS Windows XP (see font/plane00/omit.hex entry below).
+        * font/plane00/omit.hex: consists of U+FFFE and U+FFFF, for the
+          sake of MS Windows XP.
+        * font/plane00/unifont-base.hex: Further tweaks to APL glyphs.
+        * font/plane00csur:
+	  - Created ConScript Unicode Registry directory, for glyphs in Michael
+	    Everson's PUA mapping ("http://www.evertype.com/standards/csur/").
+          - Added contributions of Wojciech Stryjewski: Tengwar and Klingon.
+          - Added contributions of Andrew Miller: Kinya (partial), aUI,
+	    Gargoyle, Ewellic, Unifon, Solresol, Visible Speech, and Monofon.
+	  - Added contributions of Paul Hardy: Cirth and Aiha.
+	* font/plane01: created directory for Unicode Plane 1 glyphs.
+	  - Added glyphs contributed by Roman Czyborra and Andrew Miller:
+	    Old Italic.
+	  - Added glyphs contributed by Andrew Miller: Ancient Symbols,
+	    Lycian, Carian, Ugaritic, Old Persian, Musical Symbols,
+	    Tai Xuan Jing Symbols, Counting Rod Numerals, Mathematical
+	    Alphanumeric Symbols (partial), Mahjong Tiles, Domino Tiles,
+	    Playing Cards, Enclosed Alphanumeric Supplement, and Miscellaneous
+	    Symbols and Pictographs (partial).
+	  - Added glyphs contributed by Paul Hardy: Linear B Syllabary,
+	    Linear B Ideograms, Aegean Numbers, Ancient Greek Numbers,
+	    Gothic, Deseret, Shavian, Osmanya, Cypriot Syllabary, Phoenician,
+	    Kharoshthi, Byzantine Musical Symbols, and Ancient Greek Musical
+	    Notation.
+	* font/plane0E: added scripts contributed by Andrew Miller: Tags and
+	  Variation Selectors Supplement.
+	* font/plane0Fcsur: added glyphs from Michael Everson's ConScript
+	  Unicode Registry (CSUR) contriubted by Andrew Miller: Kinya Syllables.
+        * font/psf: added directory with files to build new PSF font version,
+	  to allow APL use under GNU/Linux in console mode.
+	* font/ttfsrc: simplified directory to only contain a Makefile;
+	  other files were moved to "font/plane00/" as a precursor to allow
+	  parallel building of multiple fonts.
+	* font/ttfsrc/Makefile:
+	  - Updated VERSION date.
+	  - Added Andrew Miller's name to COPYRIGHT string.
+	* hangul/README: changed mention of "font/hexsrc" to new location
+	  of "font/plane00".
+	* man/hexkinya.1: added man page for Andrew Miller's hexkinya Perl
+	  script, also cross-referenced in all other man pages.
+	* src/hexkinya: new script by Andrew Miller to generate Kinya Private
+	  Use Area glyphs in Plane 15, saved under "font/plane0Fcsur/".
+	* src/unibmp2hex.c: added forced double width for appropriate
+	  Plane 1 (Supplemental Multilingual Plane) scripts now that
+	  this package extends beyond the Basic Multilingual Plane.
+        * src/unipagecount.c: corrected license from GPL3+ to GPL2+.
+
+2013-12-21  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20131221.
+	* ChangeLog: corrected date on last entry from 12-27 to 12-17.
+	* Makefiles: updated date for new release.
+	* font/hexsrc/unifont-base.hex: Modified glyphs to appear better
+	  in APL: U+22F8, U+233B, U+233E, U+235B, and U+2364.
+	* font/ttfsrc/Makefile: commented out SetFontNames function calls
+	  in fontforge.  Not all applications were interpreting that data
+	  correctly.  For example, in LibreOffice, it listed the font as
+	  the foundry name ("GNU") rather than the foundry name plus the
+	  font name ("GNU Unifont") or just the font name.  That is a bug
+	  in LibreOffice, so if such things are fixed in the future then
+	  these calls can be re-introduced.
+	* src/hex2bdf:
+	  - Rearranged some properties (cosmetic change).
+	  - Changed default font name from "unifont" to "Unifont".
+	* src/unigencircles.c: changed subscript from MAXSTRING to
+	  MAXSTRING-1 at line 61.
+
+2013-12-17  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20131217.
+	* doc/Makefile: removed redirection of texi2pdf output.
+	* doc/unifont.pdf: rebuilt file.
+	* font/Makefile:
+	  - Don't modify PCF fonts with FontForge, which alters them
+	    so grub-mkfont can't read them.
+	  - In font/compiled, insert $(VERSION) into unifont.sfd name.
+	* font/ttfsrc/Makefile (clean): remove *.bdf, so unifont_sample.bdf
+	  is removed.
+	* README: removed date stamp at top of file.
+
+2013-12-15  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20131215.
+	* src/unihex2png: new program to convert unifont.hex to PNG image.
+	* src/unipng2hex: new program to convert PNG image to unifont.hex.
+	* src/hex2bdf:
+	  - Added new XLFD properties for font generation for FreeType and
+	    grub-mkfont support; includes version & copyright info.
+	  - Fields now begin with upper-case, including "unifont"-->"Unifont".
+	  - Changed POINT_SIZE property from 160 to 120.
+	  - Added "Sans" style name to FONT string plus XLFD property.
+	  - Added command line options for font name, version, & glyph height.
+	  - Allow generation of fonts with other than 16 pixel rows/glyph, to
+	    support new capabilities of unihex2png, unipng2hex, and hexdraw.
+	* src/unidup.c: now takes an optional file name on the command line.
+	* src/*.c: reformatted to follow GNU Coding Standards.
+	* man/*: Updated man pages to reflect new options, new programs,
+	  and to reflect the GPLv2+ license now common to all programs.
+	* doc/: new directory with Texinfo files.
+	* ChangeLog: created new file.
+	* COPYING: created new file.
+	* INSTALL: file created using BUILDING section from old README file.
+	* LICENSE: removed; its contents are in README and COPYING now.
+	* NEWS: created new file.
+	* Makefiles: added "SHELL = /bin/sh" if not already declared.
+	* Makefiles (distclean): added removal of "*~" if not already declared.
+	* Makefile: compress text files with "gzip -f -9" during installation.
+	* font/Makefile: fontforge scripting updated; now adds font copyright,
+	  license, version and other info to PCF files.
+	* font/hexsrc/unifont-base.hex:
+	  - Redrew several Armenian letters (U+0530..U+058F).
+	  - Redrew Capricorn symbol (U+2651).
+	  - Redrew CJK Radical Supplement glyphs: U+2E9F, U+2EA9, U+2EAC,
+	    U+2EAE, U+2EC0, U+2EDE, U+2EE7, and U+2EED.
+	* font/ttfsrc/Makefile: fontforge scripting command changed from
+	  "Simplify(-1,1)" to "Simplify(64,1)" to "merge lines which are
+	  nearly parallel into one".  This decreases the TrueType file size
+	  by almost 2 Megabytes, by reducing the number of control points
+	  for a glyph.  Also add font copyright, license, version, and
+	  other info to TTF files.
+	* font/ttfsrc/Makefile: now builds SBIT font unifont_sample.ttf.
+	* unifontall-*: renamed to "unifont_sample-*".
+	* *.bdf: Added font version, copyright, etc. with hex2bdf.
+	* *.pcf: Added font version, copyright, etc. with fontforge.
+	* *.ttf: Added font version, copyright, etc. with fontforge.
+	* font/*/unifont-*.bmp: Create chart of entire Unifont using pre-built
+	  unifont_sample.hex rather than assembling *.hex just for this image.
+	* hangul/hangul-generation.html: updated to correct a typo, where
+          rieul was mentioned as an initial consonant instead of a final
+          consonant in an explanation of vertical spacing constraints.
+	* hangul/Makefile:
+	  - Updated hex2bdf parameters to name generated BDF font
+	    "Unifont Johab" rather than "unifont" and add copyright.
+	  - Used a sed script to change BDF encoding from ISO10646 to "Johab".
+	  - Call bdftopcf to create hangul-base.pcf, then compress with gzip.
+	  - Add "precompiled:" target to create basic Johab font files.
+
+2013-10-20  Paul Hardy  <unifoundry@unifoundry.com>
+
+	* Version: 6.3.20131020.
+	* First GNU Project version.

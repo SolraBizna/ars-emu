@@ -1,33 +1,42 @@
 include make/cur_target.mk
 
+UNIFONT_VERSION=9.0.06
+
 CPPFLAGS+=-DGAME_PRETTY_NAME="\"ARS Emulator\""
 #CPPFLAGS+=-DXGL_ENABLE_VBO -DXGL_ENABLE_RECTANGLE_TEXTURES -DXGL_ENABLE_PBO
-CPPFLAGS+=-DTEG_NO_POSTINIT -DNO_OPENGL
+CPPFLAGS+=-DTEG_NO_POSTINIT -DNO_OPENGL -DTEG_USE_SN
 
 TEG_OBJECTS=obj/teg/io.o obj/teg/main.o obj/teg/miscutil.o obj/teg/config.o
 
-EXE_LIST:=
+EXE_LIST:=ars-emu compile-font
+
+all: gen obj/ROM.rom bin/Data/Lang bin/Data/Font \
+	$(addsuffix -debug$(EXE),$(addprefix bin/,$(EXE_LIST))) \
+	$(addsuffix -release$(EXE),$(addprefix bin/,$(EXE_LIST)))
 
 define define_exe =
 $(eval
-EXE_LIST+=$1
 bin/$1-release$(EXE): obj/$1.o $2
 bin/$1-debug$(EXE): $(patsubst %.o,%.debug.o,obj/$1.o $2)
 )
 endef
 
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o $(TEG_OBJECTS))
+$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o $(TEG_OBJECTS))
+$(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
 
-all: gen obj/ROM.rom \
-	$(addsuffix -debug$(EXE),$(addprefix bin/,$(EXE_LIST))) \
-	$(addsuffix -release$(EXE),$(addprefix bin/,$(EXE_LIST)))
+gen:
+	@true
 
-gen: include/gen/messagefont.hh
+bin/Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
+	@mkdir -p bin/Data
+	@echo "Compiling font..."
+	@$^ > $@
 
-obj/vincent.bin: src/font2bin.lua src/vincent.png
-	@mkdir -p obj
-	@echo "Turning Vincent into a binary blob..."
-	@$^ $@
+bin/Data/Lang: $(wildcard lang/*.utxt)
+	@echo Copying translation files...
+	@rm -rf bin/Data/Lang
+	@mkdir -p bin/Data
+	@cp -r lang bin/Data/Lang
 
 obj/ROM.rom: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
 	@mkdir -p bin
@@ -84,7 +93,16 @@ obj/%.debug.o: src/%.cc
 	@echo Compiling "$<" "(debug)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) $(CXXFLAGS) $(CXXFLAGS_DEBUG) -o "$@" "$<"
 
-obj/%.65c.o: asm/%.65c $(wildcard asm/*.inc) obj/vincent.bin
+obj/%.o: src/libsn/%.cc
+	@mkdir -p obj/teg
+	@echo Compiling "$<" "(release)"...
+	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_RELEASE) $(CFLAGS) $(CFLAGS_RELEASE) $(CXXFLAGS) $(CXXFLAGS_RELEASE) -o "$@" "$<"
+obj/%.debug.o: src/libsn/%.cc
+	@mkdir -p obj/teg
+	@echo Compiling "$<" "(debug)"...
+	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) $(CXXFLAGS) $(CXXFLAGS_DEBUG) -o "$@" "$<"
+
+obj/%.65c.o: asm/%.65c $(wildcard asm/*.inc)
 	@mkdir -p obj
 	@echo Assembling "$<"...
 	@wla-65c02 -qo "$<" "$@"

@@ -2,6 +2,8 @@
 #include "et209.hh"
 #include "config.hh"
 #include "io.hh"
+#include "font.hh"
+#include "utfit.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -15,9 +17,9 @@ ARS::MessageImp ARS::ui;
 std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
 uint8_t ARS::dram[0x8000];
+SN::Context sn;
 
 namespace {
-#include "gen/messagefont.hh"
   uint8_t bankMap[8];
   std::string rom_path;
   bool rom_path_specified = false;
@@ -64,15 +66,27 @@ namespace {
       messages_dirty = true;
     }
   }
-  void draw_glyph(uint8_t* _pixels, const MessageGlyph& glyph, int skip_rows,
+  void draw_glyph(uint8_t* _pixels, const Font::Glyph& glyph, int skip_rows,
                   int pitch) {
-    const uint16_t* glyphp = glyph.data + skip_rows * (glyph.w + 2);
-    for(int y = skip_rows; y < message_font_height + 2; ++y) {
+    for(int y = skip_rows; y < Font::HEIGHT + 2; ++y) {
       uint16_t* pixels = reinterpret_cast<uint16_t*>(_pixels);
-      for(int w = 0; w < glyph.w + 2; ++w) {
-        if(*glyphp)
-          *pixels = *glyphp;
-        ++glyphp;
+      int w = glyph.wide ? 18 : 10;
+      // uint32_t avoids negative bitshift
+      uint32_t bitmap = y > 0 ? glyph.tiles[y-1]<<16 : 0,
+        bitmap2 = y < Font::HEIGHT ? glyph.tiles[y]<<16 : 0,
+        bitmap3 = y < Font::HEIGHT-1 ? glyph.tiles[y+1]<<16 : 0;
+      if(glyph.wide) {
+        bitmap |= y > 0 ? glyph.tiles[y+15]<<8 : 0;
+        bitmap2 |= y < Font::HEIGHT ? glyph.tiles[y+16]<<8 : 0;
+        bitmap3 |= y < Font::HEIGHT-1 ? glyph.tiles[y+17]<<8 : 0;
+      }
+      uint32_t shadowmap = bitmap|bitmap2|bitmap3;
+      shadowmap |= shadowmap<<1; shadowmap |= shadowmap>>1;
+      for(int x = 0; x < w; ++x) {
+        if(bitmap2 & (0x1000000>>x))
+          *pixels = 0xFFFF;
+        else if(shadowmap & (0x1000000>>x))
+          *pixels = 0xF000;
         ++pixels;
       }
       _pixels += pitch;
@@ -82,18 +96,17 @@ namespace {
     messages_local_rect.x = 0;
     messages_local_rect.y = 0;
     messages_local_rect.w = 0;
-    messages_local_rect.h = 1;
+    messages_local_rect.h = 2;
     for(LoggedMessage& msg : logged_messages) {
-      messages_local_rect.h += message_font_height + 1;
-      int width = 1;
-      for(char c : msg.string) {
-        if(c == 32) width += 2;
+      messages_local_rect.h += Font::HEIGHT;
+      int width = 2;
+      auto cit = msg.string.cbegin();
+      while(cit != msg.string.cend()) {
+        uint32_t c = getNextCodePoint(cit, msg.string.cend());
+        if(c == 32) width += 8;
         else {
-          if(c < 32 || c > 126) c = '?';
-          else if(c >= 'a' && c <= 'z') c -= 32;
-          c -= 32;
-          auto&glyph = message_font_glyphs[message_font_glyph_indices[(int)c]];
-          width += glyph.w + 1;
+          auto& glyph = Font::GetGlyph(c);
+          width += glyph.wide ? 16 : 8;
         }
       }
       if(width > PPU::VISIBLE_SCREEN_WIDTH-MESSAGES_MARGIN_X*2)
@@ -116,25 +129,24 @@ namespace {
       pixels -= pitch;
       int y = messages_local_rect.h-1;
       auto it = logged_messages.crbegin();
-      while(it != logged_messages.crend() && y > -message_font_height) {
-        y -= message_font_height + 1;
-        pixels -= (message_font_height + 1) * pitch;
+      while(it != logged_messages.crend() && y > -Font::HEIGHT) {
+        y -= Font::HEIGHT;
+        pixels -= Font::HEIGHT * pitch;
         auto& msg = *it;
         int x = 0;
-        for(char c : msg.string) {
-          if(c == 32) x += 2;
+        auto cit = msg.string.cbegin();
+        while(cit != msg.string.cend()) {
+          uint32_t c = getNextCodePoint(cit, msg.string.cend());
+          if(c == 32) x += 8;
           else {
-            if(c < 32 || c > 126) c = '?';
-            else if(c >= 'a' && c <= 'z') c -= 32;
-            c -= 32;
-            auto&glyph=message_font_glyphs[message_font_glyph_indices[(int)c]];
-            if(x + glyph.w + 2 > messages_local_rect.w) break;
+            auto& glyph = Font::GetGlyph(c);
+            if(x + (glyph.wide ? 16 : 8) > messages_local_rect.w) break;
             int skip_rows = y >= 0 ? 0 : -y;
             draw_glyph(pixels + skip_rows * pitch + x * 2,
                        glyph, skip_rows, pitch);
-            x += glyph.w + 1;
+            x += glyph.wide ? 16 : 8;
           }
-          if(x >= messages_local_rect.w) break;
+          if(x > messages_local_rect.w-2) break;
         }
         ++it;
       }
@@ -146,19 +158,13 @@ namespace {
     messages_global_rect.h = messages_local_rect.h;
   }
   void badread(uint16_t addr) {
-    ui << "Incorrectly emulating bad memory read: $"
-       << std::hex << std::setw(4) << std::setfill('0') << addr
-       << std::dec << ui;
+    ui << sn.Get("BAD_READ"_Key, {TEG::format("%04X",addr)}) << ui;
   }
   void badwrite(uint16_t addr) {
-    ui << "Incorrectly emulating bad memory write: $"
-       << std::hex << std::setw(4) << std::setfill('0') << addr
-       << std::dec << ui;
+    ui << sn.Get("BAD_WRITE"_Key, {TEG::format("%04X",addr)}) << ui;
   }
   void busconflict(uint16_t addr) {
-    ui << "Incorrectly emulating bus conflict: $"
-       << std::hex << std::setw(4) << std::setfill('0') << addr
-       << std::dec << ui;
+    ui << sn.Get("BUS_CONFLICT"_Key, {TEG::format("%04X",addr)}) << ui;
   }
   void mainLoop() {
     ++logic_frame;
@@ -175,7 +181,7 @@ namespace {
       logic_frame = target_frame - 10;
     }
     else if(framediff < -30) {
-      ui << "Unexpected temporal anomaly. Hic!" << ui;
+      ui << sn.Get("TEMPORAL_ANOMALY"_Key) << ui;
       logic_frame = target_frame;
     }
     if(logic_frame >= target_frame && window_visible && !window_minimized) {
@@ -210,16 +216,18 @@ namespace {
         switch(evt.key.keysym.sym) {
         case SDLK_F1:
           PPU::show_overlay = !PPU::show_overlay;
-          ui << "Overlay " << (PPU::show_overlay?"shown":"hidden") << ui;
+          ui << sn.Get(PPU::show_overlay?"OVERLAY_SHOWN"_Key
+                       :"OVERLAY_HIDDEN"_Key) << ui;
           break;
         case SDLK_F2:
           PPU::show_sprites = !PPU::show_sprites;
-          ui << "Sprites " << (PPU::show_sprites?"shown":"hidden") << ui;
+          ui << sn.Get(PPU::show_sprites?"SPRITES_SHOWN"_Key
+                       :"SPRITES_HIDDEN"_Key) << ui;
           break;
         case SDLK_F3:
           PPU::show_background = !PPU::show_background;
-          ui << "Background " << (PPU::show_background?"shown":"hidden")
-             << ui;
+          ui << sn.Get(PPU::show_background?"BACKGROUND_SHOWN"_Key
+                       :"BACKGROUND_HIDDEN"_Key) << ui;
           break;
         }
         break;
@@ -237,16 +245,7 @@ namespace {
     cartridge->oncePerFrame();
   }
   void printUsage() {
-    std::cout <<
-      "Usage: ars-emu [options] cartridge.etars\n"
-      "Known options:\n"
-      "-?: This usage string\n"
-      "-c: Specify core type\n"
-      "    Known cores:\n"
-      "      fast: Scanline-based renderer. Fast, but not entirely accurate.\n"
-      "      fast_debug: Scanline-based renderer, built-in debugger.\n"
-      "-d: Allow debug port\n"
-      ;
+    sn.Out(std::cout, "USAGE"_Key);
   }
   bool parseCommandLine(int argc, const char** argv) {
     int n = 1;
@@ -262,7 +261,7 @@ namespace {
           case '?': printUsage(); return false;
           case 'c':
             if(n >= argc) {
-              std::cout << "-c needs an argument\n";
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-c"});
               valid = false;
             }
             else {
@@ -270,7 +269,7 @@ namespace {
               if(nextarg == "fast") makeCPU = makeScanlineCPU;
               else if(nextarg == "fast_debug") makeCPU = makeScanlineDebugCPU;
               else {
-                std::cout << "Unknown core: " << nextarg << "\n";
+                sn.Out(std::cout, "UNKNOWN_CORE"_Key, {nextarg});
                 valid = false;
               }
             }
@@ -279,13 +278,13 @@ namespace {
             allow_debug_port = true;
             break;
           default:
-            std::cout << "Unknown option: " << arg[-1] << "\n";
+            sn.Out(std::cout, "UNKNOWN_OPTION"_Key, {std::string(arg-1,1)});
             valid = false;
           }
         }
       }
       else if(rom_path_specified) {
-        std::cout << "Error: More than one ROM path specified\n";
+        sn.Out(std::cout, "MULTIPLE_ROM_PATHS"_Key);
         printUsage();
         return false;
       }
@@ -295,7 +294,7 @@ namespace {
       }
     }
     if(!rom_path_specified) {
-      std::cout << "Error: No ROM path specified\n";
+      sn.Out(std::cout, "NO_ROM_PATHS"_Key);
       printUsage();
       return false;
     }
@@ -305,13 +304,16 @@ namespace {
     }
     auto f = IO::OpenRawPathForRead(rom_path);
     if(!f || !*f) return false;
-    Cartridge::loadRom(rom_path, *f);
-    if(allow_debug_port) {
-      if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT))
-        ui << "Debug port is active" << ui;
-      else
-        ui << "Debug port enabled, but not used by this cartridge" << ui;
+    try {
+      Cartridge::loadRom(rom_path, *f);
     }
+    catch(std::string& reason) {
+      std::string death = sn.Get("CARTRIDGE_LOADING_FAIL"_Key, {reason});
+      die(death.c_str());
+    }
+    if(allow_debug_port
+       && !cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT))
+      ui << sn.Get("UNUSED_DEBUG"_Key) << ui;
     return true;
   }
 }
@@ -321,7 +323,7 @@ void MessageImp::outputLine() {
   int lifespan = MESSAGE_LIFESPAN;
   for(auto& msg : logged_messages)
     lifespan -= msg.lifespan;
-  std::cerr << msg << std::endl;
+  std::cerr << sn.Get("UI_MESSAGE_STDERR"_Key, {msg}) << std::endl;
   logged_messages.emplace_back(std::move(msg), lifespan);
   stream.clear();
   stream.str("");
@@ -351,7 +353,8 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
       switch(addr&7) {
       case 0: return controller1->input();
       case 1: return controller2->input();
-      case 6: break; // TODO: HAM
+      case 5: return 0; break; // TODO: HAM
+      case 6: break; // TODO: config
       case 7:
         if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)) {
           cpu->setSO(true);
@@ -393,9 +396,14 @@ void ARS::write(uint16_t addr, uint8_t value) {
           case 1:
             controller2->output(value);
             break;
-          case 6:
+          case 5:
             if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_HAM)) {
               // TODO: HAM
+            }
+            break;
+          case 6:
+            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
+              // TODO: Config
             }
             break;
           case 7:
@@ -417,36 +425,40 @@ void ARS::write(uint16_t addr, uint8_t value) {
 }
 
 extern "C" int teg_main(int argc, char** argv) {
+  sn.AddCatSource(IO::GetSNCatSource());
+  if(!sn.SetLanguage(sn.GetSystemLanguage()))
+    die("Unable to load language files. Please ensure a Lang directory exists in the Data directory next to the emulator.");
   if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
+  Font::Load();
   srandom(time(NULL)); // rand() is only used for trashing memory on reset
   if(SDL_Init(SDL_INIT_VIDEO))
-    die("Failed to initialize SDL!");
+    die(sn.Get("SDL_FAIL"_Key).c_str());
   atexit(cleanup);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
   Config::Read(EMULATOR_CONFIG_FILE, EMULATOR_CONFIG_ELEMENTS,
                elementcount(EMULATOR_CONFIG_ELEMENTS));
-  std::string windowtitle = "ARS-emu: "+rom_path;
+  std::string windowtitle = sn.Get("WINDOW_TITLE"_Key, {rom_path});
   window = SDL_CreateWindow(windowtitle.c_str(),
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_width, window_height,
                             SDL_WINDOW_RESIZABLE);
-  if(window == NULL) die("Couldn't create emulator window. Try deleting ARS-emu.conf.");
+  if(window == NULL) die(sn.Get("WINDOW_FAIL"_Key).c_str());
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-  if(renderer == NULL) die("Couldn't create emulator renderer. Try deleting ARS-emu.conf.");
+  if(renderer == NULL) die(sn.Get("RENDERER_FAIL"_Key).c_str());
   SDL_RenderSetLogicalSize(renderer, PPU::VISIBLE_SCREEN_WIDTH,
                            PPU::VISIBLE_SCREEN_HEIGHT);
   frametexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
                                    SDL_TEXTUREACCESS_STREAMING,
                                    PPU::INTERNAL_SCREEN_WIDTH,
                                    PPU::INTERNAL_SCREEN_HEIGHT);
-  if(frametexture == NULL) die("Couldn't create emulator rendering surface.");
+  if(frametexture == NULL) die(sn.Get("FRAMETEXTURE_FAIL"_Key).c_str());
   messagetexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB4444,
                                      SDL_TEXTUREACCESS_STREAMING,
                                      PPU::VISIBLE_SCREEN_WIDTH
                                      -MESSAGES_MARGIN_X*2,
                                      PPU::VISIBLE_SCREEN_HEIGHT
                                      -MESSAGES_MARGIN_Y*2);
-  if(messagetexture == NULL) die("Couldn't create emulator message surface.");
+  if(messagetexture == NULL) die(sn.Get("MESSAGETEXTURE_FAIL"_Key).c_str());
   SDL_SetTextureBlendMode(messagetexture, SDL_BLENDMODE_BLEND);
   Controller::initControllers();
   quit = false;
@@ -465,7 +477,7 @@ extern "C" int teg_main(int argc, char** argv) {
     catch(const ResetException& e) {
     }
     if(!quit) {
-      ui << "Reset!" << ui;
+      ui << sn.Get("RESET"_Key) << ui;
     }
   }
   return 0;

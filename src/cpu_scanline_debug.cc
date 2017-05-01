@@ -1,3 +1,5 @@
+/* TODO: Debugger is entirely in English */
+
 #include "ars-emu.hh"
 #include "w65c02.hh"
 #include "w65c02_dis.hh"
@@ -223,7 +225,7 @@ namespace {
       return addr;
     }
     void tryDelocalizeName(std::string& name, uint32_t addr) {
-      assert(name.length() > 0 && name[0] == '_');
+      SDL_assert(name.length() > 0 && name[0] == '_');
       auto it = addr_to_label_map.upper_bound(addr);
       if(it == addr_to_label_map.begin()) return;
       while(it-- != addr_to_label_map.begin()) {

@@ -1,9 +1,16 @@
 #ifndef FONT_HH
 #define FONT_HH
 
+#include "ars-emu.hh"
+
 namespace Font {
-  constexpr uint16_t short_glyphbase = 0x0;
-  constexpr uint16_t tall_glyphbase = 0x40, tall_glyphbase_2 = 0xa0;
+  constexpr int HEIGHT = 16;
+  struct Glyph {
+    bool wide;
+    const uint8_t* tiles;
+  };
+  void Load(); // call this first!
+  const Glyph& GetGlyph(uint32_t codepoint);
 }
 
 #endif

@@ -1,0 +1,278 @@
+2016-12-22: Release 9.0.06
+
+   Refined about 50 Pikto CSUR glyphs.
+
+   Corrected two Osage glyphs and one mathematical operator as noted
+   in ChangeLog.
+
+2016-12-10: Release 9.0.05
+
+   Modified Cherokee glyphs to reflect changes in recent Cherokee font
+   that the Unicode Consortium adopted for its code charts.  Removed
+   serifs to make Cherokee glyphs easier to read.
+
+   Modified Pikto CSUR glyphs after comparison with high-resolution scans
+   of Basic Pikto book.
+
+2016-10-29: Release 9.0.04
+
+   Extended "{" and "}" by one pixel so they now come to a point in the center.
+   Swapped U+2A05 and U+2A06 so they are now in the correct order.
+
+2016-10-21: Release 9.0.03
+
+   Added CSUR glyphs:
+     - Aiha: added doubling combining glyph, omitted from the ConScript
+       Unicode Registry (CSUR) code chart.
+     - Tonal System: base 16 counting system devised by John William Nystrom
+       in the mid-19th century.
+     - Pikto: added the Pikto glyphs to Plane 15 Private Use Area, in the
+       range specified in the CSUR.
+
+   The giant picture of all of Plane 0 now includes the Plane 0 CSUR glyphs,
+   although those are an optional part of Unifont in separate font files.
+
+2016-08-27: Release 9.0.02
+
+   Added 3 more CSUR scripts.  Modifications to some existing glyphs.
+
+2016-07-02: Release 9.0.01
+
+   Updates to support Unicode 9.0.0.
+
+2015-06-28: Release 8.0.01
+
+  Updates to support Unicode 8.0.0.
+
+2014-10-23: Release 7.0.06
+
+   A few new scripts were added:
+      U+010350..U+01037F Old Permic
+      U+01F650..U+01F67F Ornamental Dingbats
+      U+01F780..U+01F7FF Geometrical Shapes Extended
+      U+01F800..U+01F8FF Supplemental Arrows-C
+
+   Various changes were made to Makefiles, Perl scripts, and one bash
+   shell script to conform to Debian Policy Manual version 3.9.6.
+
+   Several changes were made to Makefiles:
+      * Use "set -e" at the start of multi-command shell invocations,
+        to trap errors.
+      * Use "&&" rather than ";" in multi-command shell invocations,
+        to fail on errors.
+      * install now uses "-s" flag for C program binaries.
+
+   Other minor changes were made to scripts; see ChangeLog
+   for details.
+
+2014-10-17: Release 7.0.05
+
+   Modified ASCII letter 'l' so it would have the same height as
+   the other lower-case letters with ascenders; this is one pixel
+   taller than the capital letters.  Lowered the horizontal stroke 
+   in 't' by one pixel so it would line up with the horizontal
+   stroke in 'f'; this is one pixel lower than the x-height of
+   the ASCII letters.  Letters elsewhere in Plane 0 that were formed
+   with 'k', 'l', or 't' were checked and modified where appropriate
+   to conform with the new ASCII glyphs.
+
+   Completed the Miscellaneous Symbols and Pictographs script in Plane 1,
+   and modified Plane 1 Emoticons and Transport and Map Symbols scripts.
+
+   Now create file font/compiled/plane01.html, showing a color-coded
+   indication of completion of all of Unicode Plane 1 as an HTML
+   table in a self-contained HTML file.  That and the compiled/index.html
+   are the two HTML files that building the font creates.  The plane01.html
+   file gives a color coding to show completion of each 256-glyph block,
+   from 0% (pure red) to 100% (pure green).
+
+2014-10-11: Release 7.0.04
+
+   Added five more Supplemental Multilingual Plane (Plane 1) scripts
+   and improved others thanks to several contributors.  There are now
+   over 5,000 drawn assigned glyphs for Plane 1!
+
+   Reorganized font/plane01 directory.  Several other changes; see
+   ChangeLog file for details.
+
+   unihex2sfd and unipagecount now handle all Unicode planes, not just
+   Plane 0.
+
+
+2014-07-01: Release 7.0.03
+
+   Minor release for Debian.  Added a man page for unihexfill(1);
+   Debian requires a man page for each program.
+
+2014-06-22: Release 7.0.02
+
+   Fixes a bug in font/Makefile: there were two "done" statements at the
+   end of one "for" loop.  Also adds many new Supplemental Multilingual
+   Plane (Plane 1) scripts.  See the ChangeLog file for details.
+
+2014-06-21: Release 7.0.01
+
+   Provides a glyph for every visible code point in the Unicode 7.0 Basic
+   Mulitlingual Plane.  Also adds more scripts in the Unicode 7.0
+   Supplemental Multilingual Plane.  See the ChangeLog file for full
+   details.
+
+   Note that the versioning scheme has changed.  Instead of a date, this
+   package will use an incrementing minor version number in the future
+   ("01", "02", etc.).
+
+2014-02-14: Release 6.3.20140214
+
+   This version adds the GNU Free Documentation License 1.3 to the "COPYING"
+   file.
+
+2014-02-04: Release 6.3.20140204
+
+   This version added Qianqian Fang's name to the COPYRIGHT string now
+   passed to Fontforge when the TTF fonts are built, for his contributions
+   contained in the file "font/plane00/wqy.hex".
+
+   This version also removes "<img>" links to icons on external websites from
+   the "hangul/hangul-generation.html" web page, which were retrieved and
+   stored locally when the original web page was saved in the "hangul/"
+   directory.
+
+2014-02-02: Release 6.3.20140202
+
+   This version is the first designed to easily build multiple fonts.
+   To accomplish this, font/Makefile and font/ttfsrc/Makefile were
+   modified to pass FONT and COMBINING parameters, giving the names
+   of the font file and its associated combining.txt file.
+
+   This version introduces a subset of Unicode's Supplemental Multilingual
+   Plane (SMP, or Plane 1).  The file "font/plane01/plane01.hex" contains
+   a glyph for every visible code point in the Unicode 5.0 SMP except
+   "Cuneiform" and "Cuneiform Numbers and Punctuation"; those two scripts
+   require more resolution than what will fit within a 16 by 16 pixel grid.
+   Andrew Miller drew well over 1,000 glyphs for this effort, and added
+   glyphs for several SMP scripts introduced after Unicode 5.0.
+
+   This version also introduces a subset of the ConScript Unicode
+   Registry (CSUR) Private Use Area glyphs.  Wojciech Stryjewski created
+   glyphs for Tengwar and Klingon -- Tolkien fans and Trekkies rejoice!
+   Paul Hardy drew Cirth to finish the Tolkien set, and drew other scripts.
+   Andrew Miller made very extensive additions for the CSUR; see the
+   ChangeLog for details.
+
+   Finally, this version includes a special PSF font for using APL
+   in console mode on GNU/Linux.  This PSF font contains 512 glyphs
+   as a subset of Unifont; it will not work on systems that only
+   support PSF fonts with 256 glyphs.  This PSF font will support
+   GNU APL and several other APL implementations.
+
+   The names of the font files are as follows:
+
+      unifont-*               Font with Unifont Plane 0 glyphs
+
+      unifont_sample-*        Font with Unifont glyphs, with combining
+                              circles added for illustration
+
+      unifont_csur-*          Font with glyphs from Unifont plus the
+                              CSUR PUA glyphs
+
+      unifont_upper-*         Font with glyphs from Planes 1 through 14
+
+      unifont_upper_csur-*    Font with glyphs from Planes 1 through 15
+
+      Unifont-APL8x16.psf.gz  The APL console font
+
+Glyphs for code points U+FFFE and U+FFFF, previously added for illustration
+purposes in unifont_sample, were removed because they caused problems on
+Microsoft Windows XP.  These glyphs are still included in the large bitmap
+graphic of Unifont but are no longer in the font itself.
+
+Many other small changes were made as noted in the ChangeLog file, but
+support for glyphs beyond Unicode's Basic Multilingual Plane is the most
+notable change.
+
+2013-12-21: Release 6.3.2013121
+
+   The default font name that hex2bdf creates has changed from
+   lower-case "unifont" to "Unifont".
+
+   FontForge's SetFontNames function calls were removed because
+   not all applications correctly interpreted their settings.
+   For example, LibreOffice only listed Unifont by the foundry
+   name ("GNU") rather than foundry + font name ("GNU Unifont")
+   or just the font name.  Those calls are only commented out
+   so they could easily be re-introduced.
+
+   Some glyphs were changed for better appearance with APL.
+
+2013-12-17: Release 6.3.20131217
+
+   This fixes three bugs:
+
+        * doc/Makefile: removed redirection of texi2pdf output.
+        * font/Makefile: don't modify PCF fonts with FontForge,
+          which alters them so grub-mkfont can't read them.
+        * font/ttfsrc/Makefile: remove *.bdf so unifont_sample.bdf
+          gets deleted.
+
+   Also includes a few formatting changes; see ChangeLog.
+
+2013-12-15: Release 6.3.20131215
+
+   This version introduces unihex2png and unipng2hex, two Perl scripts
+   that Andrew Miller wrote based upon Paul Hardy's unihex2bmp.c and
+   unibmp2hex.c programs.  These new scripts allow conversion between
+   the Unifont .hex format and Portable Network Graphics (PNG) files
+   for graphical editing.  With this addition, more graphics programs
+   can be used to edit Unifont glyphs.
+
+   unihex2png and unipng2hex also support glyphs that are 24 or 32
+   pixels tall, in addition to Unifont's default 16 pixels tall.
+   Roman Czyborra's hexdraw and hex2bdf Perl scripts were modified
+   to also support glyphs that are 16, 24, or 32 pixels tall.  These
+   changes have not been fully tested, and at this point are considered
+   experimental.
+
+   There are no plans to add this multi-height support to unihex2bmp.c
+   and  unibmp2hex.c.
+
+   The package now contains a "doc/" directory, with documentation
+   in Texinfo format.  Files in the "man/" directory were updated
+   for consistency, especially in noting that all programs are
+   covered under GPLv2+ now.
+
+   In addition to "unifont-*.*" font files, this package now also creates
+   "unifont_sample-*.*" files.  These "Unifont Sample" fonts contain
+   combining circles, and four-digit hexadecimal glyphs for unassigned
+   code points and Private Use Area glyphs.  Because of the inclusion
+   of combining cirlces, "Unifont Sample" font versions are only intended
+   for illustrating individual glyphs, not for general-purpose writing.
+   The two generated fonts are unifont_sample-*.bdf and unifont_sample-*.ttf.
+   The TTF file contains SBIT glyphs, not outlined TrueType glyphs like
+   "unifont-*.ttf".
+
+   The font versions (BDF, PCF, and TTF) now contain copyright and
+   version information.  This will help identify outdated versions
+   of a font in the future.  hex2bdf now accepts a version string and
+   a copyright string as command line arguments.
+
+   To simplify this package supporting two versions of Unifont
+   ("Unifont" and "Unifont Sample"), hex2bdf now accepts a font name
+   as a command line argument.  This will streamline adding additional
+   fonts in the future as part of this same package.  Note that the
+   old XLFD font name "unifont" has now been capitalized to "Unifont".
+
+   Many XLFD properties have been added to the BDF version of Unifont
+   in addition to font version and copyright XLFD properties.  At least
+   some of these are carried over to the PCF version during conversion
+   with bdftopcf.  This has solved an issue with grub-mkfont and FreeType
+   for converting the PCF font into a GRUB version.
+
+   Some glyphs were redrawn: the Capricorn sign, several CJK Radicals
+   Supplement ideographs, and several Armenian letters.  The Armenian
+   letters were modified with the new unihex2png and unipng2hex programs.
+
+   Further details are in the ChangeLog file.
+
+2013-10-20: Release 6.3.20131020
+
+   This is the first release as part of the GNU Project.

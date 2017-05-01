@@ -1,0 +1,285 @@
+: -*- mode: fundamental; word-wrap: nil -*-
+: (Most of these messages are displayed in places where automatic text wrapping
+: is not a thing, and, as a result, must be manually wrapped.)
+
+Language-Code: en
+Language-Name: English
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Command line options and usage information
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+USAGE
+Usage: ars-emu [options] cartridge.etars
+Known options:
+-?: This usage string
+-c: Specify core type
+    Known cores:
+      fast: Scanline-based renderer. Fast, but not entirely accurate.
+      fast_debug: Scanline-based renderer, built-in debugger.
+-C: Allow emulator configuration port
+-d: Allow debug port
+.
+
+MISSING_COMMAND_LINE_ARGUMENT
+Error: Option $1 requires an argument
+
+.
+
+UNKNOWN_CORE
+Error: Unknown core: $1
+
+.
+
+UNKNOWN_OPTION
+Error: Unknown command line option: -$1
+
+.
+
+MULTIPLE_ROM_PATHS
+Error: More than one ROM path specified
+
+.
+
+NO_ROM_PATHS
+Error: No ROM path specified
+
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Initialization
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+SDL_FAIL
+Failed to initialize SDL!
+.
+
+WINDOW_FAIL
+Couldn't create emulator window. Try deleting ARS-emu.conf.
+.
+
+RENDERER_FAIL
+Couldn't create emulator renderer. Try deleting ARS-emu.conf.
+.
+
+FRAMETEXTURE_FAIL
+Couldn't create emulator rendering surface.
+.
+
+MESSAGETEXTURE_FAIL
+Couldn't create UI message surface.
+.
+
+WINDOW_TITLE
+ARS Emulator: $1
+.
+
+CARTRIDGE_LOADING_FAIL
+Couldn't load the cartridge.
+
+The full error was:
+$1
+.
+
+FONT_FAIL
+Couldn't open the font. Please make sure the Data directory is intact, and
+contains a valid Font file.
+.
+
+FONT_CORRUPT
+The Font file is corrupted. Please redownload ARS-emu.
+.
+
+FONT_MISSING_FFFD
+The Font file doesn't contain a glyph for U+FFFD, and we needed one.
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: UI messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+UI_MESSAGE_STDERR
+(UI) $1
+.
+
+: UI messages must fit within this bar
+:::::::::::::::::::::::::::
+
+BAD_READ
+bad memory read: \$$1
+.
+
+BAD_WRITE
+bad memory write: \$$1
+.
+
+BUS_CONFLICT
+bus conflict: \$$1
+.
+
+TEMPORAL_ANOMALY
+Temporal anomaly. Hic!
+.
+
+OVERLAY_SHOWN
+Overlay shown
+.
+
+OVERLAY_HIDDEN
+Overlay hidden
+.
+
+SPRITES_SHOWN
+Sprites shown
+.
+
+SPRITES_HIDDEN
+Sprites hidden
+.
+
+BACKGROUND_SHOWN
+Background shown
+.
+
+BACKGROUND_HIDDEN
+Background hidden
+.
+
+RESET
+Reset!
+.
+
+UNUSED_DEBUG
+Unused debug port
+.
+
+SINGLE_CHIP_SIZE
+$2KiB $1
+.
+
+DUAL_CHIP_SIZE
+$2+$3KiB $1
+.
+
+SRAM_WRITE_FAILURE
+SRAM write failure
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: TEG messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+CERR_FATAL_ERROR
+$1 encountered a fatal error:
+$2
+
+.
+
+CERR_FATAL_FALLBACK
+Additionally, there was an error when attempting to use SDL to display this
+error message:
+$1
+
+.
+
+MESSAGEBOX_FATAL_ERROR
+$1 encountered a fatal error.
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Cartridge loading messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+GZIP_HEADER_EOF
+EOF while reading gzip header
+.
+
+GZIP_HEADER_EOS
+EOS while reading gzip header, possible bug in ARS-emu
+.
+
+GZIP_HEADER_ERROR
+zlib error while reading gzip header
+.
+
+ZLIB_ERROR
+zlib error while reading compressed ROM
+.
+
+BLANK_INIT
+ROM file explicitly contains a zero-byte initialization image
+.
+
+HUGE_INIT
+ROM file contains an excessively large initialization image
+.
+
+FILE_TOO_SMALL
+The specified file is too small to be a valid ARS ROM file
+.
+
+HEADER_READ_ERROR
+An IO error occurred while attempting to read the ETARS header
+.
+
+COMPRESSED_HEADER_READ_ERROR
+An IO error occurred while attempting to read a compressed ETARS header
+.
+
+FILE_NOT_ETARS
+The specified file is not a valid ARS ROM file
+.
+
+EXTENDED_HEADER
+The specified file is an extended ETARS image, and this version of ARS-emu does
+not know how to handle it.
+.
+
+EXOTIC_BUS_MAPPING
+ROM file explicitly requests an exotic bus mapping not supported by this
+version of ARS-emu.
+.
+
+ROM_UNINITIALIZED
+ROM file explicitly requests a $1 chip, but does not provide initialization
+data for it.
+.
+
+DRAM_INITIALIZED
+Warning: This ROM file contains initialized DRAM. This is impossible on a real,
+commercial cartridge.
+.
+
+EMPTY_ROM
+ROM file does not provide any initialization data, so we have nothing to run.
+.
+
+ROM_INIT_DATA_FAIL
+Error while reading initialization data for the $1 chip.
+.
+
+UNSUPPORTED_EXPANSION_HARDWARE
+ROM file requests expansion hardware that is not known to this version of
+ARS-emu.
+.
+
+UNSUPPORTED_PIN_MAPPING
+ROM file requests pin mapping that is not comprehensible to this version of
+ARS-emu.
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Cartridge diagnostic messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+MISSING_CHIP_READ
+Invalid read from \$$2, which maps to the missing $1 chip
+.
+
+ROM_CHIP_WRITE
+Ignoring write of \$$3 to \$$2, which maps to the (read-only) $1 chip
+.
+
+MISSING_CHIP_WRITE
+Ignoring write of \$$3 to \$$2, which maps to the missing $1 chip
+.

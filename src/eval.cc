@@ -1,8 +1,10 @@
+/* TODO: eval is in English */
+
 #include "eval.hh"
+#include "SDL.h"
 
 #include <regex>
 #include <iostream>
-#include <assert.h>
 
 namespace {
   enum class TokenType {
@@ -104,7 +106,7 @@ namespace {
                 std::function<bool(const std::string&, uint32_t&)> get_symbol,
                 std::function<uint8_t(uint32_t)> read_address,
                 uint32_t& out, int precedence) {
-    assert(it != end);
+    SDL_assert(it != end);
     uint32_t val;
     /* parsing a left-hand value */
     switch(it->first) {
@@ -211,7 +213,7 @@ namespace {
         return false;
       }
     }
-    assert(it == end);
+    SDL_assert(it == end);
     out = val;
     return true;
   }

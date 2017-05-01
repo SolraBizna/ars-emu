@@ -372,7 +372,9 @@ uint8_t ARS::PPU::complexRead(uint16_t addr) {
   case 0x0215: return ssmBytes[ssmAccessPtr];
   case 0x0217: return samBytes[samAccessPtr];
   default:
-    die("ARS::Regs::complexRead called with an inappropriate address");
+    SDL_assert("ARS::Regs::complexRead called with an inappropriate address"
+               && false); // "interesting" idiom there...
+    return 0xCC;
   }
 }
 

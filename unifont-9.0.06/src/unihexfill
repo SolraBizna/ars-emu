@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# input is a start, stop range pair
+# output is a list of code points with hexadecimal filler glyphs
+set -e
+grep "^[0-9A-Fa-f]" $1 | \
+   awk 'NF == 1 {print "unihexgen " $1 " " $1;} \
+	NF == 2 {print "unihexgen " $1 " " $2;}' | \
+   /bin/sh -s

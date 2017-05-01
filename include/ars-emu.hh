@@ -5,11 +5,14 @@
 #include <sstream>
 #include <memory>
 #include "SDL.h"
+#include "sn.hh"
 
 extern "C" void die(const char* format, ...) __attribute__((noreturn,
                                                           format(printf,1,2)));
 
 class ET209;
+
+extern SN::Context sn;
 
 namespace ARS {
   static constexpr int SAFE_BLANK_CYCLES_PER_SCANLINE = 74;
@@ -125,7 +128,9 @@ namespace ARS {
     void markSramAsDirty() { sram_dirty = SRAM_DIRTY_FRAMES; }
   public:
     static constexpr uint8_t EXPANSION_DEBUG_PORT = 0x01;
-    static constexpr uint8_t EXPANSION_HAM = 0x80;
+    static constexpr uint8_t EXPANSION_HAM = 0x40;
+    static constexpr uint8_t EXPANSION_CONFIG = 0x80;
+    static constexpr uint8_t SUPPORTED_EXPANSION_HARDWARE = 0xC1;
     static constexpr int IMAGE_HEADER_SIZE = 16;
     /*virtual*/ uint8_t read(uint8_t bank, uint16_t addr,
                              bool OL = false, bool VPB = false,
@@ -140,6 +145,7 @@ namespace ARS {
     /*virtual*/ uint32_t map_addr(uint8_t bank, uint16_t addr, bool OL = false,
                                   bool VPB = false, bool SYNC = false,
                                   bool write = false);
+    /* Throws a std::string if loading the cartridge failed */
     static void loadRom(const std::string& rom_path_name, std::istream&);
     void oncePerFrame() {
       if(sram_dirty > 1) --sram_dirty;

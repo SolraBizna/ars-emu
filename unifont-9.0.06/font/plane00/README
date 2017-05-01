@@ -1,0 +1,50 @@
+The Unicode Basic Multilingual Plane consists of 2^16 = 65,536 code points.
+Of this number, 2,048 are the Surrogate Pairs, from U+D800..U+DFFF.  This
+leaves 65,536 - 2,048 = 63,488 code points.
+
+==> The total number of lines in the files below should be 63,488 <==
+
+   hangul-syllables.hex
+   nonprinting.hex
+   omit.hex
+   pua.hex
+   spaces.hex
+   unassigned.hex
+   unifont-base.hex
+   wqy.hex
+
+The number of lines can be conveniently determined in this directory with
+
+   wc -l *.hex
+
+The last line will be a grand total, and this should equal 63,488.  Here
+is the output of "wc -l *.hex" with the Unifont 9.0 glyph files:
+
+  11172 hangul-syllables.hex
+     95 nonprinting.hex
+      2 omit.hex
+   6400 pua.hex
+     17 spaces.hex
+   1818 unassigned.hex
+  16161 unifont-base.hex
+  27823 wqy.hex
+  63488 total
+
+If there are any duplicates, most likely these will be from new glyphs
+being added to unifont-base.hex that were not removed from unassigned.hex.
+A simple comparison using unidup will show this:
+
+   sort *.hex | unidup
+
+If there are duplicate code points, unidup will print them.
+
+Note that nonprinting.hex, pua.hex, and unassigned.hex might
+not be included in the final generated unifont.hex file.  If desired,
+they can all be added by modifying the make file one level above this
+directory (modify the UNIFILES definition in ../Makefile) or with
+the call to "make" in the top-level directory with a command such as:
+
+     make UNASSIGNED="plane00/unassigned.hex" PUA="plane00/pua.hex"
+
+
+Paul Hardy, 2014, 2016
