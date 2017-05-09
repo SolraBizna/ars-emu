@@ -56,6 +56,7 @@ public:
   static constexpr int ADDR_WAVEFORM = 16;
   static constexpr int ADDR_VOLUME = 24;
   static constexpr int ADDR_NOISE_PERIOD = 15;
+  static constexpr int ADDR_NOISE_WAVEFORM = 23;
   static constexpr int ADDR_NOISE_VOLUME = 31;
   static constexpr uint16_t RATE_INSTANT_CHANGE = 0x0000;
   static constexpr uint16_t RATE_FAST_SLIDE = 0x4000;
@@ -78,7 +79,7 @@ private:
       uint8_t rate_hi[NUM_VOICES];
       uint8_t noise_period;
       uint8_t waveform[NUM_VOICES];
-      uint8_t pad2;
+      uint8_t noise_waveform;
       uint8_t volume[NUM_VOICES];
       uint8_t noise_volume;
     } user;
@@ -158,9 +159,14 @@ public:
     }
     for(int step = 0; step < 8; ++step) {
       noise_sum += (lfsr&1);
+      if(step != 7 && (user.noise_waveform & (1<<step))) continue;
       if(noise_accumulator == user.noise_period) {
         noise_accumulator = 0;
-        bool feedback = ((lfsr>>1)^lfsr)&1;
+        bool feedback;
+        if(user.noise_waveform & 0x80)
+          feedback = ((lfsr>>1)^lfsr)&1;
+        else
+          feedback = ((lfsr>>6)^lfsr)&1;
         lfsr >>= 1;
         if(feedback) lfsr |= 16384;
       }
