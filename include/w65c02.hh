@@ -394,8 +394,8 @@ namespace W65C02 {
     }
     template<class AM> void BIT_I() {
       uint8_t q = AM(*this).read();
-      if(q&a) p |= P_Z;
-      else p &= ~P_Z;
+      if(q&a) p &= ~P_Z;
+      else p |= P_Z;
     }
     template<class AM> void NOP() { AM unused(*this); }
     template<class AM> void TRB() {
