@@ -1015,6 +1015,9 @@ namespace W65C02 {
       case State::STOPPED: return false;
       }
     }
+    bool is_stopped() {
+      return state == State::STOPPED;
+    }
   };
 }
 
