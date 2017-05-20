@@ -1,2 +1,3 @@
 bin/**
 obj/**
+make/cur_target.mk
