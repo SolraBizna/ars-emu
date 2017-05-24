@@ -14,6 +14,8 @@
 
 /* TODO: stack trace */
 
+using ARS::getBankForAddr;
+
 namespace std {
   static string to_string(W65C02::ReadType rt) {
     switch(rt) {
@@ -44,7 +46,8 @@ namespace std {
 namespace {
   class CPU_ScanlineDebug : public ARS::CPU {
     int cycle_budget = 0;
-    long long cycle_count = 0;
+    uint64_t cycle_count = 0;
+    uint32_t audio_cycle_counter = 0;
     W65C02::Core<CPU_ScanlineDebug> core;
     W65C02::Disassembler<CPU_ScanlineDebug> disassembler;
     std::multimap<uint32_t, std::string> addr_to_label_map;
@@ -182,7 +185,8 @@ namespace {
     void output_addr(std::ostream& out, uint16_t addr,
                      bool OL = false, bool VPB = false, bool SYNC = false) {
       output_mapped_addr(out,
-                         ARS::cartridge->map_addr(addr, OL, VPB, SYNC));
+                         ARS::cartridge->map_addr(getBankForAddr(addr),
+                                                  addr, OL, VPB, SYNC));
     }
     void output_mapped_addr(std::ostream& out, uint32_t addr) {
       bool have_outputted_alternate = false;
@@ -265,8 +269,11 @@ namespace {
     }
     void runCycles(int count) override {
       cycle_budget += count;
+      audio_cycle_counter += count;
       while(core.in_productive_state() && cycle_budget > 0) {
-        uint32_t mapped_pc = ARS::cartridge->map_addr(core.read_pc(),
+        uint32_t mapped_pc = ARS::cartridge->map_addr(getBankForAddr
+                                                      (core.read_pc()),
+                                                      core.read_pc(),
                                                       false, false, true);
         if(!stopped) {
           if(mapped_pc == last_exec_address && brk_loop) {
@@ -309,7 +316,9 @@ namespace {
             std::cout << "!\n";
           }
           std::cout << "The instruction that did it was:\n";
-          uint32_t last_try_again = ARS::cartridge->map_addr(executing_pc,
+          uint32_t last_try_again = ARS::cartridge->map_addr(getBankForAddr
+                                                             (executing_pc),
+                                                             executing_pc,
                                                              false, false,
                                                              true);
           if(last_try_again != last_exec_address) {
@@ -348,6 +357,10 @@ namespace {
         cycle_count += cycle_budget;
         cycle_budget = 0;
       }
+      while(audio_cycle_counter >= 256) {
+        audio_cycle_counter -= 256;
+        ARS::output_apu_sample();
+      }
     }
     void setIRQ(bool irq) override {
       if(trace_pins && this->irq != irq) {
@@ -380,7 +393,8 @@ namespace {
       core.set_nmi(this->nmi = nmi);
     }
     uint8_t read_byte(uint16_t addr, W65C02::ReadType rt) {
-      uint32_t mapped_addr = ARS::cartridge->map_addr(addr, false, false,
+      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
+                                                      addr, false, false,
                                                       false, false);
       uint8_t ret;
       ret = ARS::read(addr);
@@ -410,7 +424,8 @@ namespace {
       if(rt == W65C02::ReadType::PREEMPTED) {
         last_exec_address = ~uint32_t(0);
       }
-      uint32_t mapped_addr = ARS::cartridge->map_addr(addr, false, false,
+      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
+                                                      addr, false, false,
                                                       true, false);
       uint8_t ret;
       ret = ARS::read(addr, false, false, true);
@@ -454,7 +469,8 @@ namespace {
     }
     uint8_t fetch_vector_byte(uint16_t addr) {
       last_exec_address = ~uint32_t(0);
-      uint32_t mapped_addr = ARS::cartridge->map_addr(addr, false, true,
+      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
+                                                      addr, false, true,
                                                       false, false);
       uint8_t ret = ARS::read(addr, false, true);
       if(std::find(rwatchpoints.begin(), rwatchpoints.end(), mapped_addr)
@@ -486,7 +502,8 @@ namespace {
       return ret;
     }
     void write_byte(uint16_t addr, uint8_t byte, W65C02::WriteType wt) {
-      uint32_t mapped_addr = ARS::cartridge->map_addr(addr, false, false,
+      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
+                                                      addr, false, false,
                                                       false, true);
       if(std::find(watchpoints.begin(), watchpoints.end(), mapped_addr)
          != watchpoints.end()) {
@@ -505,6 +522,9 @@ namespace {
       ARS::write(addr, byte);
       --cycle_budget;
       ++cycle_count;
+    }
+    bool isStopped() override {
+      return core.is_stopped();
     }
     uint8_t peek_byte(uint16_t addr) {
       return ARS::read(addr);
@@ -589,7 +609,7 @@ namespace {
         static const struct command {
       std::string name, help;
       void(CPU_ScanlineDebug::*func)(std::vector<std::string>& args);
-    } commands[24];
+    } commands[25];
     void cmd_help(std::vector<std::string>&) {
       std::cout << "Known commands:\n";
       for(auto& cmd : commands) {
@@ -612,6 +632,19 @@ namespace {
         return true;
       }
       else return false;
+    }
+    void cmd_load_symbols(std::vector<std::string>& args) {
+      if(args.empty()) {
+        std::cout << "usage: load-symbols path/to/symbols.sym"
+          " [path/to/more/symbols.sym ...]\n";
+      }
+      else {
+        for(auto& path : args) {
+          auto symfile = IO::OpenRawPathForRead(path);
+          if(symfile && *symfile)
+            loadSymbols(*symfile);
+        }
+      }
     }
     void cmd_dump_sprite_memory(std::vector<std::string>&) {
       ARS::PPU::dumpSpriteMemory();
@@ -1019,6 +1052,9 @@ namespace {
     {"help",
      "Displays this help message.",
      &CPU_ScanlineDebug::cmd_help},
+    {"load-symbols",
+     "Load one or more symbol files.",
+     &CPU_ScanlineDebug::cmd_load_symbols},
     {"dump-sprite-memory",
      "Dump the current state of sprite memory.",
      &CPU_ScanlineDebug::cmd_dump_sprite_memory},

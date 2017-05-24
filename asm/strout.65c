@@ -1,0 +1,22 @@
+.INCLUDE "asm/common.inc"
+
+.RAMSECTION "strout_params" SLOT ZeroPageSlot
+p_strout: dw
+.ENDS
+
+.ORG 0
+.SECTION "strout" FREE
+strout:
+	PHA
+--	LDA (p_strout)
+	BEQ +
+-	CLV
+	STA r_DebugPort
+	BVS -
+	INC p_strout
+	BNE --
+	INC p_strout+1
+	BRA --
++	PLA
+	RTS
+.ENDS

@@ -110,7 +110,7 @@ namespace {
       throw sn.Get("BLANK_INIT"_Key);
     has = !!(in&0x80);
     if((in&0x7F) > 0x18)
-      throw sn.Get("HUGE_INIT"_Key);
+      throw sn.Get("HUGE_SIZE"_Key);
     else if(in&0x7F)
       size = 1<<((in&0x7F)-1);
     else

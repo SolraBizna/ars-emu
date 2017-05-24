@@ -31,6 +31,7 @@ namespace ARS {
                 "Incorrect CYCLES_PER_FRAME");
   static constexpr int CYCLES_PER_SCANOUT = CYCLES_PER_FRAME-CYCLES_PER_VBLANK;
   static constexpr int SAMPLES_PER_LOAD = 400;
+  extern bool safe_mode;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
   static struct Regs {
@@ -166,6 +167,7 @@ namespace ARS {
     virtual void setIRQ(bool irq) = 0;
     virtual void setSO(bool so) = 0;
     virtual void setNMI(bool nmi) = 0;
+    virtual bool isStopped() = 0;
     // don't forget, NMI active = masked IRQ
   };
   extern std::unique_ptr<CPU> cpu;
@@ -185,8 +187,18 @@ namespace ARS {
     /* returns true if the event was fully handled, false if the event needs
        further handling (it may have been modified in the mean time) */
     static bool filterEvent(SDL_Event&);
+    static std::string getNameOfHardKey(int player, int button);
+    static std::string getNamesOfBoundKeys(int player, int button);
+    static void startBindingKey(int player, int button);
+    static bool keyIsBeingBound();
+    static std::string getKeyBindingInstructions(int player, int button);
   };
+  namespace Configurator {
+    void write(uint8_t d);
+    uint8_t read();
+  }
   extern ET209 apu;
+  void init_apu(); // may be called more than once
   void output_apu_sample();
   extern std::unique_ptr<Controller> controller1, controller2;
   extern class MessageImp {
@@ -216,6 +228,7 @@ namespace ARS {
     write(addr, value);
     write(addr+1, value>>8);
   }
+  uint8_t getBankForAddr(uint16_t addr);
   static_assert(RAND_MAX >= 4095, "not enough rand() bits for garbage");
   static inline uint8_t garbage() {
     return rand()>>4;

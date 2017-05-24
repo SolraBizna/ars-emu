@@ -1,0 +1,18 @@
+.INCLUDE "asm/common.inc"
+
+.SECTION "clearfb" FREE
+clearFB:
+	; Let's clear it.
+	STZ g_ptr1
+	LDA #$40
+	STA g_ptr1+1
+--	LDA #0
+-	STA (g_ptr1)
+	INC g_ptr1
+	BNE -
+	INC g_ptr1+1
+	LDA g_ptr1+1
+	CMP #>r_OLTiles
+	BNE --
+	RTS
+.ENDS

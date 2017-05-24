@@ -8,39 +8,67 @@ Language-Name: English
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Command line options and usage information
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
+: Note: Text in this section is usually written to the terminal. If the user
+: doesn't redirect output to a file, and is using a terminal emulator that
+: doesn't handle non-LTR text properly, the text may display incorrectly.
 
+: Displayed when the emulator is run with no parameters, incorrect parameters,
+: or insufficient parameters. Should fully describe how to run the emulator.
+: Must contain a trailing blank line.
 USAGE
-Usage: ars-emu [options] cartridge.etars
+Usage: ars-emu [options] cartridge.etars[.gz]
 Known options:
 -?: This usage string
--c: Specify core type
+-t: Specify core type
     Known cores:
       fast: Scanline-based renderer. Fast, but not entirely accurate.
       fast_debug: Scanline-based renderer, built-in debugger.
--C: Allow emulator configuration port
--d: Allow debug port
+-C: Allow access to emulator configuration features (implies -q)
+-d: Allow the cartridge to print to stderr (for debugging purposes)
+-q: Quit when STP is executed
+-s: Use safe video and sound settings (for recovering from bad configurations)
+
 .
 
+: Displayed, followed by USAGE, when an option that requires an argument is not
+: given an argument.
+: Must contain a trailing blank line.
+: $1: The option that was missing its argument, including a leading `-`
 MISSING_COMMAND_LINE_ARGUMENT
 Error: Option $1 requires an argument
 
 .
 
+: Displayed, followed by USAGE, when -c is given a parameter that doesn't match
+: any of the available emulator cores.
+: Must contain a trailing blank line.
+: $1: The parameter of -c.
 UNKNOWN_CORE
 Error: Unknown core: $1
 
 .
 
+: Displayed, followed by USAGE, when any unknown command line option is given.
+: Must contain a trailing blank line.
+: $1: The option that was unrecognized, WITHOUT a leading `-`
 UNKNOWN_OPTION
 Error: Unknown command line option: -$1
 
 .
 
+: Displayed, followed by USAGE, when more than one ROM path is specified on
+: the command line.
+: Must contain a trailing blank line.
 MULTIPLE_ROM_PATHS
 Error: More than one ROM path specified
 
 .
 
+: Displayed, followed by USAGE, if no ROM path is specified on the command
+: line.
+: Must contain a trailing blank line.
 NO_ROM_PATHS
 Error: No ROM path specified
 
@@ -49,31 +77,44 @@ Error: No ROM path specified
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Initialization
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
 
+: Displayed when SDL fails to initialize entirely.
 SDL_FAIL
 Failed to initialize SDL!
 .
 
+: Displayed when SDL_CreateWindow fails.
 WINDOW_FAIL
 Couldn't create emulator window. Try deleting ARS-emu.conf.
 .
 
+: Displayed when SDL_CreateRenderer fails.
 RENDERER_FAIL
 Couldn't create emulator renderer. Try deleting ARS-emu.conf.
 .
 
+: Displayed when SDL_CreateTexture fails, while trying to create the
+: SDL_Texture that PPU output is rendered to.
 FRAMETEXTURE_FAIL
 Couldn't create emulator rendering surface.
 .
 
+: Displayed when SDL_CreateTexture fails, while trying to create the
+: SDL_Texture that UI messages are rendered to.
 MESSAGETEXTURE_FAIL
 Couldn't create UI message surface.
 .
 
+: The title of the emulator window.
+: $1: The path to the ROM that is currently being executed.
 WINDOW_TITLE
 ARS Emulator: $1
 .
 
+: Displayed when loading the cartridge fails.
+: $1: One of the "Cartridge loading messages" below.
 CARTRIDGE_LOADING_FAIL
 Couldn't load the cartridge.
 
@@ -81,23 +122,30 @@ The full error was:
 $1
 .
 
+: Displayed when the Font file cannot be opened.
 FONT_FAIL
 Couldn't open the font. Please make sure the Data directory is intact, and
 contains a valid Font file.
 .
 
+: Displayed when the Font file is found to be corrupted.
 FONT_CORRUPT
 The Font file is corrupted. Please redownload ARS-emu.
 .
 
+: Displayed when the Font file does not contain a glyph for U+FFFD.
 FONT_MISSING_FFFD
-The Font file doesn't contain a glyph for U+FFFD, and we needed one.
+The Font file doesn't contain a glyph for U+FFFD. We need one.
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-: UI messages
+: UI stream messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: PRESENTATION, LEFT-TO-RIGHT
+: Combining characters: FORBIDDEN
 
+: Printed to stderr whenever a UI message appears.
+: $1: The UI message.
 UI_MESSAGE_STDERR
 (UI) $1
 .
@@ -105,91 +153,139 @@ UI_MESSAGE_STDERR
 : UI messages must fit within this bar
 :::::::::::::::::::::::::::
 
+: Displayed when the program reads from open bus.
 BAD_READ
 bad memory read: \$$1
 .
 
+: Displayed when the program writes to open bus.
 BAD_WRITE
 bad memory write: \$$1
 .
 
+: Displayed when the program accesses a secondary bus, at the same time as that
+: secondary hardware does. (Currently unsed)
 BUS_CONFLICT
 bus conflict: \$$1
 .
 
+: Displayed when time does not behave correctly, e.g. after a "hiccup".
 TEMPORAL_ANOMALY
 Temporal anomaly. Hic!
 .
 
+: Displayed when the user presses F3 to toggle overlay visibility.
 OVERLAY_SHOWN
 Overlay shown
 .
-
 OVERLAY_HIDDEN
 Overlay hidden
 .
 
+: Displayed when the user presses F2 to toggle sprite visibility.
 SPRITES_SHOWN
 Sprites shown
 .
-
 SPRITES_HIDDEN
 Sprites hidden
 .
 
+: Displayed when the user presses F1 to toggle background visibility.
 BACKGROUND_SHOWN
 Background shown
 .
-
 BACKGROUND_HIDDEN
 Background hidden
 .
 
+: Displayed when the console is reset.
 RESET
 Reset!
 .
 
+: Displayed when the user uses -d to allow the use of the Debug Serial Port,
+: but loads a cartridge that does not request it.
 UNUSED_DEBUG
 Unused debug port
 .
 
+: Displayed on cartridge load for the following:
+: ROM: If the cartridge only contains one ROM chip
+: SRAM/DRAM: If the cartridge contains SRAM/DRAM
+: $1: The chip type (ROM, SRAM, or DRAM)
+: $2: The size, in kibibytes
 SINGLE_CHIP_SIZE
 $2KiB $1
 .
 
+: Displayed on cartridge load if the cartridge contains both ROM1 and ROM2
+: chips
+: $1: The cihp type (ROM)
+: $2: The size of ROM1, in kibibytes
+: $3: The size of ROM2, in kibibytes
 DUAL_CHIP_SIZE
 $2+$3KiB $1
 .
 
+: Displayed if writing the SRAM to disk failed
 SRAM_WRITE_FAILURE
 SRAM write failure
 .
 
+: Displayed if the program reads from an area of memory that is reserved for a
+: chip that isn't present
+: $1: The chip type (ROM1, ROM2, SRAM, or DRAM)
+: $2: Four capital hex digits, the address written to
 MISSING_CHIP_READ
 bad read from \$$2
 (maps to missing $1 chip)
 .
 
+: Displayed if the program writes to cartridge ROM
+: $1: The chip type (ROM1 or ROM2)
+: $2: Four capital hex digits, the address written to
+: $3: Two capital hex digits, the value written
 ROM_CHIP_WRITE
 bad write of \$$3 to \$$2
 (maps to $1 chip)
 .
 
+: Displayed if the program writes to an area of memory that is reserved for a
+: chip that isn't present
+: $1: The chip type (ROM1, ROM2, SRAM, or DRAM)
+: $2: Four capital hex digits, the address written to
+: $3: Two capital hex digits, the value written
 MISSING_CHIP_WRITE
 bad write of \$$3 to \$$2
 (maps to missing $1 chip)
 .
 
+: Displayed if the STP instruction is executed, and quit-on-STP mode is not
+: enabled.
+CPU_STOPPED
+CPU halted
+.
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : TEG messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
+: See above for note about terminals.
 
+: Written to stderr when die() is called
+: Must contain a trailing blank line.
+: $1: The name of the game (ARS Emulator)
+: $2: The error message
 CERR_FATAL_ERROR
 $1 encountered a fatal error:
 $2
 
 .
 
+: Written to stderr when die() is called, if SDL_ShowSimpleMessageBox fails.
+: Must contain a trailing blank line.
+: $1: An error message explaining why SDL_ShowSimpleMessageBox failed.
 CERR_FATAL_FALLBACK
 Additionally, there was an error when attempting to use SDL to display this
 error message:
@@ -197,6 +293,8 @@ $1
 
 .
 
+: The title of the message box displayed when die() is called
+: $1: The name of the game (ARS Emulator)
 MESSAGEBOX_FATAL_ERROR
 $1 encountered a fatal error.
 .
@@ -204,81 +302,230 @@ $1 encountered a fatal error.
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Cartridge loading messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
 
+: End-of-file reached while still reading the header of a gzipped image
 GZIP_HEADER_EOF
 EOF while reading gzip header
 .
 
+: End-of-stream reached while still reading the header of a gzipped image
+: This should be impossible
 GZIP_HEADER_EOS
 EOS while reading gzip header, possible bug in ARS-emu
 .
 
+: A zlib error occurred while reading the header of a gzipped image
 GZIP_HEADER_ERROR
 zlib error while reading gzip header
 .
 
+: A zlib error occurred while reading a gzipped image
 ZLIB_ERROR
 zlib error while reading compressed ROM
 .
 
+: An image claimed to contain initialization data for a memory chip, but also
+: claimed that memory area was 0 bytes long
 BLANK_INIT
 ROM file explicitly contains a zero-byte initialization image
 .
 
-HUGE_INIT
-ROM file contains an excessively large initialization image
+: An image claimed that a memory area was larger than the entire cartridge
+: address space
+HUGE_SIZE
+ROM file contains an excessively large memory chip
 .
 
+: Self-explanatory
 FILE_TOO_SMALL
 The specified file is too small to be a valid ARS ROM file
 .
 
+: Self-explanatory
 HEADER_READ_ERROR
 An IO error occurred while attempting to read the ETARS header
 .
 
+: Self-explanatory
 COMPRESSED_HEADER_READ_ERROR
 An IO error occurred while attempting to read a compressed ETARS header
 .
 
+: Self-explanatory
 FILE_NOT_ETARS
 The specified file is not a valid ARS ROM file
 .
 
+: Self-explanatory
 EXTENDED_HEADER
 The specified file is an extended ETARS image, and this version of ARS-emu does
 not know how to handle it.
 .
 
+: A ROM file requested a bus mapping that is not defined in the current ETARS
+: specification.
 EXOTIC_BUS_MAPPING
 ROM file explicitly requests an exotic bus mapping not supported by this
 version of ARS-emu.
 .
 
+: Self-explanatory
+: $1: ROM1/ROM2/SRAM/DRAM
 ROM_UNINITIALIZED
 ROM file explicitly requests a $1 chip, but does not provide initialization
 data for it.
 .
 
+: ETARS images are allowed to contain initialization data for a "DRAM" chip,
+: even though normally the only way this would be possible is by performing an
+: Initial Program Load on a dev cartridge. This message is written to stderr
+: if such an ETARS image is loaded.
 DRAM_INITIALIZED
 Warning: This ROM file contains initialized DRAM. This is impossible on a real,
 commercial cartridge.
 .
 
+: If an ETARS image does not provide any initialization data, there is no
+: possible way for it to contain a runnable program. This message is displayed
+: if that is the case.
 EMPTY_ROM
 ROM file does not provide any initialization data, so we have nothing to run.
 .
 
+: Self-explanatory
+: $1: ROM1/ROM2/SRAM/DRAM
 ROM_INIT_DATA_FAIL
 Error while reading initialization data for the $1 chip.
 .
 
+: Self-explanatory
 UNSUPPORTED_EXPANSION_HARDWARE
 ROM file requests expansion hardware that is not known to this version of
 ARS-emu.
 .
 
+: Self-explanatory
 UNSUPPORTED_PIN_MAPPING
 ROM file requests pin mapping that is not comprehensible to this version of
 ARS-emu.
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Configuration interface messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: PRESENTATION, LEFT-TO-RIGHT
+: Combining characters: FORBIDDEN
+
+: This key MUST contain the value LTR (for languages like English) or RTL (for
+: languages like Hebrew). This only affects the configuration menu, and it does
+: nothing but decide whether the labels are on the left or the right.
+CONFIG_MENU_DIRECTION
+LTR
+.
+
+: Every configuration interface message must fit within this bar
+: (which is not the same width as the one for UI messages)
+::::::::::::::::::::::::::::
+
+GENERIC_MENU_FINISHED_LABEL
+Finished
+.
+
+: Main menu
+::::::::::::::::::::::::::::
+MAIN_MENU_TITLE
+ARS-Emu Configuration
+.
+MAIN_MENU_KEYBOARD_HELP_TEXT
+To navigate these menus, use
+the arrow keys and Enter.
+.
+MAIN_MENU_AUDIO_SUBMENU
+Audio Options…
+.
+MAIN_MENU_VIDEO_SUBMENU
+Video Options…
+.
+MAIN_MENU_KEYBOARD_SUBMENU
+Keyboard Options…
+.
+MAIN_MENU_FINISHED_LABEL
+Save & Exit
+.
+MAIN_MENU_REVERT_LABEL
+Exit Without Saving
+.
+
+: Keyboard menu
+::::::::::::::::::::::::::::
+KEYBOARD_MENU_TITLE
+Keyboard Options
+.
+: $1 = CONTROLLER_P1_NAME or CONTROLLER_P2_NAME
+KEYBOARD_PLAYER_CONTROLLER_MENU_TITLE
+$1 Controller
+.
+: $1 = CONTROLLER_P1_NAME or CONTROLLER_P2_NAME
+KEYBOARD_PLAYER_CONTROLLER_SUBMENU_BUTTON_LABEL
+$1 Controller…
+.
+MULTI_KEY_BINDING_SEP
+, 
+.
+NO_KEY_BINDING
+(unbound)
+.
+: $1 = CONTROLLER_P1_NAME or CONTROLLER_P2_NAME, $2 = CONTROLLER_xyz_BUTTON or
+: CONTROLLER_HAT_dir
+CONTROLLER_INPUT_NAME
+$1 $2
+.
+::::::::::::::::::::::::::::
+: $1 = CONTROLLER_INPUT_NAME
+: May be up to 12 lines long, but please manually break lines.
+CONTROLLER_KEY_BINDING_INSTRUCTIONS
+Press a key to bind it to
+$1.
+
+Press escape to abort.
+
+Press delete or backspace to
+remove all bindings for
+$1.
+.
+: $1 = CONTROLLER_xyz_BUTTON or CONTROLLER_HAT_dir
+KEYBOARD_MENU_INPUT_BINDING_LABEL
+$1:
+.
+CONTROLLER_P1_NAME
+P1
+.
+CONTROLLER_P2_NAME
+P2
+.
+CONTROLLER_A_BUTTON
+A Button
+.
+CONTROLLER_B_BUTTON
+B Button
+.
+CONTROLLER_C_BUTTON
+C Button
+.
+CONTROLLER_HAT_UP
+Hat Up
+.
+CONTROLLER_HAT_DOWN
+Hat Down
+.
+CONTROLLER_HAT_LEFT
+Hat Left
+.
+CONTROLLER_HAT_RIGHT
+Hat Right
+.
+CONTROLLER_PAUSE_BUTTON
+Pause
 .

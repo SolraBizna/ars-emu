@@ -1,0 +1,89 @@
+.INCLUDE "asm/common.inc"
+.INCLUDE "asm/strout.inc"
+
+.RAMSECTION "" SLOT ZeroPageSlot
+g_ptr1 DW
+g_ptr2 DW
+.ENDS
+
+.ORGA $F000
+.SECTION "main" FORCE
+
+	JMP main
+
+_notPresentTiles:
+.INCBIN "asm/need_config_option.bin" FSIZE _notPresentTilesLength
+_notPresentTilesEnd:
+.DEFINE _notPresentTilesWide (_notPresentTilesLength)>>5
+.DEFINE MessageStart $5800 + (32-_notPresentTilesWide)>>1<<5
+
+main:
+	; Rip the Config handshake straaaaaight outta the document
+	; Discard any leftover command
+	LDA #$FF
+	STA r_EmuConfig
+	STA r_EmuConfig
+	STA r_EmuConfig
+	; Test cold read
+	LDA r_EmuConfig
+	CMP #$EC
+	BNE notPresent
+	; Echo sequence, unlikely on an open bus, even a badly emulated one
+	STZ r_EmuConfig
+	LDA #$22
+	LDX #$55
+	STA r_EmuConfig
+	STX r_EmuConfig
+	CMP r_EmuConfig
+	BNE notPresent
+	CPX r_EmuConfig
+	BNE notPresent
+	; If execution reaches here, the device is present and usable
+	; Activate the menus!
+	LDA #1
+	STA r_EmuConfig
+	; Do the menu until there are none left to do!
+-	JSR doMenu
+	; Get the number of menu items
+	LDA #4
+	STA r_EmuConfig
+	LDA r_EmuConfig
+	; if it's non-zero, doMenu again
+	BNE -
+	; otherwise, deactivate the menu system, clear the framebuffer and quit
+	LDA #2
+	STA r_EmuConfig
+	JMP clearFB ; tail call
+
+notPresent:
+	JSR clearFB
+	LDA #<_notPresentTiles
+	STA g_ptr1
+	LDA #>_notPresentTiles
+	STA g_ptr1+1
+	LDA #<MessageStart
+	STA g_ptr2
+	LDA #>MessageStart
+	STA g_ptr2+1
+-	LDA (g_ptr1)
+	STA (g_ptr2)
+	INC g_ptr1
+	BNE +
+	INC g_ptr1+1
++	INC g_ptr2
+	BNE +
+	INC g_ptr2+1
++	LDA g_ptr1
+	CMP #<_notPresentTilesEnd
+	BNE -
+	LDA g_ptr1+1
+	CMP #>_notPresentTilesEnd
+	BNE -
+	LDA #96
+	STA g_HilightStart
+	LDA #112
+	STA g_HilightStop
+-	WAI
+	BRA -
+
+.ENDS

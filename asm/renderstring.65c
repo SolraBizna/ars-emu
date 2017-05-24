@@ -1,0 +1,151 @@
+.INCLUDE "asm/common.inc"
+
+.SECTION "renderString" FREE
+
+.DEFINE LEFT_MARGIN_ADDR 64
+.DEFINE RIGHT_MARGIN_ADDR 192
+
+_calculateLineStartAddressHighByte:
+	ASL
+	ASL
+	CLC
+	ADC #$40
+	RTS
+
+clearRow:
+	PHA
+	PHX
+	PHY
+	PHA
+	INA
+	JSR _calculateLineStartAddressHighByte
+	TAX
+	PLA
+	JSR _calculateLineStartAddressHighByte
+	STA g_ptr1+1
+	STZ g_ptr1
+	LDA #0
+	LDY #0
+-	STA (g_ptr1),Y
+	INY
+	BNE -
+	INC g_ptr1+1
+	CPX g_ptr1+1
+	BNE -
+	PLY
+	PLX
+	PLA
+	RTS
+
+renderDimLeftAlignedString:
+	; Back up registers
+	PHA
+	PHX
+	PHY
+	JSR _calculateLineStartAddressHighByte
+	STA g_ptr1+1
+	LDA #LEFT_MARGIN_ADDR+8
+	STA g_ptr1
+; on input, A is the row number
+renderLeftAlignedString:
+	; Back up registers
+	PHA
+	PHX
+	PHY
+	JSR _calculateLineStartAddressHighByte
+	STA g_ptr1+1
+	LDA #LEFT_MARGIN_ADDR
+	STA g_ptr1
+_leftAlignedStringBody:
+	; Read the number of columns
+	LDA r_EmuConfig
+	; Shift left by 1 to get number of tiles
+	ASL
+	; Put into X
+	TAX
+	BRA _enterRenderLoop
+	; (jump to while condition)
+	; offset = 0
+--	LDY #0
+	; do {
+	; g_ptr1[offset++] |= *r_EmuConfig
+-	LDA r_EmuConfig
+	ORA (g_ptr1),Y
+	STA (g_ptr1),Y
+	INY
+	; } while(offset < 8)
+	CPY #8
+	BNE -
+	; g_ptr1 += 16
+	CLC
+	LDA g_ptr1
+	ADC #16
+	STA g_ptr1
+	BCC +
+	INC g_ptr1+1
+	; --X
++	DEX
+	; While X != 0...
+_enterRenderLoop:
+++	CPX #0
+	BNE --
+	; Return
+	PLY
+	PLX
+	PLA
+	RTS
+
+renderDimRightAlignedString:
+	; Back up registers
+	PHA
+	PHX
+	PHY
+	INA
+	JSR _calculateLineStartAddressHighByte
+	DEA
+	STA g_ptr1+1
+	LDA #RIGHT_MARGIN_ADDR+8
+	STA g_ptr1
+	BRA _rightAlignedStringBody
+renderRightAlignedString:
+	; Back up registers
+	PHA
+	PHX
+	PHY
+	INA
+	JSR _calculateLineStartAddressHighByte
+	DEA
+	STA g_ptr1+1
+	LDA #RIGHT_MARGIN_ADDR
+	STA g_ptr1
+_rightAlignedStringBody:
+	; Read the number of columns
+	LDA r_EmuConfig
+	; Shift left by 1 to get number of tiles
+	ASL
+	; Put into X
+	TAX
+	; Subtract that << 4 from g_ptr1
+	ASL
+	ASL
+	ASL
+	ASL
+	AND #$E0
+	EOR #$FF
+	SEC
+	ADC g_ptr1
+	STA g_ptr1
+	BCS +
+	DEC g_ptr1+1
++	TXA
+	LSR
+	LSR
+	LSR
+	LSR
+	EOR #$FF
+	SEC
+	ADC g_ptr1+1
+	STA g_ptr1+1
+	BRA _enterRenderLoop
+
+.ENDS

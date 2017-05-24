@@ -10,7 +10,7 @@ TEG_OBJECTS=obj/teg/io.o obj/teg/main.o obj/teg/miscutil.o obj/teg/config.o
 
 EXE_LIST:=ars-emu compile-font
 
-all: gen obj/ROM.rom bin/Data/Lang bin/Data/Font \
+all: gen bin/Data/SimpleConfig.etars.gz bin/Data/Lang bin/Data/Font \
 	$(addsuffix -debug$(EXE),$(addprefix bin/,$(EXE_LIST))) \
 	$(addsuffix -release$(EXE),$(addprefix bin/,$(EXE_LIST)))
 
@@ -21,8 +21,9 @@ bin/$1-debug$(EXE): $(patsubst %.o,%.debug.o,obj/$1.o $2)
 )
 endef
 
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o $(TEG_OBJECTS))
+$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o $(TEG_OBJECTS))
 $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
+$(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))
 
 gen:
 	@true
@@ -38,15 +39,20 @@ bin/Data/Lang: $(wildcard lang/*.utxt)
 	@mkdir -p bin/Data
 	@cp -r lang bin/Data/Lang
 
-obj/ROM.rom: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
-	@mkdir -p bin
-	@echo "Generating ROM image..."
-	@echo [objects] > obj/ROM.link
-	@for f in $^; do echo $$f >> obj/ROM.link; done
-	@echo >> obj/ROM.link
-	@echo [header] >> obj/ROM.link
-	@echo src/header.dat >> obj/ROM.link
-	@wlalink -S obj/ROM.link obj/ROM.rom
+bin/Data/SimpleConfig.etars.gz: obj/SimpleConfig.etars
+	@echo "Compressing simple configuration ROM image..."
+	@gzip -fk9 "$<"
+	@cp "$<".gz "$@"
+
+obj/SimpleConfig.etars: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
+	@mkdir -p obj
+	@echo "Generating simple configuration ROM image..."
+	@echo [objects] > obj/SimpleConfig.link
+	@for f in $^; do echo $$f >> obj/SimpleConfig.link; done
+	@echo >> obj/SimpleConfig.link
+	@echo [header] >> obj/SimpleConfig.link
+	@echo src/header.dat >> obj/SimpleConfig.link
+	@wlalink -S obj/SimpleConfig.link obj/SimpleConfig.etars
 
 make/cur_target.mk:
 	@echo Please point cur_target.mk to an appropriate target definition.

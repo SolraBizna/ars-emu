@@ -4,6 +4,7 @@
 #include "io.hh"
 #include "font.hh"
 #include "utfit.hh"
+#include "prefs.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -17,6 +18,7 @@ using namespace ARS;
 ARS::MessageImp ARS::ui;
 std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
+bool ARS::safe_mode = false;
 uint8_t ARS::dram[0x8000];
 SN::Context sn;
 
@@ -39,7 +41,8 @@ namespace {
     Config::Element("window_height", window_height),
   };
   bool window_visible = true, window_minimized = false, quit = false,
-    allow_debug_port = false;
+    allow_debug_port = false, allow_config_port = false, quit_on_stop = false,
+    stop_has_been_detected = false;
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* frametexture = nullptr, *messagetexture = nullptr;
@@ -246,6 +249,12 @@ namespace {
     }
     cpu->runCycles(CYCLES_PER_VBLANK);
     cartridge->oncePerFrame();
+    if(!stop_has_been_detected && cpu->isStopped()) {
+      ui << sn.Get("CPU_STOPPED"_Key) << ui;
+      stop_has_been_detected = true;
+      if(quit_on_stop)
+        quit = true;
+    }
   }
   void printUsage() {
     sn.Out(std::cout, "USAGE"_Key);
@@ -262,9 +271,9 @@ namespace {
         while(*arg) {
           switch(*arg++) {
           case '?': printUsage(); return false;
-          case 'c':
+          case 't':
             if(n >= argc) {
-              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-c"});
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-t"});
               valid = false;
             }
             else {
@@ -279,6 +288,15 @@ namespace {
             break;
           case 'd':
             allow_debug_port = true;
+            break;
+          case 'C':
+            allow_config_port = true;
+            /* fall through */
+          case 'q':
+            quit_on_stop = true;
+            break;
+          case 'S':
+            safe_mode = true;
             break;
           default:
             sn.Out(std::cout, "UNKNOWN_OPTION"_Key, {std::string(arg-1,1)});
@@ -337,6 +355,7 @@ void MessageImp::outputBuffer() {
     outputLine(std::string(begin, it), lifespan);
     if(it != msg.end()) ++it;
     begin = it;
+    lifespan = 0;
   } while(begin != msg.end());
   stream.clear();
   stream.str("");
@@ -367,14 +386,19 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
       case 0: return controller1->input();
       case 1: return controller2->input();
       case 5: return 0; break; // TODO: HAM
-      case 6: break; // TODO: config
+      case 6:
+        if(allow_config_port
+           && cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG))
+          return Configurator::read();
+        return 0xBB;
       case 7:
-        if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)) {
+        if(allow_debug_port
+           && cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)) {
           cpu->setSO(true);
           cpu->setSO(false);
           return 0xFF;
         }
-        break;
+        return 0xBB;
       }
     }
     else return dram[addr];
@@ -415,15 +439,17 @@ void ARS::write(uint16_t addr, uint8_t value) {
             }
             break;
           case 6:
-            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
-              // TODO: Config
+            if(allow_config_port
+               && cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
+              Configurator::write(value);
             }
-            break;
+            return;
           case 7:
-            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)) {
+            if(allow_debug_port
+               &&cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)){
               std::cerr << value;
             }
-            break;
+            return;
           }
         }
       }
@@ -437,6 +463,10 @@ void ARS::write(uint16_t addr, uint8_t value) {
   badwrite(addr);
 }
 
+uint8_t ARS::getBankForAddr(uint16_t addr) {
+  return bankMap[addr>>12];
+}
+
 extern "C" int teg_main(int argc, char** argv) {
   sn.AddCatSource(IO::GetSNCatSource());
   if(!sn.SetLanguage(sn.GetSystemLanguage()))
@@ -444,9 +474,12 @@ extern "C" int teg_main(int argc, char** argv) {
   if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
   Font::Load();
   srandom(time(NULL)); // rand() is only used for trashing memory on reset
-  if(SDL_Init(SDL_INIT_VIDEO))
+  if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO))
     die(sn.Get("SDL_FAIL"_Key).c_str());
   atexit(cleanup);
+  PrefsLogic::DefaultsAll();
+  PrefsLogic::LoadAll();
+  ARS::init_apu();
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
   Config::Read(EMULATOR_CONFIG_FILE, EMULATOR_CONFIG_ELEMENTS,
                elementcount(EMULATOR_CONFIG_ELEMENTS));

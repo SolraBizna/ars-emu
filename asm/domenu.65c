@@ -1,0 +1,402 @@
+.INCLUDE "asm/common.inc"
+.INCLUDE "asm/strout.inc"
+
+.RAMSECTION "menuVars" SLOT ZeroPageSlot
+l_scrolledItem DB ; the item visible in the topmost row
+l_selectedItem DB ; the item currently hilighted
+l_renderingRow DB ; the ROW currently rendered (as used by renderString)
+l_renderingType DB ; the type of item currently being rendered
+l_curMenuCookie DB ; the cookie of the currently active menu
+l_controllerLastFrame DB ; controller status last frame
+l_controllerMask DB
+l_redrawStartItem DB ; the first item to render when doing a redraw
+l_redrawStopItem DB ; the first item NOT to render when doing a redraw
+.ENDS
+
+.DEFINE ITEM_START_ROW 2
+.DEFINE NUMBER_OF_SCREEN_ROWS 14
+
+.ORG 0
+.SECTION "doMenu" FREE
+
+doMenu:
+	; Find out the menu cookie
+	LDA #11
+	STA r_EmuConfig
+	LDA r_EmuConfig
+	STA l_curMenuCookie
+	; Initialize menu state
+	STZ l_scrolledItem
+	; find the first selectable item (there is guaranteed to be one)
+	LDX #0
+	LDY #5
+-	STY r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	BMI _noSelectable
+	CMP #2
+	BPL +
+	INX
+	BRA -
+	; found it!
++	STX l_selectedItem
+	JSR renderMenu
+	; do {
+-	JSR handleInput
+	; } while(menuCookie hasn't changed)
+	LDA #11
+	STA r_EmuConfig
+	LDA r_EmuConfig
+	CMP l_curMenuCookie
+	BEQ -
+	RTS
+
+_noSelectable:
+	callStrout _noSelectableMessage
+	STP
+_noSelectableMessage:
+.DB "No selectable item in menu", 10, 0
+
+	;internally:
+	; X = index of item being rendered
+	; Y = number of items left to render
+renderMenu:
+	PHA
+	PHX
+	PHY
+	STZ g_HilightStart
+	STZ g_HilightStop
+	; Clear the top two rows
+	LDA #0
+	JSR clearRow
+	LDA #1
+	JSR clearRow
+	; Render menu title
+	LDA #3
+	STA r_EmuConfig
+	LDA #0 ; (at row 0)
+	JSR renderLeftAlignedString
+	; Start rendering items
+	LDA #ITEM_START_ROW
+	STA l_renderingRow
+	LDY #NUMBER_OF_SCREEN_ROWS - ITEM_START_ROW
+	LDX l_scrolledItem
+-	; ALWAYS clear this row
+	LDA l_renderingRow
+	JSR clearRow
+	; Find out what type of item we're rendering
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	STA l_renderingType
+	BMI _continue ; $80-$FF = no more items (but plenty of rows to clear)
+	BEQ _continue ; $00 = nothing to render
+	; Is it the selected item?
+	CPX l_selectedItem
+	BNE +++
+	; It is! Hilight it
+	LDA l_renderingRow
+	ASL
+	ASL
+	ASL
+	ASL
+	STA g_HilightStart
+	CLC
+	ADC #16
+	STA g_HilightStop
++++	; Render it!
+	LDA #6
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	; Left aligned non-dim string
+	BIT #1
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderLeftAlignedString
+	PLA
++	; Right aligned non-dim string
+	BIT #2
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderRightAlignedString
+	PLA
++	; Left aligned dim string
+	BIT #4
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderDimLeftAlignedString
+	PLA
++	; Right aligned dim string
+	BIT #8
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderDimRightAlignedString
+	PLA
++
+_continue:
+	DEY
+	BEQ _menuOver
+	INX
+	INC l_renderingRow
+	JMP -
+_menuOver:
+	PLY
+	PLX
+	PLA
+	RTS
+
+; returns only when input has completed
+handleInput:
+	JSR awaitNMI
+	LDA l_controllerLastFrame
+	EOR #$7F
+	STA l_controllerMask
+	STZ r_Controller1
+	LDA r_Controller1
+	STA l_controllerLastFrame
+	AND l_controllerMask
+	; Is Pause pressed?
+	PHA
+	AND #$78
+	CMP #$78
+	BNE +
+	; (discard backed up accumulator and do the same as with B)
+	PLA
+	; Back!
+_btnB:	LDA #8
+	STA r_EmuConfig
+	RTS
++	PLA
+	; Handle hat up/down
+	BIT #$10
+	BNE _hatUp
+	BIT #$40
+	BNE _hatDown
+	; Handle face buttons
+	BIT #$01
+	BNE _btnA
+	BIT #$02
+	BNE _btnB
+	; Handle rest of hat in tail
+	JMP _tail
+
+_hatUp:
+	; Find a selectable item with a lower index and select it.
+	LDX l_selectedItem
+-	DEX
+	BMI handleInput
+	; is it selectable?
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	BMI handleInput ; ran off the end of the array (NOTREACHED)
+	CMP #2
+	BMI - ; not selectable, skip it
+	LDA l_selectedItem
+	INA
+	STA l_redrawStopItem
+	STX l_selectedItem
+	STX l_redrawStartItem
+	BRA redrawMenu ; tail call
+
+_hatDown:
+	; Find a selectable item with a higher index and select it.
+	LDX l_selectedItem
+-	INX
+	BMI handleInput
+	; is it selectable?
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	BMI handleInput ; ran off the end of the array
+	CMP #2
+	BMI - ; not selectable, skip it
+	LDA l_selectedItem
+	STA l_redrawStartItem
+	STX l_selectedItem
+	INX
+	STX l_redrawStopItem
+	BRA redrawMenu ; tail call
+
+_btnA:
+	LDX l_selectedItem
+	; Is it a KeyConfig? If so, instead of activating, bind.
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	CMP #8
+	BNE +
+	JMP _bindKey
++	; Activate!
+	LDA #7
+	STA r_EmuConfig
+	STX r_EmuConfig
+	; Did the menu change?
+	LDA #11
+	STA r_EmuConfig
+	LDA r_EmuConfig
+	CMP l_curMenuCookie
+	BEQ +
+	RTS ; Menu changed, fall out
+	; Menu did not change, re-render that row
++	STX l_redrawStartItem
+	INX
+	STX l_redrawStopItem
+	BRA redrawMenu ; tail call
+
+redrawMenu:
+	; Start rendering items
+	LDA #ITEM_START_ROW
+	STA l_renderingRow
+	LDY #NUMBER_OF_SCREEN_ROWS - ITEM_START_ROW
+	LDX l_scrolledItem
+-	; Find out what type of item we're rendering
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	STA l_renderingType
+	BMI _menuOver2 ; $80-$FF = no more items
+	BEQ _continue2 ; $00 = nothing to render
+	CPX l_redrawStartItem
+	BMI _continue2 ; not doing it yet
+	CPX l_redrawStopItem
+	BPL _menuOver2 ; all done
+	; we are rendering this one, clear its row
+	LDA l_renderingRow
+	JSR clearRow
+	; Is it the selected item?
+	CPX l_selectedItem
+	BNE +++
+	; It is! Hilight it
+	LDA l_renderingRow
+	ASL
+	ASL
+	ASL
+	ASL
+	STA g_HilightStart
+	CLC
+	ADC #16
+	STA g_HilightStop
++++	; Render it!
+	LDA #6
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	; Left aligned non-dim string
+	BIT #1
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderLeftAlignedString
+	PLA
++	; Right aligned non-dim string
+	BIT #2
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderRightAlignedString
+	PLA
++	; Left aligned dim string
+	BIT #4
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderDimLeftAlignedString
+	PLA
++	; Right aligned dim string
+	BIT #8
+	BEQ +
+	PHA
+	LDA l_renderingRow
+	JSR renderDimRightAlignedString
+	PLA
++
+_continue2:
+	DEY
+	BEQ _menuOver2
+	INX
+	INC l_renderingRow
+	BRA -
+_menuOver2:
+	RTS
+
+_bindKey:
+	LDA #9
+	STA r_EmuConfig
+	STX r_EmuConfig
+	JSR clearFB
+	STZ g_HilightStart
+	STZ g_HilightStop
+	LDX #2
+	LDY r_EmuConfig
+	BRA +
+-	TXA
+	JSR renderLeftAlignedString
+	INX
+	DEY
++	BNE -
+	; discard controller type and button ID
+	LDA r_EmuConfig
+	LDA r_EmuConfig
+-	WAI
+	LDA r_EmuConfig
+	BEQ -
+	JMP renderMenu ; tail call
+
+; (butt end of handleInput)
+_tail:
+	BIT #$20
+	BNE _hatRight
+	BIT #$08
+	BNE _hatLeft
+	; ignore C
+_ignore:
+	JMP handleInput
+
+_hatLeft:
+	; is it a Selector?
+	LDX l_selectedItem
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	CMP #7
+	BNE _ignore
+	; Reverse-select
+	LDA #10
+	STA r_EmuConfig
+	STX r_EmuConfig
+	STX l_redrawStartItem
+	INX
+	STX l_redrawStopItem
+	JMP redrawMenu ; tail call
+
+_hatRight:
+	; is it a Selector?
+	LDX l_selectedItem
+	LDA #5
+	STA r_EmuConfig
+	STX r_EmuConfig
+	LDA r_EmuConfig
+	CMP #7
+	BNE _ignore
+	; Activate
+	LDA #7
+	STA r_EmuConfig
+	STX r_EmuConfig
+	STX l_redrawStartItem
+	INX
+	STX l_redrawStopItem
+	JMP redrawMenu ; tail call
+
+.ENDS

@@ -1,0 +1,12 @@
+.INCLUDE "asm/common.inc"
+
+.SECTION "AwaitNMI" FREE
+awaitNMI:
+	PHA
+	LDA g_NMICount
+-	WAI
+	CMP g_NMICount
+	BEQ -
+	PLA
+	RTS
+.ENDS

@@ -1,0 +1,206 @@
+.INCLUDE "asm/common.inc"
+.INCLUDE "asm/strout.inc"
+
+.ORGA $F7FA
+.BANK 0 SLOT 0
+.SECTION "!InterruptVectors" FORCE
+.DW handleNMI, handleReset, handleIRQ
+.ENDS
+
+.ORG $0
+.RAMSECTION "x" SLOT ZeroPageSlot
+g_NMICount DB
+g_HilightStart DB
+g_HilightStop DB
+g_tmp DB
+.ENDS
+
+; WLA doesn't give us a way to put particular things into RAMSECTIONs at
+; aligned or otherwise hardcoded addresses...
+.DEFINE g_Framebuffer $4000
+.EXPORT g_Framebuffer
+
+.ORG $0
+.BANK 0 SLOT 0
+.SECTION "Startup" FREE
+handleReset:
+
+	; We can have pretty simple startup code because we don't use the BG or
+	; SP layers
+
+	; Video is supposed to be blank on reset, but make sure anyway
+	STZ r_Multi1
+
+	; All-zero palette locations for BG and SP
+	LDX #8
+-	DEX
+	STZ r_BGPalettes,X
+	CPX #0
+	BNE -
+
+	; Zero color mod
+	STZ r_ColorMod
+
+	; Black out most of the CRAM, we live in the top 32 colors
+	STZ r_CRAMIndex
+	LDA #$FF
+	LDX #256-32
+-	STA r_CRAMPort
+	DEX
+	BNE -
+
+	; While we're at it, stub out all the sprites
+	STZ r_SSMIndex
+	LDX #64
+-	STZ r_SSMPort
+	STA r_SSMPort
+	STZ r_SSMPort
+	STZ r_SSMPort
+	DEX
+	BNE -
+
+	; One bits for the first two rows of overlay attributes,
+	; zero bits for the rest
+	LDX #0
+-	STA r_OLAttributes,X
+	INX
+	CPX #8
+	BMI -
+-	STZ r_OLAttributes,X
+	INX
+	BPL -
+
+	; "Purple out" the next 16 colors (for the hilight background)
+	LDA #$1A
+	LDX #16
+-	STA r_CRAMPort
+	DEX
+	BNE -
+
+	; The overlay palette
+	LDA #$30
+	LDY #$20
+	JSR _loadPalSeg
+	LDA #$4A
+	JSR _loadPalSeg
+	LDA #$50
+	LDY #$30
+	JSR _loadPalSeg
+	JSR _loadPalSeg
+
+	; Fill the overlay tilemap with The Pattern(TM)
+	LDX #0
+-	TXA
+	PHA
+	ASL
+	AND #$3E
+	STA g_tmp
+	PLA
+	AND #$C0
+	ORA g_tmp
+	STA g_tmp
+	TXA
+	BIT #$20
+	BEQ +
+	LDA g_tmp
+	INA
+	BRA ++
++	LDA g_tmp
+++	STA $7C00,X
+	STA $7D00,X
+	STA $7E00,X
+	CPX #$80
+	BPL +
+	STA $7F00,X
++	INX
+	BNE -
+	; Well, that was needlessly complicated. But congrats! With this and a
+	; little scanline IRQ magic, we now have a 2-bit 256x224 framebuffer!
+
+	; No hilight region for now
+	STZ g_HilightStart
+	STZ g_HilightStop
+
+	; We're done initializing, disable the blank
+	LDA #$FF
+	STA r_IRQScanline
+	LDA #$08
+	STA r_Multi1
+	CLI
+	JSR main
+	STP
+
+_loadPalSeg:
+	STY r_CRAMPort
+	STA r_CRAMPort
+	STY r_CRAMPort
+	STA r_CRAMPort
+	RTS
+
+.ENDS
+
+.ORG $0
+.SECTION "Interrupts" FREE
+handleNMI:
+	PHA
+	LDA #8
+	STA r_IRQScanline
+	INC g_NMICount
+	PLA
+	RTI
+
+_BRKmessage:
+.DB "BRK encountered", 10, 0
+handleBRK:
+	callStrout _BRKmessage
+	STP
+
+handleIRQ:
+	PHX
+	TSX
+	PHA
+	INX
+	INX
+	LDA #$10
+	BIT $0100,X
+	BNE handleBRK
+	; it's not a BRK; set the registers appropriately
+	LDA r_IRQScanline
+	SEC
+	SBC #8
+	; Set the overlay base nybble appropriately (do this first)
+	PHA ; (back up A)
+	LSR
+	LSR
+	AND #$30
+	ORA #$48
+	STA r_Multi1
+	; Are we within the hilight region?
+	PLA ; (restore backed up A)
+	CMP g_HilightStart
+	BMI +
+	CMP g_HilightStop
+	BPL +
+	; We are within the hilight region
+	LDA #31
+	STA r_OLPalette
+	LDA #$0E
+	BRA ++
++	; We are not within the hilight region
+	LDA #30
+	STA r_OLPalette
+	LDA #0
+++	STA r_BGPalettes
+	STA r_BGPalettes+1
+	STA r_BGPalettes+2
+	STA r_BGPalettes+3
++++	; This was fun, let's do another IRQ in 8 more scanlines
+	LDA r_IRQScanline
+	CLC
+	ADC #8
+	STA r_IRQScanline
+	PLA
+	PLX
+	RTI
+
+.ENDS
