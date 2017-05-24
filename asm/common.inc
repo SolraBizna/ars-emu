@@ -6,8 +6,8 @@
 .MEMORYMAP
 DEFAULTSLOT 0
 SLOT 0 $F000 $0800
-SLOT 1 $0000 $0100 ; zero page
-SLOT 2 $0250 $79B0 ; WRAM
+SLOT 1 $0001 $00FF ; zero page
+SLOT 2 $0256 $79AA ; WRAM
 .ENDME
 .ROMBANKSIZE $0800
 .ROMBANKS 1
@@ -70,5 +70,7 @@ r_NoiseVolume DB
 ; Overlay tilemap and attribute map
 .DEFINE r_OLTiles $7C00
 .DEFINE r_OLAttributes $7C00+(32*28)
+
+.DEFINE g_NMICount $00
 
 .ORG 0

@@ -7,9 +7,10 @@
 .DW handleNMI, handleReset, handleIRQ
 .ENDS
 
+.EXPORT g_NMICount
+
 .ORG $0
 .RAMSECTION "x" SLOT ZeroPageSlot
-g_NMICount DB
 g_HilightStart DB
 g_HilightStop DB
 g_tmp DB
