@@ -164,9 +164,9 @@ public:
         noise_accumulator = 0;
         bool feedback;
         if(user.noise_waveform & 0x80)
-          feedback = ((lfsr>>1)^lfsr)&1;
-        else
           feedback = ((lfsr>>6)^lfsr)&1;
+        else
+          feedback = ((lfsr>>1)^lfsr)&1;
         lfsr >>= 1;
         if(feedback) lfsr |= 16384;
       }
