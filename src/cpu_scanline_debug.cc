@@ -910,7 +910,7 @@ namespace {
         return;
       }
       uint32_t value;
-      if(!eval(args[2], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
@@ -930,13 +930,13 @@ namespace {
         return;
       }
       uint32_t addr, value;
-      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[0], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
                         std::placeholders::_1), addr))
         return;
-      if(!eval(args[2], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
@@ -954,13 +954,13 @@ namespace {
         return;
       }
       uint32_t addr, value;
-      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[0], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
                         std::placeholders::_1), addr))
         return;
-      if(!eval(args[2], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
@@ -979,13 +979,13 @@ namespace {
         return;
       }
       uint32_t addr, value;
-      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[0], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
                         std::placeholders::_1), addr))
         return;
-      if(!eval(args[2], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
@@ -1005,13 +1005,13 @@ namespace {
         return;
       }
       uint32_t addr, value;
-      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[0], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
                         std::placeholders::_1), addr))
         return;
-      if(!eval(args[2], std::bind(&CPU_ScanlineDebug::get_symbol, this,
+      if(!eval(args[1], std::bind(&CPU_ScanlineDebug::get_symbol, this,
                                  std::placeholders::_1,
                                  std::placeholders::_2),
               std::bind(&CPU_ScanlineDebug::read_address, this,
