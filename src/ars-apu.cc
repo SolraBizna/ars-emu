@@ -7,8 +7,11 @@
 namespace {
   constexpr float SAMPLE_RATE = 47988.28125f;
   constexpr float ET209_OUTPUT_TO_FLOAT_SAMPLE = 1.f / 256.f;
+#if __clang__
   constexpr float FILTER_COEFFICIENT = 0x1.adc011a45e08ap-2;
-    // (std::exp(-1/(SAMPLE_RATE*0.000024f)))
+#else
+  constexpr float FILTER_COEFFICIENT = std::exp(-1/(SAMPLE_RATE*0.000024f));
+#endif
   constexpr unsigned int QBUF_LEN = 256;
   //constexpr unsigned int QBUF_THROTTLE = 2048 * sizeof(float);
   constexpr unsigned int QBUF_THROTTLE = 4096 * sizeof(float);
