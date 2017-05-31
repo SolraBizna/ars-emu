@@ -498,7 +498,7 @@ extern "C" int teg_main(int argc, char** argv) {
     die("Unable to load language files. Please ensure a Lang directory exists in the Data directory next to the emulator.");
   if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
   Font::Load();
-  srandom(time(NULL)); // rand() is only used for trashing memory on reset
+  srand(time(NULL)); // rand() is only used for trashing memory on reset
   if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO))
     die("%s", sn.Get("SDL_FAIL"_Key).c_str());
   atexit(cleanup);
