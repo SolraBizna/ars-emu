@@ -25,7 +25,7 @@ namespace {
     static constexpr uint8_t FOREGROUND_MASK = 4;
     uint8_t TileAddr, TilePage;
   } ssm[NUM_SPRITES];
-  constexpr uint8_t* ssmBytes = reinterpret_cast<uint8_t*>(ssm);
+#define ssmBytes reinterpret_cast<uint8_t*>(ssm)
   static_assert(sizeof(SpriteState) == 4, "Sprite size has slipped");
   // HHHHHPPP
   // H = tile height-1, range 1..32 (8..128)

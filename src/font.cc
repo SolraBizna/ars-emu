@@ -65,7 +65,7 @@ namespace {
 void Font::Load() {
   SDL_assert(!file);
   file = IO::OpenDataFileForRead("Font");
-  if(!file) die(sn.Get("FONT_FAIL"_Key).c_str());
+  if(!file) die("%s",sn.Get("FONT_FAIL"_Key).c_str());
   file->exceptions(std::iostream::failbit|std::iostream::badbit
                   |std::iostream::eofbit);
   try {
@@ -76,7 +76,7 @@ void Font::Load() {
     }
   }
   catch(std::iostream::failure&) {
-    die(sn.Get("FONT_CORRUPT"_Key).c_str());
+    die("%s",sn.Get("FONT_CORRUPT"_Key).c_str());
   }
 }
 
@@ -90,7 +90,7 @@ const Font::Glyph& Font::GetGlyph(uint32_t codepoint) {
       uint8_t widths[256];
       file->seekg(page.offset);
       file->read(reinterpret_cast<char*>(loadbuf.ptr), page.size);
-      if(file->gcount() != page.size)
+      if(file->gcount() != static_cast<std::streamsize>(page.size))
         throw std::iostream::failure("early EOF");
       z_stream z;
       z.zalloc = nullptr;
@@ -143,6 +143,6 @@ const Font::Glyph& Font::GetGlyph(uint32_t codepoint) {
     return *page.glyphs[codepoint & 255];
   }
   catch(std::iostream::failure&) {
-    die(sn.Get("FONT_CORRUPT"_Key).c_str());
+    die("%s",sn.Get("FONT_CORRUPT"_Key).c_str());
   }
 }

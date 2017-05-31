@@ -3,6 +3,7 @@
 #include "font.hh"
 #include "menu.hh"
 
+#include <array>
 #include <vector>
 #include <unordered_map>
 #include <algorithm>

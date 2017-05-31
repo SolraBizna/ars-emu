@@ -13,6 +13,10 @@
 #include <thread>
 #include <algorithm>
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 using namespace ARS;
 
 ARS::MessageImp ARS::ui;
@@ -42,7 +46,7 @@ namespace {
   };
   bool window_visible = true, window_minimized = false, quit = false,
     allow_debug_port = false, allow_config_port = false, quit_on_stop = false,
-    stop_has_been_detected = false;
+    stop_has_been_detected = false, need_reset = true;
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* frametexture = nullptr, *messagetexture = nullptr;
@@ -54,7 +58,7 @@ namespace {
     if(window != nullptr) SDL_DestroyWindow(window);
     SDL_Quit();
   }
-  struct ResetException {};
+  struct EscapeException {};
   struct LoggedMessage {
     std::string string;
     int lifespan;
@@ -173,6 +177,15 @@ namespace {
     ui << sn.Get("BUS_CONFLICT"_Key, {TEG::format("%04X",addr)}) << ui;
   }
   void mainLoop() {
+    if(need_reset) {
+      need_reset = false;
+      cartridge->handleReset();
+      PPU::handleReset();
+      cpu->handleReset();
+      for(size_t n = 0; n < sizeof(bankMap); ++n)
+        bankMap[n] = cartridge->getPowerOnBank();
+      epoch = std::chrono::high_resolution_clock::now();
+    }
     ++logic_frame;
     auto now = std::chrono::high_resolution_clock::now();
     auto target_frame = std::chrono::duration_cast<frame_duration>(now - epoch)
@@ -190,6 +203,17 @@ namespace {
       ui << sn.Get("TEMPORAL_ANOMALY"_Key) << ui;
       logic_frame = target_frame;
     }
+#ifdef EMSCRIPTEN
+    while(logic_frame < target_frame) {
+      ++logic_frame;
+      cpu->runCycles(CYCLES_PER_VBLANK);
+      PPU::dummyRender();
+      cartridge->oncePerFrame();
+      cycle_messages();
+    }
+#endif
+    cpu->runCycles(CYCLES_PER_VBLANK);
+    cartridge->oncePerFrame();
     if(logic_frame >= target_frame && window_visible && !window_minimized) {
       PPU::renderToTexture(frametexture);
       if(messages_dirty) {
@@ -247,8 +271,6 @@ namespace {
         break;
       }
     }
-    cpu->runCycles(CYCLES_PER_VBLANK);
-    cartridge->oncePerFrame();
     if(!stop_has_been_detected && cpu->isStopped()) {
       ui << sn.Get("CPU_STOPPED"_Key) << ui;
       stop_has_been_detected = true;
@@ -279,7 +301,9 @@ namespace {
             else {
               std::string nextarg = argv[n++];
               if(nextarg == "fast") makeCPU = makeScanlineCPU;
+#ifndef NO_DEBUG_CORES
               else if(nextarg == "fast_debug") makeCPU = makeScanlineDebugCPU;
+#endif
               else {
                 sn.Out(std::cout, "UNKNOWN_CORE"_Key, {nextarg});
                 valid = false;
@@ -330,7 +354,7 @@ namespace {
     }
     catch(std::string& reason) {
       std::string death = sn.Get("CARTRIDGE_LOADING_FAIL"_Key, {reason});
-      die(death.c_str());
+      die("%s", death.c_str());
     }
     if(allow_debug_port
        && !cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT))
@@ -363,12 +387,13 @@ void MessageImp::outputBuffer() {
 }
 
 void ARS::triggerReset() {
-  throw ResetException();
+  need_reset = true;
+  throw EscapeException();
 }
 
 void ARS::triggerQuit() {
   quit = true;
-  throw ResetException();
+  throw EscapeException();
 }
 
 void ARS::temporalAnomaly() {
@@ -475,7 +500,7 @@ extern "C" int teg_main(int argc, char** argv) {
   Font::Load();
   srandom(time(NULL)); // rand() is only used for trashing memory on reset
   if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO))
-    die(sn.Get("SDL_FAIL"_Key).c_str());
+    die("%s", sn.Get("SDL_FAIL"_Key).c_str());
   atexit(cleanup);
   PrefsLogic::DefaultsAll();
   PrefsLogic::LoadAll();
@@ -488,43 +513,43 @@ extern "C" int teg_main(int argc, char** argv) {
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_width, window_height,
                             SDL_WINDOW_RESIZABLE);
-  if(window == NULL) die(sn.Get("WINDOW_FAIL"_Key).c_str());
+  if(window == NULL) die("%s",sn.Get("WINDOW_FAIL"_Key).c_str());
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-  if(renderer == NULL) die(sn.Get("RENDERER_FAIL"_Key).c_str());
+  if(renderer == NULL) die("%s",sn.Get("RENDERER_FAIL"_Key).c_str());
   SDL_RenderSetLogicalSize(renderer, PPU::VISIBLE_SCREEN_WIDTH,
                            PPU::VISIBLE_SCREEN_HEIGHT);
   frametexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
                                    SDL_TEXTUREACCESS_STREAMING,
                                    PPU::INTERNAL_SCREEN_WIDTH,
                                    PPU::INTERNAL_SCREEN_HEIGHT);
-  if(frametexture == NULL) die(sn.Get("FRAMETEXTURE_FAIL"_Key).c_str());
+  if(frametexture == NULL) die("%s",sn.Get("FRAMETEXTURE_FAIL"_Key).c_str());
   messagetexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB4444,
                                      SDL_TEXTUREACCESS_STREAMING,
                                      PPU::VISIBLE_SCREEN_WIDTH
                                      -MESSAGES_MARGIN_X*2,
                                      PPU::VISIBLE_SCREEN_HEIGHT
                                      -MESSAGES_MARGIN_Y*2);
-  if(messagetexture == NULL) die(sn.Get("MESSAGETEXTURE_FAIL"_Key).c_str());
+  if(messagetexture == NULL) die("%s",
+                                 sn.Get("MESSAGETEXTURE_FAIL"_Key).c_str());
   SDL_SetTextureBlendMode(messagetexture, SDL_BLENDMODE_BLEND);
   Controller::initControllers();
   quit = false;
   cpu = makeCPU(rom_path);
   fillDramWithGarbage(dram, sizeof(dram));
   PPU::fillWithGarbage();
+#ifdef EMSCRIPTEN
+  emscripten_set_main_loop(mainLoop, 0, 1);
+#else
   while(!quit) {
-    cartridge->handleReset();
-    PPU::handleReset();
-    cpu->handleReset();
-    for(size_t n = 0; n < sizeof(bankMap); ++n)
-      bankMap[n] = cartridge->getPowerOnBank();
     try {
       while(!quit) mainLoop();
     }
-    catch(const ResetException& e) {
+    catch(const EscapeException& e) {
     }
-    if(!quit) {
+    if(need_reset) {
       ui << sn.Get("RESET"_Key) << ui;
     }
   }
+#endif
   return 0;
 }

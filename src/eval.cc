@@ -1,3 +1,4 @@
+#ifndef NO_DEBUG_CORES
 /* TODO: eval is in English */
 
 #include "eval.hh"
@@ -252,3 +253,4 @@ bool eval(const std::string& expression,
   return sub_eval(expression, it, lexed.cend(),
                   get_symbol, read_address, out);
 }
+#endif

@@ -2,13 +2,14 @@
 
 #include <vector>
 #include <algorithm>
+#include <array>
 
 namespace {
   uint8_t cookie = 0;
   class Dummy : public Menu::Item {
   public:
     uint8_t getType() const override { return 0xFF; }
-    std::array<std::string,4> getLabels() const { return {}; }
+    std::array<std::string,4> getLabels() const override { return {}; }
   };
   std::shared_ptr<Dummy> dummyItem = std::make_shared<Dummy>();
   std::vector<std::shared_ptr<Menu> > menus;
@@ -37,22 +38,22 @@ uint8_t Menu::Selector::getType() const { return 0x07; }
 uint8_t Menu::KeyConfig::getType() const { return 0x08; }
 
 std::array<std::string,4> Menu::Divider::getLabels() const {
-  return {};
+  return {{}};
 }
 std::array<std::string,4> Menu::Label::getLabels() const {
-  return {label};
+  return {{label}};
 }
 std::array<std::string,4> Menu::Button::getLabels() const {
-  return {label};
+  return {{label}};
 }
 std::array<std::string,4> Menu::Submenu::getLabels() const {
-  return {label};
+  return {{label}};
 }
 std::array<std::string,4> Menu::Selector::getLabels() const {
-  return {label, options[cur_option]};
+  return {{label, options[cur_option]}};
 }
 std::array<std::string,4> Menu::KeyConfig::getLabels() const {
-  return {label,ARS::Controller::getNamesOfBoundKeys(player_no,button_index)};
+  return {{label,ARS::Controller::getNamesOfBoundKeys(player_no,button_index)}};
 }
 
 void Menu::Button::activate() {

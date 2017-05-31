@@ -1,3 +1,4 @@
+#ifndef NO_DEBUG_CORES
 /* TODO: Debugger is entirely in English */
 
 #include "ars-emu.hh"
@@ -1169,3 +1170,4 @@ ARS::makeScanlineDebugCPU(const std::string& rom_path) {
   std::cout << "Debugger started.\n";
   return ret;
 }
+#endif
