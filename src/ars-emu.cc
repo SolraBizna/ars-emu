@@ -235,8 +235,13 @@ namespace {
       PPU::dummyRender();
     }
     cycle_messages();
-    if(target_frame < logic_frame)
+    if(target_frame < logic_frame) {
+#ifdef __WIN32__
+      SDL_Delay(std::chrono::duration_cast<std::chrono::milliseconds>((epoch + std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(frame_duration(logic_frame))) - now).count());
+#else
       std::this_thread::sleep_for((epoch + std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(frame_duration(logic_frame))) - now);
+#endif
+    }
     SDL_Event evt;
     while(SDL_PollEvent(&evt)) {
       if(Controller::filterEvent(evt)) continue;

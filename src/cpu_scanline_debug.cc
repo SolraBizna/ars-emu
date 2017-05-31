@@ -15,6 +15,11 @@
 
 /* TODO: stack trace */
 
+/* WTF, Microsoft */
+#ifdef ABSOLUTE
+#undef ABSOLUTE
+#endif
+
 using ARS::getBankForAddr;
 
 namespace std {

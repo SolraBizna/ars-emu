@@ -228,6 +228,7 @@ namespace {
         cur_screen ^= 2;
         bg_rowptr -= MODE2_BACKGROUND_TILES_HIGH * MODE2_BACKGROUND_TILES_WIDE;
       }
+      bg_ptr = bg_rowptr;
       uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr];
       if(bg_x_tile&1) ++bg_ptr;
       bg_pal = bg_byte&3;
@@ -529,7 +530,7 @@ void ARS::PPU::renderToTexture(SDL_Texture* texture) {
       int pitch;
       SDL_LockTexture(texture, nullptr,
                       reinterpret_cast<void**>(&pixels), &pitch);
-      bzero(pixels, pitch * INTERNAL_SCREEN_HEIGHT);
+      memset(pixels, 0, pitch * INTERNAL_SCREEN_HEIGHT);
       SDL_UnlockTexture(texture);
       lastRenderWasBlank = true;
     }
