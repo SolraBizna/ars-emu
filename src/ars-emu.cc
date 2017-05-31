@@ -428,7 +428,7 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
     }
     else return dram[addr];
   }
-  else return cartridge->read(bankMap[addr>>12], addr, OL, VPB, SYNC);
+  else return cartridge->read(bankMap[(addr>>12)-8], addr, OL, VPB, SYNC);
   badread(addr);
   return 0xBB;
 }
@@ -482,14 +482,14 @@ void ARS::write(uint16_t addr, uint8_t value) {
     return;
   }
   else {
-    cartridge->write(bankMap[addr>>12], addr, value);
+    cartridge->write(bankMap[(addr>>12)-8], addr, value);
     return;
   }
   badwrite(addr);
 }
 
 uint8_t ARS::getBankForAddr(uint16_t addr) {
-  return bankMap[addr>>12];
+  return bankMap[(addr>>12)-8];
 }
 
 extern "C" int teg_main(int argc, char** argv) {
