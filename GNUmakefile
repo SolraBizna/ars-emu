@@ -18,7 +18,7 @@ endif
 ifdef CROSS_COMPILE
 all: gen $(FULL_EXE_LIST)
 else
-all: gen bin/Data/SimpleConfig.etars.gz bin/Data/Lang bin/Data/Font \
+all: gen all-data \
 	$(FULL_EXE_LIST)
 endif
 
@@ -43,7 +43,9 @@ $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJEC
 endif
 
 gen:
-	@true
+	@true # currently nothing to generate
+
+all-data: bin/Data/SimpleConfig.etars.gz bin/Data/Lang bin/Data/Font
 
 ifndef CROSS_COMPILE
 bin/Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
@@ -144,4 +146,4 @@ clean:
 include $(wildcard obj/*.d)
 include $(wildcard obj/teg/*.d)
 
-.PHONY: all clean data gen
+.PHONY: all clean data gen all-data
