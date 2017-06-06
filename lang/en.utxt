@@ -75,7 +75,7 @@ Error: No ROM path specified
 .
 
 : On Windows (and macOS?), instead of printing the above message to the
-; console, ARS-emu will display the following in a dialog box.
+: console, ARS-emu will display the following in a dialog box.
 DRAG_AND_DROP_A_ROM
 Please drag and drop a .etars or .etars.gz file onto ARS-emu.
 .
