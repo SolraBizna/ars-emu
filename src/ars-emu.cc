@@ -246,6 +246,7 @@ namespace {
     while(SDL_PollEvent(&evt)) {
       if(Controller::filterEvent(evt)) continue;
       switch(evt.type) {
+      case SDL_DROPFILE: SDL_free(evt.drop.file); break;
       case SDL_QUIT: quit = true; triggerReset();
       case SDL_KEYDOWN:
         switch(evt.key.keysym.sym) {
@@ -343,8 +344,22 @@ namespace {
         rom_path_specified = true;
       }
     }
+    if(!rom_path_specified && !SDL_Init(SDL_INIT_EVENTS)) {
+      // Did we get a drag-and-drop?
+      SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+      SDL_Event evt;
+      while(SDL_PollEvent(&evt)) {
+        switch(evt.type) {
+        case SDL_DROPFILE:
+          rom_path = evt.drop.file;
+          SDL_free(evt.drop.file);
+          rom_path_specified = true;
+          break;
+        }
+      }
+    }
     if(!rom_path_specified) {
-#ifdef __WIN32__
+#ifdef DROPPY_OS
       die("%s", sn.Get("DRAG_AND_DROP_A_ROM"_Key).c_str());
 #else
       sn.Out(std::cout, "NO_ROM_PATHS"_Key);
@@ -510,6 +525,7 @@ extern "C" int teg_main(int argc, char** argv) {
   srand(time(NULL)); // rand() is only used for trashing memory on reset
   if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO))
     die("%s", sn.Get("SDL_FAIL"_Key).c_str());
+  SDL_EventState(SDL_DROPFILE, SDL_DISABLE);
   atexit(cleanup);
   PrefsLogic::DefaultsAll();
   PrefsLogic::LoadAll();
