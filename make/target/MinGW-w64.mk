@@ -7,6 +7,10 @@ LD=i686-w64-mingw32-g++-win32
 # Library archiver used
 AR=i686-w64-mingw32-gcc-ar
 
+# hack to support the Windows icon
+NEED_WINDOWS_ICON=1
+WINDRES=i686-w64-mingw32-windres
+
 # Flags passed to all calls that involve a C preprocessor.
 CPPFLAGS=-MP -MMD -I/opt/releng/w32/include -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -D_UNICODE -DUNICODE -DMINGW -D_WIN32_WINNT=0x0501
 CPPFLAGS_DEBUG=-DDEBUG=1

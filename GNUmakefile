@@ -31,7 +31,12 @@ endif
 )
 endef
 
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o $(TEG_OBJECTS))
+EXTRA_OBJECTS:=
+ifdef NEED_WINDOWS_ICON
+EXTRA_OBJECTS+=obj/ars-emu.res
+endif
+
+$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o $(TEG_OBJECTS) $(EXTRA_OBJECTS))
 ifndef CROSS_COMPILE
 $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
 $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))
@@ -122,6 +127,11 @@ obj/%.debug.o: src/libsn/%.cc
 	@mkdir -p obj/teg
 	@echo Compiling "$<" "(debug)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) $(CXXFLAGS) $(CXXFLAGS_DEBUG) -o "$@" "$<"
+
+obj/%.res: src/%.rc
+	@mkdir -p obj
+	@echo Compiling "$<"...
+	@$(WINDRES) "$<" -O coff -o "$@"
 
 obj/%.65c.o: asm/%.65c $(wildcard asm/*.inc)
 	@mkdir -p obj
