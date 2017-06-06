@@ -344,8 +344,12 @@ namespace {
       }
     }
     if(!rom_path_specified) {
+#ifdef __WIN32__
+      die("%s", sn.Get("DRAG_AND_DROP_A_ROM"_Key).c_str());
+#else
       sn.Out(std::cout, "NO_ROM_PATHS"_Key);
       printUsage();
+#endif
       return false;
     }
     if(!valid) {
