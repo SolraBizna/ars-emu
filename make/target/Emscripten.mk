@@ -1,3 +1,5 @@
+# Transpile to JavaScript using Emscripten
+
 # Compiler used to compile C code.
 CC=emcc
 # Compiler used to compile C++ code.

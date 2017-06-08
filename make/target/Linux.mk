@@ -1,11 +1,11 @@
+# Linux, and likely other UNIX-likes
+
 # Compiler used to compile C code.
 CC=gcc
 # Compiler used to compile C++ code.
 CXX=g++
 # Linker used. (This will usually be the same as the C++ compiler.)
 LD=g++
-# Library archiver used
-AR=gcc-ar
 
 # Flags passed to all calls that involve a C preprocessor.
 CPPFLAGS=-MP -MMD -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -I/usr/include/lua5.3
@@ -25,8 +25,6 @@ LDFLAGS_DEBUG=-ggdb
 LDFLAGS_RELEASE=-Ofast -flto
 # Libraries.
 LIBS=`sdl2-config --libs` -lz -llua5.3
-# Flags passed to the library archiver
-ARFLAGS=-rsc
 
 # Extension for executables.
 EXE=

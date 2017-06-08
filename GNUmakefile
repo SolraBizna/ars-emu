@@ -77,8 +77,7 @@ obj/SimpleConfig.etars: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/
 endif
 
 make/cur_target.mk:
-	@echo Please point cur_target.mk to an appropriate target definition.
-	@false
+	@./choose_target.sh
 
 bin/%-release$(EXE): obj/%.o
 	@mkdir -p bin
