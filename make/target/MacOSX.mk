@@ -13,7 +13,7 @@ CPPFLAGS=-Iinclude/ -Isrc/teg/ -Isrc/libsn/ -I/opt/releng/mac/include/lua5.3 -DM
 CPPFLAGS_DEBUG=-DDEBUG=1
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.
-CFLAGS=-I/opt/releng/mac/Frameworks/SDL2.framework/Headers -Wall -Wextra -Werror -mmacosx-version-min=10.6 -c
+CFLAGS=-I/opt/releng/mac/Frameworks/SDL2.framework/Headers -Wall -Wextra -Werror -mmacosx-version-min=10.6 -arch i386 -arch x86_64 -c
 CFLAGS_DEBUG=-Og -ggdb
 CFLAGS_RELEASE=-Ofast -flto
 # Flags passed the C++ compiler.
@@ -25,7 +25,7 @@ LDFLAGS=-F/opt/releng/mac/Frameworks -Wl,-rpath -Wl,@executable_path/../Framewor
 LDFLAGS_DEBUG=-ggdb
 LDFLAGS_RELEASE=-Ofast -flto
 # Libraries.
-LIBS=-framework SDL2 -L/opt/releng/mac/lib -lz -llua5.3
+LIBS=-framework SDL2 -L/opt/releng/mac/lib -lz -llua5.3 -arch i386 -arch x86_64
 
 # Extension for executables.
 EXE=

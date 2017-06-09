@@ -247,7 +247,7 @@ namespace {
       if(Controller::filterEvent(evt)) continue;
       switch(evt.type) {
       case SDL_DROPFILE: SDL_free(evt.drop.file); break;
-      case SDL_QUIT: quit = true; triggerReset();
+      case SDL_QUIT: quit = true; break;
       case SDL_KEYDOWN:
         switch(evt.key.keysym.sym) {
         case SDLK_F3:
@@ -344,7 +344,7 @@ namespace {
         rom_path_specified = true;
       }
     }
-    if(!rom_path_specified && !SDL_Init(SDL_INIT_EVENTS)) {
+    if(!rom_path_specified && !SDL_Init(SDL_INIT_VIDEO)) {
       // Did we get a drag-and-drop?
       SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
       SDL_Event evt;
