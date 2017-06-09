@@ -45,7 +45,7 @@ endif
 gen:
 	@true # currently nothing to generate
 
-all-data: bin/Data/SimpleConfig.etars.gz bin/Data/Lang bin/Data/Font
+all-data: bin/Data/SimpleConfig.etarz bin/Data/Lang bin/Data/Font
 
 ifndef CROSS_COMPILE
 bin/Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
@@ -59,7 +59,7 @@ bin/Data/Lang: $(wildcard lang/*.utxt)
 	@mkdir -p bin/Data
 	@cp -r lang bin/Data/Lang
 
-bin/Data/SimpleConfig.etars.gz: obj/SimpleConfig.etars
+bin/Data/SimpleConfig.etarz: obj/SimpleConfig.etars
 	@echo "Compressing simple configuration ROM image..."
 	@gzip -fk9 "$<"
 	@mkdir -p bin/Data

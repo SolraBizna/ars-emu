@@ -18,7 +18,7 @@ Language-Name: English
 : or insufficient parameters. Should fully describe how to run the emulator.
 : Must contain a trailing blank line.
 USAGE
-Usage: ars-emu [options] cartridge.etars[.gz]
+Usage: ars-emu [options] cartridge.etarz
 Known options:
 -?: This usage string
 -t: Specify core type
@@ -77,7 +77,7 @@ Error: No ROM path specified
 : On Windows (and macOS?), instead of printing the above message to the
 : console, ARS-emu will display the following in a dialog box.
 DRAG_AND_DROP_A_ROM
-Please drag and drop a .etars or .etars.gz file onto ARS-emu.
+Please drag and drop a .etars or .etarz file onto ARS-emu.
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
