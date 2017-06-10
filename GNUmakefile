@@ -45,25 +45,23 @@ endif
 gen:
 	@true # currently nothing to generate
 
-all-data: bin/Data/SimpleConfig.etarz bin/Data/Lang bin/Data/Font
+all-data: bin/Data
+
+bin/Data:
+	@echo "Linking data files..."
+	@mkdir -p bin
+	@(cd bin; ln -s ../Data)
 
 ifndef CROSS_COMPILE
-bin/Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
-	@mkdir -p bin/Data
+Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
 	@echo "Compiling font..."
+	@mkdir -p Data
 	@$^ > $@
 
-bin/Data/Lang: $(wildcard lang/*.utxt)
-	@echo Copying translation files...
-	@rm -rf bin/Data/Lang
-	@mkdir -p bin/Data
-	@cp -r lang bin/Data/Lang
-
-bin/Data/SimpleConfig.etarz: obj/SimpleConfig.etars
+Data/SimpleConfig.etarz: obj/SimpleConfig.etars
 	@echo "Compressing simple configuration ROM image..."
-	@gzip -fk9 "$<"
-	@mkdir -p bin/Data
-	@cp "$<".gz "$@"
+	@mkdir -p Data
+	@gzip -cfk9 "$<" > "$@"
 
 obj/SimpleConfig.etars: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
 	@mkdir -p obj

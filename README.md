@@ -53,8 +53,6 @@ and include the resulting JavaScript files in addition to `ars-emu-release.js`.
 
 You'll either have to edit one of the files in `make/target` or write one of your own. All of the targets already present (other than `Linux`) are intended for cross-compiling from my releng environment, and will require minor tweaking.
 
-If you're cross-compiling for another platform, pass `CROSS_COMPILE=1` to your `make` invocations. This will prevent it from attempting to build and run the font compiler, and as a side effect prevent building any of the data files. You will need to obtain a `Data` directory from a self-hosted build of ARS-emu in order to run the resulting binary. (The `Data` directory does not change from one platform to another.)
-
 If your build is happening with the wrong target, delete `make/cur_target.mk` and run `make` again again.
 
 # Limits (and lack thereof)
@@ -90,7 +88,7 @@ Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit syst
 
 # Documentation
 
-Technical documentation, along with a fictional history of the ARS, will come in the next commit.
+Technical documentation, along with a fictional history of the ARS, will come <del>in the next commit</del> when I'm more certain nothing serious will change.
 
 # License
 
@@ -101,7 +99,7 @@ ARS-emu is distributed under the GNU General Public License version 3 or later.
 
 ## SimpleConfig
 
-The files in the `asm/` directory belong to the SimpleConfig ROM. SimpleConfig is in the public domain. It is designed to be directly embeddable in other ROMs, allowing games to provide a built-in way to configure the emulator. Detailed documentation on how to do so will come in the next commit.
+The files in the `asm/` directory belong to the SimpleConfig ROM. SimpleConfig is in the public domain. It is designed to be directly embeddable in other ROMs, allowing games to provide a built-in way to configure the emulator. Detailed documentation on how to do so will come <del>in the next commit</del> when I am certain nothing about that aspect of the "hardware" will change.
 
 ## GNU Unifont
 
