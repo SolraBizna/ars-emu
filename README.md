@@ -30,7 +30,7 @@ ARS-emu makes use of C++14 features, and requires a very recent C++ compiler. Th
 
     $ git submodule init
     $ git submodule update
-    $ make bin/ars-emu-debug # or -release instead of -debug if you like
+    $ make bin/Data bin/ars-emu-debug # or -release instead of -debug if you like
 
 When prompted for a target, answer `Linux`
 
