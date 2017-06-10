@@ -1,6 +1,6 @@
 [submodule "src/teg"]
 	path = src/teg
-	url = git@git.tejat.net:teg
+	url = git@github.com:SolraBizna/teg
 [submodule "src/libsn"]
 	path = src/libsn
 	url = git@github.com:SolraBizna/libsn
