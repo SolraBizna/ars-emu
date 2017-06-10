@@ -28,12 +28,34 @@ ARS-emu makes use of C++14 features, and requires a very recent C++ compiler. Th
 
 ## Linux
 
-(after installing dependencies)
-
-    $ ln -s target/Linux.mk make/cur_target.mk
     $ git submodule init
     $ git submodule update
     $ make bin/ars-emu-debug # or -release instead of -debug if you like
+
+When prompted for a target, answer `Linux`
+
+## Emscripten
+
+    $ git submodule init
+    $ git submodule update
+    $ make bin/ars-emu-release.js
+
+When prompted for a target, answer `Emscripten`
+
+This does NOT include the `Data` directory or a cartridge. You'll want to do something like:
+
+    python path/to/emsdk_portable/emscripten/VERSION/tools/file_packager.py Data.data --embed path/to/ars-emu/bin/Data@/Data --js-output=Data.js
+    python path/to/emsdk_portable/emscripten/VERSION/tools/file_packager.py rom.data --embed path/to/cartridge.etarz@/cartridge.etarz --js-output=rom.js
+
+and include the resulting JavaScript files in addition to `ars-emu-release.js`.
+
+## Other platforms
+
+You'll either have to edit one of the files in `make/target` or write one of your own. All of the targets already present (other than `Linux`) are intended for cross-compiling from my releng environment, and will require minor tweaking.
+
+If you're cross-compiling for another platform, pass `CROSS_COMPILE=1` to your `make` invocations. This will prevent it from attempting to build and run the font compiler, and as a side effect prevent building any of the data files. You will need to obtain a `Data` directory from a self-hosted build of ARS-emu in order to run the resulting binary. (The `Data` directory does not change from one platform to another.)
+
+If your build is happening with the wrong target, delete `make/cur_target.mk` and run `make` again again.
 
 # Limits (and lack thereof)
 
