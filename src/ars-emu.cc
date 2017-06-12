@@ -206,14 +206,15 @@ namespace {
 #ifdef EMSCRIPTEN
     while(logic_frame < target_frame) {
       ++logic_frame;
+      cartridge->oncePerFrame();
       cpu->runCycles(CYCLES_PER_VBLANK);
       PPU::dummyRender();
-      cartridge->oncePerFrame();
+      cpu->frameBoundary();
       cycle_messages();
     }
 #endif
-    cpu->runCycles(CYCLES_PER_VBLANK);
     cartridge->oncePerFrame();
+    cpu->runCycles(CYCLES_PER_VBLANK);
     if(logic_frame >= target_frame && window_visible && !window_minimized) {
       PPU::renderToTexture(frametexture);
       if(messages_dirty) {
@@ -234,6 +235,7 @@ namespace {
     else {
       PPU::dummyRender();
     }
+    cpu->frameBoundary();
     cycle_messages();
     if(target_frame < logic_frame) {
 #ifdef __WIN32__
@@ -308,6 +310,7 @@ namespace {
               std::string nextarg = argv[n++];
               if(nextarg == "fast") makeCPU = makeScanlineCPU;
 #ifndef NO_DEBUG_CORES
+              else if(nextarg == "fast_intprof") makeCPU = makeScanlineIntProfCPU;
               else if(nextarg == "fast_debug") makeCPU = makeScanlineDebugCPU;
 #endif
               else {

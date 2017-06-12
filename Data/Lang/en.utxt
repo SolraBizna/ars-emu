@@ -24,7 +24,9 @@ Known options:
 -t: Specify core type
     Known cores:
       fast: Scanline-based renderer. Fast, but not entirely accurate.
-      fast_debug: Scanline-based renderer, built-in debugger.
+      fast_debug: Scanline-based renderer, built-in (English only) debugger.
+      fast_intprof: Scanline-based renderer. Does some simple performance
+        profiling of the emulated code and outputs it on stdout.
 -C: Allow access to emulator configuration features (implies -q)
 -d: Allow the cartridge to print to stderr (for debugging purposes)
 -q: Quit when STP is executed

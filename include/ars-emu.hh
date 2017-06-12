@@ -168,10 +168,12 @@ namespace ARS {
     virtual void setSO(bool so) = 0;
     virtual void setNMI(bool nmi) = 0;
     virtual bool isStopped() = 0;
+    virtual void frameBoundary() {}
     // don't forget, NMI active = masked IRQ
   };
   extern std::unique_ptr<CPU> cpu;
   std::unique_ptr<CPU> makeScanlineCPU(const std::string& rom_path);
+  std::unique_ptr<CPU> makeScanlineIntProfCPU(const std::string& rom_path);
   std::unique_ptr<CPU> makeScanlineDebugCPU(const std::string& rom_path);
   class Controller {
     uint8_t dOut, dIn;
