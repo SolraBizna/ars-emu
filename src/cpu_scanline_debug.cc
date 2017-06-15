@@ -356,7 +356,7 @@ namespace {
           if(debug_steps == 0)
             stopped = true;
         }
-        if(!core.in_productive_state() || !stopped)
+        if(!core.in_productive_state() || stopped)
           last_exec_address = ~0;
       }
       if(cycle_budget > 0) {

@@ -516,7 +516,8 @@ void ARS::write(uint16_t addr, uint8_t value) {
 }
 
 uint8_t ARS::getBankForAddr(uint16_t addr) {
-  return bankMap[(addr>>12)-8];
+  if(addr < 0x8000) return 0; // no bank
+  else return bankMap[(addr>>12)-8];
 }
 
 extern "C" int teg_main(int argc, char** argv) {
