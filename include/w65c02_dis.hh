@@ -20,9 +20,9 @@ namespace W65C02 {
     }
     void outRelativeBitBranch(std::ostream& out, uint16_t& addr,const char*op){
       out << op << " $" << std::hex << std::setfill('0') << std::setw(2)
-          << (int)system.peek_byte(addr) << "," << std::setfill('0')
+          << (int)system.peek_byte(addr) << "," << std::setfill('0') << "$"
           << std::setw(4)
-          << ((addr+((int8_t)(int)system.peek_byte(addr+1)))&0xFFFF)
+          << ((addr+((int8_t)(int)system.peek_byte(addr+1))+2)&0xFFFF)
           << std::dec;
       addr += 2;
     }
