@@ -130,7 +130,7 @@ public:
       switch(shift_rate) {
       case 0: real_rate[voice] = target_rate; break;
       default:
-        if(sample_number & ((1<<shift_rate)-1)) break;
+        if(sample_number & ((1<<shift_rate<<2)-1)) break;
         if(real_rate[voice] < target_rate) ++real_rate[voice];
         else if(real_rate[voice] > target_rate) --real_rate[voice];
         break;
