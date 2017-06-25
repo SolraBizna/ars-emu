@@ -13,7 +13,7 @@ CPPFLAGS_DEBUG=-DDEBUG=1
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.
 CFLAGS=`sdl2-config --cflags` -Wall -Wextra -Werror -c
-CFLAGS_DEBUG=-Og -ggdb
+CFLAGS_DEBUG=-ggdb
 CFLAGS_RELEASE=-Ofast -flto
 # Flags passed the C++ compiler.
 CXXFLAGS=$(CFLAGS) -std=c++14 -Woverloaded-virtual
