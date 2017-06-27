@@ -16,17 +16,6 @@ namespace {
   //constexpr unsigned int QBUF_THROTTLE = 2048 * sizeof(float);
   constexpr unsigned int QBUF_THROTTLE = 4096 * sizeof(float);
   constexpr unsigned int UNPAUSE_THRESHOLD = 1024 * sizeof(float);
-  static const SDL_AudioSpec AUDIO_SPEC = {
-    static_cast<int>(SAMPLE_RATE), // in SDL, these are always integers...
-    AUDIO_F32SYS,
-    1,
-    0,
-    512, // buffer a bit less than a frame
-    512*sizeof(float),
-    0,
-    nullptr,
-    nullptr
-  };
   float prev_sample = 0.f;
   std::array<float, QBUF_LEN> qbuf;
   unsigned int qbuf_pos = 0;
@@ -38,7 +27,24 @@ ET209 ARS::apu;
 
 void ARS::init_apu() {
   if(dev != 0) SDL_CloseAudioDevice(dev);
-  dev = SDL_OpenAudioDevice(nullptr, 0, &AUDIO_SPEC, nullptr, 0);
+  SDL_version version;
+  SDL_GetVersion(&version);
+  SDL_AudioSpec desired;
+  memset(&desired, 0, sizeof(desired));
+  // in SDL, sample rates are always integers...
+  desired.freq = static_cast<int>(SAMPLE_RATE);
+  desired.format = AUDIO_F32SYS;
+  desired.channels = 1;
+  if(version.major > 2 || version.minor > 0 || version.patch > 5) {
+    desired.samples = 512;
+    desired.size = 512*sizeof(float);
+  }
+  else {
+    // work around SDL bug 3685
+    desired.size = 8192;
+    desired.samples = 8192/sizeof(float);
+  }
+  dev = SDL_OpenAudioDevice(nullptr, 0, &desired, nullptr, 0);
   if(dev == 0)
     ui << SDL_GetError() << ui;
   else
