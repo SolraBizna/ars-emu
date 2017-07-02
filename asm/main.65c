@@ -18,6 +18,59 @@ _notPresentTilesEnd:
 .DEFINE MessageStart $5800 + (32-_notPresentTilesWide)>>1<<5
 
 main:
+
+	; Fill the overlay tilemap with The Pattern(TM)
+	LDX #0
+-	TXA
+	PHA
+	ASL
+	AND #$3E
+	STA g_tmp
+	PLA
+	AND #$C0
+	ORA g_tmp
+	STA g_tmp
+	TXA
+	BIT #$20
+	BEQ +
+	LDA g_tmp
+	INA
+	BRA ++
++	LDA g_tmp
+++	STA $7C00,X
+	STA $7D00,X
+	STA $7E00,X
+	CPX #$80
+	BPL +
+	STA $7F00,X
++	INX
+	BNE -
+	; Well, that was needlessly complicated. But congrats! With this and a
+	; little scanline IRQ magic, we now have a 2-bit 256x224 framebuffer!
+
+	; One bits for the first two rows of overlay attributes,
+	; zero bits for the rest
+	LDA #$FF
+	LDX #0
+-	STA r_OLAttributes,X
+	INX
+	CPX #8
+	BMI -
+-	STZ r_OLAttributes,X
+	INX
+	BPL -
+
+	; No hilight region for now
+	STZ g_HilightStart
+	STZ g_HilightStop
+
+	; We're done initializing, re-enable video output
+	;LDA #$FF ; redundant
+	STA r_IRQScanline
+	LDA #$08
+	STA r_Multi
+	CLI
+
 	; Rip the Config handshake straaaaaight outta the document
 	; Discard any leftover command
 	LDA #$FF
