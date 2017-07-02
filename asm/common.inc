@@ -25,11 +25,11 @@ SLOT 2 $0256 $79AA ; WRAM
 .ENUM $0200
 r_BGScrollX DB
 r_BGScrollY DB
-r_Multi1 DB
+r_Multi DB
 r_BGTileBases DW
-r_BGFG DB
+r_SPPalettes DB
 r_BGPalettes DS 4
-r_SPPalettes DS 4
+r_BGFG DS 4
 r_OLPalette DB
 r_ColorMod DB
 r_VRAMPage DB

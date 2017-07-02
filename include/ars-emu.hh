@@ -47,9 +47,9 @@ namespace ARS {
     static constexpr uint8_t M1_OLBASE_SHIFT = 4;
     uint8_t multi1; // $0202
     uint8_t bgTileBaseTop, bgTileBaseBot; // $0203,$0204
-    uint8_t bgForegroundInfo; // $0205
+    uint8_t spBasePalette; // $0205
     uint8_t bgBasePalette[4]; // $0206-$0209
-    uint8_t spBasePalette[4]; // $020A-$020D
+    uint8_t bgForegroundInfo[4]; // $020A-$020D
     uint8_t olBasePalette; // $020E
     uint8_t colorMod; // $020F
     // $0210-$021F are "complex"

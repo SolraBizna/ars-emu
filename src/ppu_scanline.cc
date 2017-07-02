@@ -130,7 +130,7 @@ namespace {
     int cur_screen;
     int bg_rowptr, bga_rowptr;
     int bg_ptr, bga_ptr;
-    uint8_t bg_low_plane, bg_high_plane, bga_block, bg_num_background_colors;
+    uint8_t bg_low_plane, bg_high_plane, bga_block;
     mode1_bg_engine(int scanline) {
       bg_y_tile = (ARS::Regs.bgScrollY + scanline) >> 3;
       bg_y_row = (ARS::Regs.bgScrollY + scanline) & 7;
@@ -163,14 +163,17 @@ namespace {
       bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
                             |(bg_tile<<4))+bg_y_row+8];
       bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
-      bg_num_background_colors = 3 - ((ARS::Regs.bgForegroundInfo
-                                       >> (cur_screen<<1))&3);
-      if(bg_num_background_colors != 0) ++bg_num_background_colors;
     }
     void getState(uint8_t& bg_color, bool& bg_priority) {
-      bg_color = ((bg_low_plane>>(~bg_x_col&7))&1)
+      uint8_t raw_color = ((bg_low_plane>>(~bg_x_col&7))&1)
         | (((bg_high_plane>>(~bg_x_col&7))&1)<<1);
-      bg_priority = bg_color >= bg_num_background_colors;
+      uint8_t palette = getPalette();
+      bg_color = (ARS::Regs.bgBasePalette[cur_screen]
+                  <<4)|(palette<<2)|raw_color;
+      auto bg_num_background_colors =
+        3 - ((ARS::Regs.bgForegroundInfo[cur_screen]>>(palette<<1))&3);
+      if(bg_num_background_colors != 0) ++bg_num_background_colors;
+      bg_priority = raw_color >= bg_num_background_colors;
     }
     uint8_t getPalette() {
       return (bga_block >> (((bg_x_tile>>1)&3)<<1))&3;
@@ -184,9 +187,6 @@ namespace {
           cur_screen ^= 1;
           bg_x_tile = 0;
           bg_ptr = bg_rowptr;
-          bg_num_background_colors = 3 - ((ARS::Regs.bgForegroundInfo
-                                           >> (cur_screen<<1))&3);
-          if(bg_num_background_colors != 0) ++bg_num_background_colors;
           bga_x_tile = 0;
           bga_ptr = bga_rowptr;
           bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
@@ -216,7 +216,7 @@ namespace {
     int cur_screen;
     int bg_rowptr, bg_ptr;
     uint8_t bg_pal;
-    uint8_t bg_low_plane, bg_high_plane, bg_num_background_colors;
+    uint8_t bg_low_plane, bg_high_plane;
     mode2_bg_engine(int scanline) {
       bg_y_tile = (ARS::Regs.bgScrollY + scanline) >> 3;
       bg_y_row = (ARS::Regs.bgScrollY + scanline) & 7;
@@ -247,14 +247,17 @@ namespace {
                            |(bg_tile<<4))+bg_y_row];
       bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
                             |(bg_tile<<4))+bg_y_row+8];
-      bg_num_background_colors = 3 - ((ARS::Regs.bgForegroundInfo
-                                       >> (cur_screen<<1))&3);
-      if(bg_num_background_colors != 0) ++bg_num_background_colors;
     }
     void getState(uint8_t& bg_color, bool& bg_priority) {
-      bg_color = ((bg_low_plane>>(~bg_x_col&7))&1)
+      uint8_t raw_color = ((bg_low_plane>>(~bg_x_col&7))&1)
         | (((bg_high_plane>>(~bg_x_col&7))&1)<<1);
-      bg_priority = bg_color >= bg_num_background_colors;
+      uint8_t palette = getPalette();
+      bg_color = (ARS::Regs.bgBasePalette[cur_screen]
+                  <<4)|(palette<<2)|raw_color;
+      auto bg_num_background_colors =
+        3 - ((ARS::Regs.bgForegroundInfo[cur_screen] >>(palette<<1))&3);
+      if(bg_num_background_colors != 0) ++bg_num_background_colors;
+      bg_priority = raw_color >= bg_num_background_colors;
     }
     uint8_t getPalette() {
       return bg_pal;
@@ -268,9 +271,6 @@ namespace {
           cur_screen ^= 1;
           bg_x_tile = 0;
           bg_ptr = bg_rowptr;
-          bg_num_background_colors = 3 - ((ARS::Regs.bgForegroundInfo
-                                           >> (cur_screen<<1))&3);
-          if(bg_num_background_colors != 0) ++bg_num_background_colors;
         }
         uint8_t bg_tile = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
         uint8_t bgBase;
@@ -483,8 +483,8 @@ namespace {
               | (((spriteFetch[sfi+2]>>(column-sprite.X))&1)<<2);
             if(me_color != 0) {
               sprite_color = static_cast<uint8_t>
-                (cram[((ARS::Regs
-                        .spBasePalette[bg_engine.cur_screen]<<6)
+                (cram[((((ARS::Regs
+                          .spBasePalette>>(bg_engine.cur_screen<<1))&3)<<6)
                        |(((sam[active_sprites[i]]
                            >>SA_PALETTE_SHIFT)
                           &SA_PALETTE_MASK)<<3)
@@ -499,10 +499,8 @@ namespace {
             out_color = sprite_color;
           }
           else if(show_background) {
-            uint8_t palette = bg_engine.getPalette();
             out_color = static_cast<uint8_t>
-              (cram[(ARS::Regs.bgBasePalette[bg_engine.cur_screen]
-                     <<4)|(palette<<2)|bg_color]+ARS::Regs.colorMod);
+              (cram[bg_color]+ARS::Regs.colorMod);
           }
           else out_color = cram[ARS::Regs.colorMod];
         }

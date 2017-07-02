@@ -30,12 +30,12 @@ handleReset:
 	; SP layers
 
 	; Video is supposed to be blank on reset, but make sure anyway
-	STZ r_Multi1
+	STZ r_Multi
 
-	; All-zero palette locations for BG and SP
-	LDX #8
+	; All-zero palette locations for BG and SP, and BGFG
+	LDX #9
 -	DEX
-	STZ r_BGPalettes,X
+	STZ r_SPPalettes,X
 	CPX #0
 	BNE -
 
@@ -126,7 +126,7 @@ handleReset:
 	LDA #$FF
 	STA r_IRQScanline
 	LDA #$08
-	STA r_Multi1
+	STA r_Multi
 	CLI
 	JSR main
 	STP
@@ -175,7 +175,7 @@ handleIRQ:
 	LSR
 	AND #$30
 	ORA #$48
-	STA r_Multi1
+	STA r_Multi
 	; Are we within the hilight region?
 	PLA ; (restore backed up A)
 	CMP g_HilightStart
