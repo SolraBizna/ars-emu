@@ -71,7 +71,8 @@ namespace {
     bool read_break_occurred = false, write_break_occurred = false;
     uint32_t read_break_addr, write_break_addr;
     uint8_t read_break_value, write_break_value;
-    int debug_steps = 0;
+    int debug_steps = 0, loopiness = 0;
+    static constexpr int MAX_LOOPINESS_BEFORE_SUSPICION = 3;
     uint32_t last_exec_address = ~uint32_t(0);
     uint16_t executing_pc = 0;
     std::string repeat_command;
@@ -287,30 +288,36 @@ namespace {
         uint32_t mapped_pc = map_addr(core.read_pc(), false, false, true);
         if(!stopped) {
           if(mapped_pc == last_exec_address && brk_loop) {
-            std::cout << "Breaking an obvious infinite loop!\n";
-            stopped = true;
+            if(++loopiness >= MAX_LOOPINESS_BEFORE_SUSPICION) {
+              loopiness = 0;
+              std::cout << "Breaking an obvious infinite loop!\n";
+              stopped = true;
+            }
           }
-          else if(std::find(breakpoints.begin(), breakpoints.end(), mapped_pc)
-                  != breakpoints.end()) {
-            std::cout << "Breakpoint hit!\n";
-            stopped = true;
-          }
-          else if(brk_brk || brk_wai) {
-            uint8_t opcode = peek_opcode(core.read_pc());
-            switch(opcode) {
-            case 0x00: // BRK
-              if(brk_brk) {
-                std::cout << "Breaking on BRK instruction!"
-                  " (Welcome to the weeds.)\n";
-                stopped = true;
+          else {
+            loopiness = 0;
+            if(std::find(breakpoints.begin(), breakpoints.end(), mapped_pc)
+               != breakpoints.end()) {
+              std::cout << "Breakpoint hit!\n";
+              stopped = true;
+            }
+            else if(brk_brk || brk_wai) {
+              uint8_t opcode = peek_opcode(core.read_pc());
+              switch(opcode) {
+              case 0x00: // BRK
+                if(brk_brk) {
+                  std::cout << "Breaking on BRK instruction!"
+                    " (Welcome to the weeds.)\n";
+                  stopped = true;
+                }
+                break;
+              case 0xCB: // WAI
+                if(brk_wai) {
+                  std::cout << "Breaking on WAI instruction!\n";
+                  stopped = true;
+                }
+                break;
               }
-              break;
-            case 0xCB: // WAI
-              if(brk_wai) {
-                std::cout << "Breaking on WAI instruction!\n";
-                stopped = true;
-              }
-              break;
             }
           }
         }
