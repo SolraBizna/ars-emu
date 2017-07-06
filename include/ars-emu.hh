@@ -127,6 +127,9 @@ namespace ARS {
               uint8_t expansion_hardware, uint8_t overlay_bank);
     /*virtual*/ ~Cartridge();
     void markSramAsDirty() { sram_dirty = SRAM_DIRTY_FRAMES; }
+    uint32_t map_addr(uint8_t bank, uint16_t addr, bool OL = false,
+                      bool VPB = false, bool SYNC = false,
+                      bool write = false);
   public:
     static constexpr uint8_t EXPANSION_DEBUG_PORT = 0x01;
     static constexpr uint8_t EXPANSION_HAM = 0x40;
@@ -141,11 +144,6 @@ namespace ARS {
     uint8_t getPowerOnBank() { return power_on_bank; }
     uint8_t getBS() { return bank_size; }
     void flushSRAM();
-    /* used by the debugger, maps from a 2x-bit ARS address to a 32-bit symbol
-       address */
-    /*virtual*/ uint32_t map_addr(uint8_t bank, uint16_t addr, bool OL = false,
-                                  bool VPB = false, bool SYNC = false,
-                                  bool write = false);
     /* Throws a std::string if loading the cartridge failed */
     static void loadRom(const std::string& rom_path_name, std::istream&);
     void oncePerFrame() {

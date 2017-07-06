@@ -190,17 +190,15 @@ namespace {
     }
     void output_addr(std::ostream& out, uint16_t addr,
                      bool OL = false, bool VPB = false, bool SYNC = false) {
-      output_mapped_addr(out,
-                         ARS::cartridge->map_addr(getBankForAddr(addr),
-                                                  addr, OL, VPB, SYNC));
+      output_mapped_addr(out, map_addr(addr, OL, VPB, SYNC));
     }
     void output_mapped_addr(std::ostream& out, uint32_t addr) {
       bool have_outputted_alternate = false;
-      if(addr < 0x10000)
+      if(addr < 0x8000)
         out << "$" << std::hex << std::setw(4) << std::setfill('0') << addr
             << std::dec;
       else
-        out << "$" <<std::hex << std::setw(4) << std::setfill('0')
+        out << "$" <<std::hex << std::setw(2) << std::setfill('0')
             << (addr>>16) << ":" << std::setw(4) << std::setfill('0')
             << (addr&65535) << std::dec;
       auto it = addr_to_label_map.upper_bound(addr);
@@ -247,6 +245,7 @@ namespace {
                 || std::find(it->second.begin(), it->second.end(), ':')
                 != it->second.end()) {
           // another local label, can't be our parent
+          // TODO: handle Hubris subroutines better
           continue;
         }
         else {
@@ -255,6 +254,14 @@ namespace {
           return;
         }
       }
+    }
+    /* Does what Cartridge::map_addr used to do; map a memory address to a
+       symbol address */
+    uint32_t map_addr(uint16_t addr, bool OL = false, bool VPB = false,
+                      bool SYNC = false, bool write = false) {
+      (void)OL, (void)VPB, (void)SYNC, (void)write;
+      // TODO: figure out how to do overlay_bank mapping correcty here
+      return addr | (ARS::getBankForAddr(addr)<<16);
     }
   public:
     CPU_ScanlineDebug() : core(*this), disassembler(*this) {}
@@ -277,10 +284,7 @@ namespace {
       cycle_budget += count;
       audio_cycle_counter += count;
       while(core.in_productive_state() && cycle_budget > 0) {
-        uint32_t mapped_pc = ARS::cartridge->map_addr(getBankForAddr
-                                                      (core.read_pc()),
-                                                      core.read_pc(),
-                                                      false, false, true);
+        uint32_t mapped_pc = map_addr(core.read_pc(), false, false, true);
         if(!stopped) {
           if(mapped_pc == last_exec_address && brk_loop) {
             std::cout << "Breaking an obvious infinite loop!\n";
@@ -322,11 +326,8 @@ namespace {
             std::cout << "!\n";
           }
           std::cout << "The instruction that did it was:\n";
-          uint32_t last_try_again = ARS::cartridge->map_addr(getBankForAddr
-                                                             (executing_pc),
-                                                             executing_pc,
-                                                             false, false,
-                                                             true);
+          uint32_t last_try_again = map_addr(executing_pc,
+                                             false, false, true);
           if(last_try_again != last_exec_address) {
             output_mapped_addr(std::cout, last_exec_address);
             std::cout << "\n(currently inaccessible as the mapper state has changed)\n";
@@ -399,9 +400,7 @@ namespace {
       core.set_nmi(this->nmi = nmi);
     }
     uint8_t read_byte(uint16_t addr, W65C02::ReadType rt) {
-      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
-                                                      addr, false, false,
-                                                      false, false);
+      uint32_t mapped_addr = map_addr(addr, false, false, false, false);
       uint8_t ret;
       ret = ARS::read(addr);
       if(std::find(rwatchpoints.begin(), rwatchpoints.end(), mapped_addr)
@@ -430,9 +429,7 @@ namespace {
       if(rt == W65C02::ReadType::PREEMPTED) {
         last_exec_address = ~uint32_t(0);
       }
-      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
-                                                      addr, false, false,
-                                                      true, false);
+      uint32_t mapped_addr = map_addr(addr, false, false, true, false);
       uint8_t ret;
       ret = ARS::read(addr, false, false, true);
       if(std::find(rwatchpoints.begin(), rwatchpoints.end(), mapped_addr)
@@ -475,9 +472,7 @@ namespace {
     }
     uint8_t fetch_vector_byte(uint16_t addr) {
       last_exec_address = ~uint32_t(0);
-      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
-                                                      addr, false, true,
-                                                      false, false);
+      uint32_t mapped_addr = map_addr(addr, false, true, false, false);
       uint8_t ret = ARS::read(addr, false, true);
       if(std::find(rwatchpoints.begin(), rwatchpoints.end(), mapped_addr)
          != rwatchpoints.end()) {
@@ -508,9 +503,7 @@ namespace {
       return ret;
     }
     void write_byte(uint16_t addr, uint8_t byte, W65C02::WriteType wt) {
-      uint32_t mapped_addr = ARS::cartridge->map_addr(getBankForAddr(addr),
-                                                      addr, false, false,
-                                                      false, true);
+      uint32_t mapped_addr = map_addr(addr, false, false, false, true);
       if(std::find(watchpoints.begin(), watchpoints.end(), mapped_addr)
          != watchpoints.end()) {
         write_break_occurred = true;
