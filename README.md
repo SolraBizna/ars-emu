@@ -73,7 +73,7 @@ Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit syst
 - CPU is clocked *very* fast by 8-bit console standards (12.285MHz)
 - Memory is plentiful (see table below)
 - 3-bit sprites rather than the usual 2-bit ones (allowing Mega Man like sprites with ease)
-- No limit on sprites per scanline (which I **EARNED** by careful design!)
+- No limit on sprites per scanline (which I **EARNED** by careful design and wanton wasting of gates!)
 
 <table>
 <thead>
@@ -88,7 +88,7 @@ Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit syst
 
 # Documentation
 
-Technical documentation, along with a fictional history of the ARS, will come <del>in the next commit</del> when I'm more certain nothing serious will change.
+A brief history of Eiling Technologies and the Artificial Reality System console is in `FICTION.md`. A detailed description of the ARS hardware is in `HARDWARE.md`. Both documents are written in an "in-universe" tone.
 
 # License
 
@@ -99,7 +99,7 @@ ARS-emu is distributed under the GNU General Public License version 3 or later.
 
 ## SimpleConfig
 
-The files in the `asm/` directory belong to the SimpleConfig ROM. SimpleConfig is in the public domain. It is designed to be directly embeddable in other ROMs, allowing games to provide a built-in way to configure the emulator. Detailed documentation on how to do so will come <del>in the next commit</del> when I am certain nothing about that aspect of the "hardware" will change.
+The files in the `asm/` directory belong to the SimpleConfig ROM. SimpleConfig is in the public domain. It is designed to be directly embeddable in other ROMs, allowing games to provide a built-in way to configure the emulator. Detailed documentation on how to do so is at the end of `HARDWARE.md`.
 
 ## GNU Unifont
 
