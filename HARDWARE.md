@@ -419,8 +419,6 @@ On any cycle where a particular meaningful read or write does not take place, th
 
 # ROM file format
 
-Data in the ROM files is little-endian. Grumble.
-
 - `$0-$2`: ASCII bytes "ARS"
 - `$3`: `$1A` (control-Z = DOS end-of-file)
 - `$4`: Mapping type (must be `$00`)
