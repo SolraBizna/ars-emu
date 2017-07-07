@@ -229,12 +229,11 @@ namespace {
         bg_rowptr -= MODE2_BACKGROUND_TILES_HIGH * MODE2_BACKGROUND_TILES_WIDE;
       }
       bg_ptr = bg_rowptr;
-      uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr];
-      if(bg_x_tile&1) ++bg_ptr;
+      uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
       bg_pal = bg_byte&3;
-      uint8_t bg_tile = bg_pal&0xFC;
-      if(bg_x_col&1) ++bg_ptr, bg_tile |= 1;
-      if(bg_y_row&1) bg_tile |= 2;
+      uint8_t bg_tile = bg_byte&0xFC;
+      if(bg_x_tile&1) bg_tile |= 1;
+      if(bg_y_tile&1) bg_tile |= 2;
       uint8_t bgBase;
       switch(cur_screen) {
       default:
@@ -272,7 +271,11 @@ namespace {
           bg_x_tile = 0;
           bg_ptr = bg_rowptr;
         }
-        uint8_t bg_tile = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
+        uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
+        bg_pal = bg_byte&3;
+        uint8_t bg_tile = bg_byte&0xFC;
+        if(bg_x_tile&1) bg_tile |= 1;
+        if(bg_y_tile&1) bg_tile |= 2;
         uint8_t bgBase;
         switch(cur_screen) {
         default:
