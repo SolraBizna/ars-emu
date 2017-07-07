@@ -211,15 +211,16 @@ namespace {
           if(it->first != found) { ++it; break; }
         }
         do {
-          out << (have_outputted_alternate?" (":", ")
+          out << (!have_outputted_alternate?" (":", ")
               << it->second << "+" << (addr-found);
+          have_outputted_alternate = true;
           ++it;
         } while(it != addr_to_label_map.end() && it->first == found);
       }
       it = addr_to_definition_map.find(addr);
       if(it != addr_to_definition_map.end()) {
         do {
-          out << (have_outputted_alternate?" (":", ") << it->first;
+          out << (!have_outputted_alternate?" (":", ") << it->second;
           have_outputted_alternate = true;
           ++it;
         } while(it != addr_to_label_map.end() && it->first == addr);
