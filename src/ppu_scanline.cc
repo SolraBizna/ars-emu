@@ -139,14 +139,12 @@ namespace {
       bga_y_tile = (ARS::Regs.bgScrollY + scanline) >> 4;
       bga_x_tile = ARS::Regs.bgScrollX >> 4;
       cur_screen = ARS::Regs.multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
+      while(bg_y_tile >= MODE1_BACKGROUND_TILES_HIGH) {
+        cur_screen ^= 2;
+        bg_y_tile -= MODE1_BACKGROUND_TILES_HIGH;
+      }
       bg_rowptr = bg_y_tile * MODE1_BACKGROUND_TILES_WIDE;
       bga_rowptr = bga_y_tile * MODE1_BACKGROUND_TILES_WIDE / 8;
-      if(bg_y_tile >= MODE1_BACKGROUND_TILES_HIGH) {
-        cur_screen ^= 2;
-        bg_rowptr -= MODE1_BACKGROUND_TILES_HIGH * MODE1_BACKGROUND_TILES_WIDE;
-        bga_rowptr -= MODE1_BACKGROUND_TILES_HIGH * MODE1_BACKGROUND_TILES_WIDE
-          / 16;
-      }
       bg_ptr = bg_rowptr + bg_x_tile;
       bga_ptr = bga_rowptr + bga_x_tile / 4;
       uint8_t bg_tile = backgrounds_mode1[cur_screen].Tiles[bg_ptr++];
@@ -158,10 +156,8 @@ namespace {
       case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
       case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
       }
-      bg_low_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                           |(bg_tile<<4))+bg_y_row];
-      bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                            |(bg_tile<<4))+bg_y_row+8];
+      bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
+      bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
       bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
     }
     void getState(uint8_t& bg_color, bool& bg_priority) {
@@ -203,10 +199,8 @@ namespace {
         case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
         case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
         }
-        bg_low_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                             |(bg_tile<<4))+bg_y_row];
-        bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                              |(bg_tile<<4))+bg_y_row+8];
+        bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
+        bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
       }
     }
   };
@@ -223,12 +217,12 @@ namespace {
       bg_x_tile = ARS::Regs.bgScrollX >> 3;
       bg_x_col = ARS::Regs.bgScrollX & 7;
       cur_screen = ARS::Regs.multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
-      bg_rowptr = bg_y_tile * MODE2_BACKGROUND_TILES_WIDE;
       if(bg_y_tile >= MODE2_BACKGROUND_TILES_HIGH) {
         cur_screen ^= 2;
-        bg_rowptr -= MODE2_BACKGROUND_TILES_HIGH * MODE2_BACKGROUND_TILES_WIDE;
+        bg_y_tile -= MODE2_BACKGROUND_TILES_HIGH;
       }
-      bg_ptr = bg_rowptr;
+      bg_rowptr = bg_y_tile * MODE2_BACKGROUND_TILES_WIDE;
+      bg_ptr = bg_rowptr + bg_x_tile;
       uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
       bg_pal = bg_byte&3;
       uint8_t bg_tile = bg_byte&0xFC;
@@ -242,10 +236,8 @@ namespace {
       case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
       case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
       }
-      bg_low_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                           |(bg_tile<<4))+bg_y_row];
-      bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                            |(bg_tile<<4))+bg_y_row+8];
+      bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
+      bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
     }
     void getState(uint8_t& bg_color, bool& bg_priority) {
       uint8_t raw_color = ((bg_low_plane>>(~bg_x_col&7))&1)
@@ -284,10 +276,8 @@ namespace {
         case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
         case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
         }
-        bg_low_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                             |(bg_tile<<4))+bg_y_row];
-        bg_high_plane = vram[((((bgBase>>(cur_screen<<2))&15)<<12)
-                              |(bg_tile<<4))+bg_y_row+8];
+        bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
+        bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
       }
     }
   };
