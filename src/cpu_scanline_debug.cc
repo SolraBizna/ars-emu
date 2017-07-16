@@ -628,13 +628,15 @@ namespace {
       if(args.size() == 0) return false;
       auto& arg = args[0];
       if(arg.length() == 0) return false;
-      else if(arg == "0" || arg[0] == 'n' || arg[0] == 'N' || arg[0] == 'f'
-         || arg[0] == 'F') {
+      else if(arg == "off" || arg == "Off" || arg == "OFF"
+              || arg == "0" || arg[0] == 'n' || arg[0] == 'N' || arg[0] == 'f'
+              || arg[0] == 'F') {
         out = false;
         return true;
       }
-      else if(arg == "1" || arg[0] == 'y' || arg[0] == 'Y' || arg[0] == 't'
-         || arg[0] == 'T') {
+      else if(arg == "on" || arg == "On" || arg == "ON"
+              || arg == "1" || arg[0] == 'y' || arg[0] == 'Y' || arg[0] == 't'
+              || arg[0] == 'T') {
         out = true;
         return true;
       }
