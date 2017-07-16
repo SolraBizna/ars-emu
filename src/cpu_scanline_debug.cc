@@ -227,6 +227,13 @@ namespace {
       }
       if(have_outputted_alternate) out << ")";
     }
+    uint32_t parse_big_value(const std::string& res) {
+      size_t pos = 0;
+      unsigned long addr = std::stoul(res, &pos, 16);
+      if(pos != res.length())
+        throw std::out_of_range("out of range 00000000-ffffffff");
+      return addr;
+    }
     uint16_t parse_address(const std::string& res) {
       size_t pos = 0;
       unsigned long addr = std::stoul(res, &pos, 16);
@@ -243,16 +250,29 @@ namespace {
           // bank number is different, we're out of parental candidates
           break;
         }
-        else if(it->second[0] == '_'
-                || std::find(it->second.begin(), it->second.end(), ':')
-                != it->second.end()) {
+        size_t find_pos = it->second.find("::");
+        size_t last_component_pos;
+        if(find_pos == std::string::npos)
+          last_component_pos = 0;
+        else {
+          size_t next_pos;
+          while((next_pos = it->second.find("::", find_pos + 1))
+                != std::string::npos) {
+            find_pos = next_pos;
+          }
+          last_component_pos = find_pos + 2;
+        }
+        if(last_component_pos >= it->second.length()) {
+          // last component of label is empty, so...
+          continue;
+        }
+        else if(it->second[last_component_pos] == '_') {
           // another local label, can't be our parent
-          // TODO: handle Hubris subroutines better
           continue;
         }
         else {
           /* found it! */
-          name = it->second + ':' + name;
+          name = it->second + "::" + name;
           return;
         }
       }
@@ -547,8 +567,8 @@ namespace {
       enum class sec {
         LABELS, DEFINITIONS, OTHER
       } curSec = sec::OTHER;
-      std::regex label_regex("^([0-9a-f][0-9a-f][0-9a-f][0-9a-f]):([0-9a-f][0-9a-f][0-9a-f][0-9a-f]) (.*)$");
-      std::regex definition_regex("^([0-9a-f][0-9a-f][0-9a-f][0-9a-f])([0-9a-f][0-9a-f][0-9a-f][0-9a-f]) (.*)$");
+      std::regex label_regex("^([0-9A-Fa-f]{1,4}):([0-9A-Fa-f]{1,4}) (.*)$");
+      std::regex definition_regex("^([0-9A-Fa-f]{1,8}) (.*)$");
       std::cmatch matchResult;
       while(f) {
         f.getline(line, sizeof(line));
@@ -566,7 +586,8 @@ namespace {
                               std::regex_constants::match_continuous)) {
             std::string name(matchResult[3]);
             if(name.length() == 0) {
-              std::cout << "Ignoring unnamed symbol\n";
+              std::cout << "Ignoring unnamed symbol\n"
+                "(line was: \""<<line<<"\")\n";
               continue;
             }
             try {
@@ -589,9 +610,14 @@ namespace {
         else if(curSec == sec::DEFINITIONS) {
           if(std::regex_match(line, matchResult, definition_regex,
                               std::regex_constants::match_continuous)) {
-            std::string name(matchResult[3]);
+            std::string name(matchResult[2]);
             if(name.length() == 0) {
-              std::cout << "Ignoring unnamed symbol\n";
+              std::cout << "Ignoring unnamed symbol\n"
+                "(line was: \""<<line<<"\")\n";
+              continue;
+            }
+            else if(!name.compare(0, 8, "_sizeof_")) {
+              // skip sizeof definitions
               continue;
             }
             else if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()){
@@ -599,14 +625,12 @@ namespace {
               continue;
             }
             try {
-              uint16_t high = parse_address(matchResult[1]);
-              uint16_t low = parse_address(matchResult[2]);
-              uint32_t value = (static_cast<uint32_t>(high)<<16)|low;
+              uint32_t value = parse_big_value(matchResult[1]);
               addr_to_definition_map.insert(std::make_pair(value, name));
               symdef_to_addr_map.insert(std::make_pair(name, value));
             }
             catch(std::exception& e) {
-              std::cout << "Ignoring invalid label "<<matchResult[3]<<"\n";
+              std::cout << "Ignoring invalid definition "<<matchResult[2]<<"\n";
             }
           }
         }
