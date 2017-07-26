@@ -23,7 +23,7 @@ CXXFLAGS_RELEASE=$(CFLAGS_RELEASE)
 # Flags passed to the linker.
 LDFLAGS_RELEASE=-O3 -flto
 # Libraries.
-LIBS=../ars-emscripten-libs/ars-emscripten-libs.bc -s USE_SDL=2 -s TOTAL_MEMORY=16777216
+LIBS=../ars-emscripten-libs/ars-emscripten-libs.bc -s USE_SDL=2 -s TOTAL_MEMORY=134217728
 
 # Extension for executables.
 EXE=.js
