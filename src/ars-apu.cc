@@ -35,7 +35,9 @@ void ARS::init_apu() {
   desired.freq = static_cast<int>(SAMPLE_RATE);
   desired.format = AUDIO_F32SYS;
   desired.channels = 1;
-  if(version.major > 2 || version.minor > 0 || version.patch > 5) {
+  if(version.major > 2
+     || (version.major == 2 && version.minor > 0)
+     || (version.major == 2 && version.minor == 0 && version.patch > 5)) {
     desired.samples = 512;
     desired.size = 512*sizeof(float);
   }
