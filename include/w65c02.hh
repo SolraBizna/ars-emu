@@ -974,7 +974,7 @@ namespace W65C02 {
           case 0xF8: SED(); break;
           case 0xF9: SBC<AM::AbsoluteY<Core<System>>>(); break;
           case 0xFA: PLX(); break;
-          case 0xFB: NOP<AM::Implied<Core<System>>>();
+          case 0xFB: NOP<AM::Implied<Core<System>>>(); break;
           case 0xFC: NOP<AM::AbsoluteX<Core<System>>>(); break;
           case 0xFD: SBC<AM::AbsoluteX<Core<System>>>(); break;
           case 0xFE: INC<AM::AbsoluteX<Core<System>>>(); break;
