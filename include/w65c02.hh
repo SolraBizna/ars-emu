@@ -734,7 +734,7 @@ namespace W65C02 {
           case 0x08: PHP(); break;
           case 0x09: ORA<AM::Immediate<Core<System>>>(); break;
           case 0x0A: ASL<AM::ImpliedA<Core<System>>>(); break;
-          case 0x0B: NOP<AM::Implied<Core<System>>>();
+          case 0x0B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x0C: TSB<AM::Absolute<Core<System>>>(); break;
           case 0x0D: ORA<AM::Absolute<Core<System>>>(); break;
           case 0x0E: ASL<AM::Absolute<Core<System>>>(); break;
@@ -750,7 +750,7 @@ namespace W65C02 {
           case 0x18: CLC(); break;
           case 0x19: ORA<AM::AbsoluteY<Core<System>>>(); break;
           case 0x1A: INC<AM::ImpliedA<Core<System>>>(); break;
-          case 0x1B: NOP<AM::Implied<Core<System>>>();
+          case 0x1B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x1C: TRB<AM::Absolute<Core<System>>>(); break;
           case 0x1D: ORA<AM::AbsoluteX<Core<System>>>(); break;
           case 0x1E: ASL<AM::AbsoluteX<Core<System>>>(); break;
@@ -766,7 +766,7 @@ namespace W65C02 {
           case 0x28: PLP(); break;
           case 0x29: AND<AM::Immediate<Core<System>>>(); break;
           case 0x2A: ROL<AM::ImpliedA<Core<System>>>(); break;
-          case 0x2B: NOP<AM::Implied<Core<System>>>();
+          case 0x2B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x2C: BIT<AM::Absolute<Core<System>>>(); break;
           case 0x2D: AND<AM::Absolute<Core<System>>>(); break;
           case 0x2E: ROL<AM::Absolute<Core<System>>>(); break;
@@ -782,7 +782,7 @@ namespace W65C02 {
           case 0x38: SEC(); break;
           case 0x39: AND<AM::AbsoluteY<Core<System>>>(); break;
           case 0x3A: DEC<AM::ImpliedA<Core<System>>>(); break;
-          case 0x3B: NOP<AM::Implied<Core<System>>>();
+          case 0x3B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x3C: BIT<AM::AbsoluteX<Core<System>>>(); break;
           case 0x3D: AND<AM::AbsoluteX<Core<System>>>(); break;
           case 0x3E: ROL<AM::AbsoluteX<Core<System>>>(); break;
@@ -798,7 +798,7 @@ namespace W65C02 {
           case 0x48: PHA(); break;
           case 0x49: EOR<AM::Immediate<Core<System>>>(); break;
           case 0x4A: LSR<AM::ImpliedA<Core<System>>>(); break;
-          case 0x4B: NOP<AM::Implied<Core<System>>>();
+          case 0x4B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x4C: JMP<AM::Absolute<Core<System>>>(); break;
           case 0x4D: EOR<AM::Absolute<Core<System>>>(); break;
           case 0x4E: LSR<AM::Absolute<Core<System>>>(); break;
@@ -814,7 +814,7 @@ namespace W65C02 {
           case 0x58: CLI(); break;
           case 0x59: EOR<AM::AbsoluteY<Core<System>>>(); break;
           case 0x5A: PHY(); break;
-          case 0x5B: NOP<AM::Implied<Core<System>>>();
+          case 0x5B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x5C: NOP<AM::Absolute<Core<System>>>(); break;
           case 0x5D: EOR<AM::AbsoluteX<Core<System>>>(); break;
           case 0x5E: LSR<AM::AbsoluteX<Core<System>>>(); break;
@@ -830,7 +830,7 @@ namespace W65C02 {
           case 0x68: PLA(); break;
           case 0x69: ADC<AM::Immediate<Core<System>>>(); break;
           case 0x6A: ROR<AM::ImpliedA<Core<System>>>(); break;
-          case 0x6B: NOP<AM::Implied<Core<System>>>();
+          case 0x6B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x6C: JMP<AM::AbsoluteIndirect<Core<System>>>(); break;
           case 0x6D: ADC<AM::Absolute<Core<System>>>(); break;
           case 0x6E: ROR<AM::Absolute<Core<System>>>(); break;
@@ -846,7 +846,7 @@ namespace W65C02 {
           case 0x78: SEI(); break;
           case 0x79: ADC<AM::AbsoluteY<Core<System>>>(); break;
           case 0x7A: PLY(); break;
-          case 0x7B: NOP<AM::Implied<Core<System>>>();
+          case 0x7B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x7C: JMP<AM::AbsoluteXIndirect<Core<System>>>(); break;
           case 0x7D: ADC<AM::AbsoluteX<Core<System>>>(); break;
           case 0x7E: ROR<AM::AbsoluteX<Core<System>>>(); break;
@@ -862,7 +862,7 @@ namespace W65C02 {
           case 0x88: DEC<AM::ImpliedY<Core<System>>>(); break;
           case 0x89: BIT_I<AM::Immediate<Core<System>>>(); break;
           case 0x8A: TXA(); break;
-          case 0x8B: NOP<AM::Implied<Core<System>>>();
+          case 0x8B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x8C: STY<AM::Absolute<Core<System>>>(); break;
           case 0x8D: STA<AM::Absolute<Core<System>>>(); break;
           case 0x8E: STX<AM::Absolute<Core<System>>>(); break;
@@ -878,7 +878,7 @@ namespace W65C02 {
           case 0x98: TYA(); break;
           case 0x99: STA<AM::AbsoluteY<Core<System>>>(); break;
           case 0x9A: TXS(); break;
-          case 0x9B: NOP<AM::Implied<Core<System>>>();
+          case 0x9B: NOP<AM::Implied<Core<System>>>(); break;
           case 0x9C: STZ<AM::Absolute<Core<System>>>(); break;
           case 0x9D: STA<AM::AbsoluteX<Core<System>>>(); break;
           case 0x9E: STZ<AM::AbsoluteX<Core<System>>>(); break;
@@ -894,7 +894,7 @@ namespace W65C02 {
           case 0xA8: TAY(); break;
           case 0xA9: LDA<AM::Immediate<Core<System>>>(); break;
           case 0xAA: TAX(); break;
-          case 0xAB: NOP<AM::Implied<Core<System>>>();
+          case 0xAB: NOP<AM::Implied<Core<System>>>(); break;
           case 0xAC: LDY<AM::Absolute<Core<System>>>(); break;
           case 0xAD: LDA<AM::Absolute<Core<System>>>(); break;
           case 0xAE: LDX<AM::Absolute<Core<System>>>(); break;
@@ -910,7 +910,7 @@ namespace W65C02 {
           case 0xB8: CLV(); break;
           case 0xB9: LDA<AM::AbsoluteY<Core<System>>>(); break;
           case 0xBA: TSX(); break;
-          case 0xBB: NOP<AM::Implied<Core<System>>>();
+          case 0xBB: NOP<AM::Implied<Core<System>>>(); break;
           case 0xBC: LDY<AM::AbsoluteX<Core<System>>>(); break;
           case 0xBD: LDA<AM::AbsoluteX<Core<System>>>(); break;
           case 0xBE: LDX<AM::AbsoluteY<Core<System>>>(); break;
@@ -958,7 +958,7 @@ namespace W65C02 {
           case 0xE8: INC<AM::ImpliedX<Core<System>>>(); break;
           case 0xE9: SBC<AM::Immediate<Core<System>>>(); break;
           case 0xEA: NOP<AM::Implied<Core<System>>>(); break;
-          case 0xEB: NOP<AM::Implied<Core<System>>>();
+          case 0xEB: NOP<AM::Implied<Core<System>>>(); break;
           case 0xEC: CPX<AM::Absolute<Core<System>>>(); break;
           case 0xED: SBC<AM::Absolute<Core<System>>>(); break;
           case 0xEE: INC<AM::Absolute<Core<System>>>(); break;
