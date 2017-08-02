@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo -ne "\\r\\e[0;0H\\e[33m*** Build pending... ***\\e[0m"
-if ! make -k -j2 bin/Data/Font bin/Data/Lang bin/Data/SimpleConfig.etars.gz bin/ars-emu-debug 2>/tmp/oversub_result.txt >/dev/null; then
+if ! make -k -j2 all-data bin/ars-emu-debug 2>/tmp/oversub_result.txt >/dev/null; then
     SIZE=$(stty size)
     ROWS=$(echo $SIZE | cut -f 1 -d " ")
     COLS=$(echo $SIZE | cut -f 2 -d " ")
