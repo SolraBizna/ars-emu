@@ -527,7 +527,7 @@ extern "C" int teg_main(int argc, char** argv) {
   if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
   Font::Load();
   srand(time(NULL)); // rand() is only used for trashing memory on reset
-  if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO))
+  if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_GAMECONTROLLER))
     die("%s", sn.Get("SDL_FAIL"_Key).c_str());
   SDL_EventState(SDL_DROPFILE, SDL_DISABLE);
   atexit(cleanup);

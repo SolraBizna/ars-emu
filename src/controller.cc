@@ -11,6 +11,12 @@ namespace {
   enum Buttons { A,B,C,LEFT,UP,RIGHT,DOWN,PAUSE,NUM_BUTTONS };
   constexpr int MAX_KEYS_PER_BUTTON = 2;
   constexpr int NO_SCANCODE = -1;
+  constexpr SDL_JoystickID NO_JOYSTICK = -1;
+  struct BoundGamepad {
+    SDL_JoystickID jid = NO_JOYSTICK;
+    SDL_GameController* g;
+    int oid;
+  } bound_gamepads[NUM_PLAYERS];
   int binding_player = -1, binding_button;
   const int DEFAULT_KEYBINDINGS[NUM_PLAYERS][NUM_BUTTONS][MAX_KEYS_PER_BUTTON]
   = {
@@ -166,6 +172,78 @@ uint8_t Controller::input() {
 
 bool Controller::filterEvent(SDL_Event& evt) {
   switch(evt.type) {
+  case SDL_CONTROLLERDEVICEADDED:
+    if(!SDL_IsGameController(evt.cdevice.which))
+      ui << sn.Get("GAMEPAD_INVALID"_Key) << ui;
+    else {
+      for(int n = 0; n < NUM_PLAYERS; ++n) {
+        if(bound_gamepads[n].jid != NO_JOYSTICK
+           && bound_gamepads[n].oid == evt.cdevice.which)
+          return true; // already bound
+      }
+      for(int n = 0; n < NUM_PLAYERS; ++n) {
+        if(bound_gamepads[n].jid == NO_JOYSTICK) {
+          bound_gamepads[n].g = SDL_GameControllerOpen(evt.cdevice.which);
+          if(bound_gamepads[n].g == nullptr) {
+            ui << sn.Get("GAMEPAD_INVALID"_Key) << ui;
+            return true;
+          }
+          bound_gamepads[n].jid = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(bound_gamepads[n].g));
+          bound_gamepads[n].oid = evt.cdevice.which;
+          std::string player_name = TEG::format("CONTROLLER_P%i_NAME",n+1);
+          SN::ConstKey player_key(player_name.data(), player_name.length());
+          ui << sn.Get("GAMEPAD_BOUND"_Key, {sn.Get(player_key)}) << ui;
+          return true;
+        }
+      }
+      ui << sn.Get("GAMEPAD_IGNORED"_Key) << ui;
+    }
+    return true;
+  case SDL_CONTROLLERDEVICEREMOVED:
+    for(int n = 0; n < NUM_PLAYERS; ++n) {
+      if(bound_gamepads[n].jid == evt.cdevice.which) {
+        bound_gamepads[n].jid = NO_JOYSTICK;
+        SDL_GameControllerClose(bound_gamepads[n].g);
+        std::string player_name = TEG::format("CONTROLLER_P%i_NAME",n+1);
+        SN::ConstKey player_key(player_name.data(), player_name.length());
+        ui << sn.Get("GAMEPAD_UNBOUND"_Key, {sn.Get(player_key)}) << ui;
+      }
+    }
+    break;
+  case SDL_CONTROLLERBUTTONDOWN:
+  case SDL_CONTROLLERBUTTONUP:
+    for(int n = 0; n < NUM_PLAYERS; ++n) {
+      if(bound_gamepads[n].jid == evt.cbutton.which) {
+        switch(evt.cbutton.button) {
+        case SDL_CONTROLLER_BUTTON_A:
+          buttonsPressed[n][A] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_B:
+        case SDL_CONTROLLER_BUTTON_X:
+          buttonsPressed[n][B] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_Y:
+          buttonsPressed[n][C] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_START:
+          buttonsPressed[n][PAUSE] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+          buttonsPressed[n][UP] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+          buttonsPressed[n][LEFT] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+          buttonsPressed[n][DOWN] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+          buttonsPressed[n][RIGHT] = evt.cbutton.state == SDL_PRESSED;
+          break;
+        }
+      }
+    }
+    break;
   case SDL_KEYDOWN:
   case SDL_KEYUP:
     if(keyIsBeingBound()) {
@@ -255,6 +333,14 @@ bool Controller::filterEvent(SDL_Event& evt) {
 void Controller::initControllers() {
   controller1 = std::make_unique<StandardController>(P1);
   controller2 = std::make_unique<StandardController>(P2);
+  for(int jid = 0; jid < SDL_NumJoysticks(); ++jid) {
+    if(SDL_IsGameController(jid)) {
+      SDL_Event evt;
+      evt.type = SDL_CONTROLLERDEVICEADDED;
+      evt.cdevice.which = jid;
+      filterEvent(evt);
+    }
+  }
 }
 
 std::string ARS::Controller::getNameOfHardKey(int player, int button) {

@@ -274,6 +274,29 @@ CPU_STOPPED
 CPU halted
 .
 
+: Displayed if an unrecognized gamepad is connected
+:::::::::::::::::::::::::::
+GAMEPAD_INVALID
+unknown gamepad ignored
+.
+
+: Displayed if a gamepad is successfully bound to one of the controllers
+: $1: CONTROLLER_P1_NAME or CONTROLLER_P2_NAME
+GAMEPAD_BOUND
+$1 gamepad plugged in
+.
+
+: Displayed if a gamepad is unbound
+: $1: CONTROLLER_P1_NAME or CONTROLLER_P2_NAME
+GAMEPAD_UNBOUND
+$1 gamepad unplugged
+.
+
+: Displayed if a gamepad is detected, but not bound to a controller
+GAMEPAD_IGNORED
+extra gamepad ignored
+.
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : TEG messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
