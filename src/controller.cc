@@ -97,11 +97,11 @@ namespace {
   class KBPrefsLogic : public PrefsLogic {
   protected:
     void Load() override {
-      Config::Read("Keybindings~",
+      Config::Read("Keybindings.utxt",
                    keybinding_elements, elementcount(keybinding_elements));
     }
     void Save() override {
-      Config::Write("Keybindings~",
+      Config::Write("Keybindings.utxt",
                     keybinding_elements, elementcount(keybinding_elements));
     }
     void Defaults() override {
