@@ -68,6 +68,7 @@ public:
   static constexpr uint8_t WAVEFORM_INVERT_ALL_FLAG = 8;
   static constexpr uint8_t WAVEFORM_TOGGLE_INVERT_ON_CARRY_FLAG = 16;
   static constexpr uint8_t WAVEFORM_OUTPUT_ACCUMULATOR_FLAG = 32;
+  static constexpr uint8_t WAVEFORM_SIGNED_RESET_MASK = 48;
   static constexpr uint8_t VOLUME_MAX = 64;
   static constexpr uint8_t VOLUME_RESET_FLAG = 128;
 private:
@@ -137,7 +138,9 @@ public:
       }
       if(user.volume[voice] & VOLUME_RESET_FLAG) {
         user.volume[voice] &= ~VOLUME_RESET_FLAG;
-        voice_accumulator[voice] = 0;
+        voice_accumulator[voice]
+          = (user.waveform[voice] & WAVEFORM_SIGNED_RESET_MASK)
+          == WAVEFORM_SIGNED_RESET_MASK ? 0x8000 : 0;
       }
       else {
         uint32_t nuccumulator = voice_accumulator[voice] + real_rate[voice] +1;
