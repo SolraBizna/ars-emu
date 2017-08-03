@@ -69,6 +69,11 @@ public:
   static constexpr uint8_t WAVEFORM_TOGGLE_INVERT_ON_CARRY_FLAG = 16;
   static constexpr uint8_t WAVEFORM_OUTPUT_ACCUMULATOR_FLAG = 32;
   static constexpr uint8_t WAVEFORM_SIGNED_RESET_MASK = 48;
+  static constexpr uint8_t WAVEFORM_PAN_MASK = 192;
+  static constexpr uint8_t WAVEFORM_PAN_HALF = 0;
+  static constexpr uint8_t WAVEFORM_PAN_LEFT = 128;
+  static constexpr uint8_t WAVEFORM_PAN_RIGHT = 64;
+  static constexpr uint8_t WAVEFORM_PAN_FULL = 192;
   static constexpr uint8_t VOLUME_MAX = 64;
   static constexpr uint8_t VOLUME_RESET_FLAG = 128;
 private:
@@ -122,7 +127,7 @@ public:
     noise_accumulator = rand();
     sample_number = rand();
   }
-  int16_t output_sample() {
+  int16_t output_mono_sample() {
     int16_t accumulated = 0;
     for(int voice = 0; voice < NUM_VOICES; ++voice) {
       uint16_t target_rate = user.rate_lo[voice] | (user.rate_hi[voice]<<8);
@@ -151,9 +156,19 @@ public:
         }
         voice_accumulator[voice] = static_cast<uint16_t>(nuccumulator);
       }
-      accumulated += q6_multiply(eval_waveform(voice_accumulator[voice],
+      auto val = q6_multiply(eval_waveform(voice_accumulator[voice],
                                                user.waveform[voice]),
-                                 user.volume[voice] & 127); 
+                                 user.volume[voice] & 127);
+      switch(user.waveform[voice] & WAVEFORM_PAN_MASK) {
+      case WAVEFORM_PAN_HALF:
+      case WAVEFORM_PAN_LEFT:
+      case WAVEFORM_PAN_RIGHT:
+        accumulated += val >> 1;
+        break;
+      default:
+        accumulated += val;
+        break;
+      }
     }
     uint8_t noise_sum = 0;
     if((user.noise_volume & VOLUME_RESET_FLAG) != 0) {
@@ -179,6 +194,82 @@ public:
                                user.noise_volume&127);
     ++sample_number;
     return accumulated;
+  }
+  void output_stereo_sample(int16_t out_samples[2]) {
+    int16_t accumulated_left = 0, accumulated_right = 0;
+    for(int voice = 0; voice < NUM_VOICES; ++voice) {
+      uint16_t target_rate = user.rate_lo[voice] | (user.rate_hi[voice]<<8);
+      auto shift_rate = target_rate>>14;
+      target_rate &= 0x3FFF;
+      switch(shift_rate) {
+      case 0: real_rate[voice] = target_rate; break;
+      default:
+        if(sample_number & ((1<<shift_rate<<2)-1)) break;
+        if(real_rate[voice] < target_rate) ++real_rate[voice];
+        else if(real_rate[voice] > target_rate) --real_rate[voice];
+        break;
+      }
+      if(user.volume[voice] & VOLUME_RESET_FLAG) {
+        user.volume[voice] &= ~VOLUME_RESET_FLAG;
+        voice_accumulator[voice]
+          = (user.waveform[voice] & WAVEFORM_SIGNED_RESET_MASK)
+          == WAVEFORM_SIGNED_RESET_MASK ? 0x8000 : 0;
+      }
+      else {
+        uint32_t nuccumulator = voice_accumulator[voice] + real_rate[voice] +1;
+        if(nuccumulator >= 65536) {
+          if(user.waveform[voice] & WAVEFORM_TOGGLE_INVERT_ON_CARRY_FLAG) {
+            user.waveform[voice] ^= WAVEFORM_INVERT_ALL_FLAG;
+          }
+        }
+        voice_accumulator[voice] = static_cast<uint16_t>(nuccumulator);
+      }
+      auto val = q6_multiply(eval_waveform(voice_accumulator[voice],
+                                           user.waveform[voice]),
+                             user.volume[voice] & 127);
+      switch(user.waveform[voice] & WAVEFORM_PAN_MASK) {
+      case WAVEFORM_PAN_HALF:
+        accumulated_left += val >> 1;
+        accumulated_right += val >> 1;
+        break;
+      case WAVEFORM_PAN_LEFT:
+        accumulated_left += val;
+        break;
+      default:
+        accumulated_left += val;
+        // fallthrough
+      case WAVEFORM_PAN_RIGHT:
+        accumulated_right += val;
+        break;
+      }
+    }
+    uint8_t noise_sum = 0;
+    if((user.noise_volume & VOLUME_RESET_FLAG) != 0) {
+      user.noise_volume &= ~VOLUME_RESET_FLAG;
+      lfsr = 1;
+    }
+    for(int step = 0; step < 8; ++step) {
+      noise_sum += (lfsr&1);
+      if(step != 7 && (user.noise_waveform & (1<<step))) continue;
+      if(noise_accumulator == user.noise_period) {
+        noise_accumulator = 0;
+        bool feedback;
+        if(user.noise_waveform & 0x80)
+          feedback = ((lfsr>>6)^lfsr)&1;
+        else
+          feedback = ((lfsr>>1)^lfsr)&1;
+        lfsr >>= 1;
+        if(feedback) lfsr |= 16384;
+      }
+      else ++noise_accumulator;
+    }
+    int16_t noise = q6_multiply(noise_sum|(noise_sum<<3),
+                                user.noise_volume&127);
+    accumulated_left += noise;
+    accumulated_right += noise;
+    ++sample_number;
+    out_samples[0] = accumulated_left;
+    out_samples[1] = accumulated_right;
   }
   void write(int addr, uint8_t value) {
     addr &= 0x1F;
