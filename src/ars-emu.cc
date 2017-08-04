@@ -40,11 +40,6 @@ namespace {
   constexpr int MESSAGES_MARGIN_X = 12;
   constexpr int MESSAGES_MARGIN_Y = 8;
   constexpr int MESSAGE_LIFESPAN = 300;
-  const char* EMULATOR_CONFIG_FILE = "ARS-emu.conf";
-  const Config::Element EMULATOR_CONFIG_ELEMENTS[] = {
-    Config::Element("window_width", window_width),
-    Config::Element("window_height", window_height),
-  };
   bool window_visible = true, window_minimized = false, quit = false,
     allow_debug_port = false, allow_config_port = false, quit_on_stop = false,
     stop_has_been_detected = false, need_reset = true;
@@ -541,23 +536,24 @@ extern "C" int teg_main(int argc, char** argv) {
   PrefsLogic::LoadAll();
   ARS::init_apu();
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-  Config::Read(EMULATOR_CONFIG_FILE, EMULATOR_CONFIG_ELEMENTS,
-               elementcount(EMULATOR_CONFIG_ELEMENTS));
   std::string windowtitle = sn.Get("WINDOW_TITLE"_Key, {rom_path});
   window = SDL_CreateWindow(windowtitle.c_str(),
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             window_width, window_height,
                             SDL_WINDOW_RESIZABLE);
-  if(window == NULL) die("%s",sn.Get("WINDOW_FAIL"_Key).c_str());
+  if(window == NULL) die("%s",sn.Get("WINDOW_FAIL"_Key,
+                                     {SDL_GetError()}).c_str());
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-  if(renderer == NULL) die("%s",sn.Get("RENDERER_FAIL"_Key).c_str());
+  if(renderer == NULL) die("%s",sn.Get("RENDERER_FAIL"_Key,
+                                       {SDL_GetError()}).c_str());
   SDL_RenderSetLogicalSize(renderer, PPU::VISIBLE_SCREEN_WIDTH,
                            PPU::VISIBLE_SCREEN_HEIGHT);
   frametexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
                                    SDL_TEXTUREACCESS_STREAMING,
                                    PPU::INTERNAL_SCREEN_WIDTH,
                                    PPU::INTERNAL_SCREEN_HEIGHT);
-  if(frametexture == NULL) die("%s",sn.Get("FRAMETEXTURE_FAIL"_Key).c_str());
+  if(frametexture == NULL) die("%s",sn.Get("FRAMETEXTURE_FAIL"_Key,
+                                           {SDL_GetError()}).c_str());
   messagetexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB4444,
                                      SDL_TEXTUREACCESS_STREAMING,
                                      PPU::VISIBLE_SCREEN_WIDTH
@@ -565,7 +561,8 @@ extern "C" int teg_main(int argc, char** argv) {
                                      PPU::VISIBLE_SCREEN_HEIGHT
                                      -MESSAGES_MARGIN_Y*2);
   if(messagetexture == NULL) die("%s",
-                                 sn.Get("MESSAGETEXTURE_FAIL"_Key).c_str());
+                                 sn.Get("MESSAGETEXTURE_FAIL"_Key,
+                                        {SDL_GetError()}).c_str());
   SDL_SetTextureBlendMode(messagetexture, SDL_BLENDMODE_BLEND);
   Controller::initControllers();
   quit = false;

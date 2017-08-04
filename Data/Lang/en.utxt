@@ -106,25 +106,29 @@ Failed to initialize SDL!
 .
 
 : Displayed when SDL_CreateWindow fails.
+: $1: SDL's error message
 WINDOW_FAIL
-Couldn't create emulator window. Try deleting ARS-emu.conf.
+Couldn't create emulator window: $1
 .
 
 : Displayed when SDL_CreateRenderer fails.
+: $1: SDL's error message
 RENDERER_FAIL
-Couldn't create emulator renderer. Try deleting ARS-emu.conf.
+Couldn't create emulator renderer: $1
 .
 
 : Displayed when SDL_CreateTexture fails, while trying to create the
 : SDL_Texture that PPU output is rendered to.
+: $1: SDL's error message
 FRAMETEXTURE_FAIL
-Couldn't create emulator rendering surface.
+Couldn't create emulator rendering surface: $1
 .
 
 : Displayed when SDL_CreateTexture fails, while trying to create the
 : SDL_Texture that UI messages are rendered to.
+: $1: SDL's error message
 MESSAGETEXTURE_FAIL
-Couldn't create UI message surface.
+Couldn't create UI message surface: $1
 .
 
 : The title of the emulator window.
