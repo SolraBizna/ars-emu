@@ -5,6 +5,7 @@
 #include "font.hh"
 #include "utfit.hh"
 #include "prefs.hh"
+#include "windower.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -22,7 +23,7 @@ using namespace ARS;
 ARS::MessageImp ARS::ui;
 std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
-bool ARS::safe_mode = false;
+bool ARS::safe_mode = false, ARS::debugging_audio = false;
 uint8_t ARS::dram[0x8000];
 SN::Context sn;
 
@@ -235,6 +236,7 @@ namespace {
     else {
       PPU::dummyRender();
     }
+    Windower::Update();
     cpu->frameBoundary();
     cycle_messages();
     if(target_frame < logic_frame) {
@@ -246,6 +248,7 @@ namespace {
     }
     SDL_Event evt;
     while(SDL_PollEvent(&evt)) {
+      if(Windower::HandleEvent(evt)) continue;
       if(Controller::filterEvent(evt)) continue;
       switch(evt.type) {
       case SDL_DROPFILE: SDL_free(evt.drop.file); break;
@@ -321,6 +324,9 @@ namespace {
             break;
           case 'd':
             allow_debug_port = true;
+            break;
+          case 'A':
+            debugging_audio = true;
             break;
           case 'C':
             allow_config_port = true;

@@ -36,7 +36,7 @@ ifdef NEED_WINDOWS_ICON
 EXTRA_OBJECTS+=obj/ars-emu.res
 endif
 
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o $(TEG_OBJECTS) $(EXTRA_OBJECTS))
+$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/ars-apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o obj/audiocvt.o obj/windower.o $(TEG_OBJECTS) $(EXTRA_OBJECTS))
 ifndef CROSS_COMPILE
 $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
 $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))

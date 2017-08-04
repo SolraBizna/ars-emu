@@ -31,6 +31,8 @@ Known options:
 -d: Allow the cartridge to print to stderr (for debugging purposes)
 -q: Quit when STP is executed
 -s: Use safe video and sound settings (for recovering from bad configurations)
+-A: Enable additional (English only) audio debugging output (useful only when
+    developing or porting ARS-emu)
 
 .
 
@@ -78,8 +80,18 @@ Error: No ROM path specified
 
 : On Windows (and macOS?), instead of printing the above message to the
 : console, ARS-emu will display the following in a dialog box.
+: (Note the lack of an ending blank line)
 DRAG_AND_DROP_A_ROM
 Please drag and drop a .etars or .etarz file onto ARS-emu.
+.
+
+: Displayed if SDL chose a different buffer size for audio
+: $1: The value of the desired_sdl_buffer_length configuration key
+: $2: The number of sample frames we actually got
+AUDIO_BUFFER_SIZE_MISMATCH
+Requested a $1-frame audio buffer, but got a $2-frame one instead.
+(This is probably harmless.)
+
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -559,4 +571,51 @@ Hat Right
 .
 CONTROLLER_PAUSE_BUTTON
 Pause
+.
+
+: Audio menu
+::::::::::::::::::::::::::::
+AUDIO_MENU_TITLE
+Audio Options
+.
+
+: Speaker configuration the user is using
+AUDIO_MENU_SOUND_TYPE
+Output
+.
+
+: One speaker. (Currently unused)
+AUDIO_MENU_MONO
+Mono
+.
+: Two speakers.
+AUDIO_MENU_STEREO
+Stereo
+.
+: Headphones.
+AUDIO_MENU_HEADPHONES
+Headphones
+.
+
+: Which method of synchronizing the emulated audio and video to use
+AUDIO_MENU_SYNC_TYPE
+Audio sync
+.
+
+: No synchronization
+AUDIO_MENU_SYNC_NONE
+Off
+.
+: Fixed synchronization
+AUDIO_MENU_SYNC_STATIC
+Fixed
+.
+: Dynamic synchronization
+AUDIO_MENU_SYNC_DYNAMIC
+Dynamic
+.
+
+: Sample rate to output
+AUDIO_MENU_SAMPLERATE
+Samplerate
 .

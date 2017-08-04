@@ -9,7 +9,7 @@ std::shared_ptr<Menu> Menu::createMainMenu() {
   items.emplace_back(new Menu::Divider());
 #endif
   items.emplace_back(new Menu::Submenu(sn.Get("MAIN_MENU_AUDIO_SUBMENU"_Key),
-                                       Menu::createFightMenu));
+                                       Menu::createAudioMenu));
   items.emplace_back(new Menu::Submenu(sn.Get("MAIN_MENU_VIDEO_SUBMENU"_Key),
                                        Menu::createFightMenu));
 #if !NO_KEYBOARD

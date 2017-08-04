@@ -2,44 +2,261 @@
 #include "et209.hh"
 #include "prefs.hh"
 #include "config.hh"
+#include "audiocvt.hh"
+#include "windower.hh"
+#include "menu.hh"
 
 #include <cmath>
 #include <array>
+#include <atomic>
 
 namespace {
+#if !NO_DEBUG_CORES
+  constexpr int DEBUG_WINDOW_PIXEL_SIZE = 4;
+  constexpr int DEBUG_WINDOW_HEIGHT = 32;
+  SDL_Window* debugwindow = nullptr;
+  SDL_Renderer* debugrenderer;
+#endif
   constexpr float SAMPLE_RATE = 47988.28125f;
+  constexpr int SAMPLE_RATE_HYSTERESIS = 128;
+  // These are about four cents off from the nominal sample rate. That SHOULD
+  // be just small enough that it's nearly impossible to hear the difference,
+  // while still being about ten times larger than the drift of even the most
+  // absurdly miscalibrated sound card.
+  constexpr float MINIMUM_PERMITTED_SAMPLE_RATE = SAMPLE_RATE * 0.9975f;
+  constexpr float MAXIMUM_PERMITTED_SAMPLE_RATE = SAMPLE_RATE * 1.0025f;
   constexpr float ET209_OUTPUT_TO_FLOAT_SAMPLE = 1.f / 256.f;
 #if __clang__
   constexpr float FILTER_COEFFICIENT = 0x1.adc011a45e08ap-2;
 #else
   constexpr float FILTER_COEFFICIENT = std::exp(-1/(SAMPLE_RATE*0.000024f));
 #endif
-  constexpr unsigned int QBUF_LEN = 512;
-  //constexpr unsigned int QBUF_THROTTLE = 2048 * sizeof(float);
-  constexpr unsigned int QBUF_THROTTLE = 8192 * sizeof(float);
-  constexpr unsigned int UNPAUSE_THRESHOLD = 1024 * sizeof(float);
+  int target_min_queue_depth, target_max_queue_depth;
+  float hysteresis_accum;
+  int hysteresis_count;
+  float target_in_rate, cur_in_rate;
+  std::unique_ptr<AudioCvt> cur_cvt, prev_cvt;
+  bool autopaused;
+  class AudioQueue {
+  public:
+    static constexpr unsigned int ELEMENT_SIZE = 512;
+    static constexpr unsigned int ELEMENT_COUNT = 32;
+    static constexpr unsigned int APPROX_ELEMENTS_PER_FRAME
+    = (800 + ELEMENT_SIZE-1) / ELEMENT_SIZE;
+  private:
+    std::array<std::array<float, ELEMENT_SIZE>, ELEMENT_COUNT> elements;
+    std::atomic<unsigned int> current_element_in;
+    std::atomic<unsigned int> next_element_out;
+    unsigned int index_within_element = 0;
+  public:
+    AudioQueue() : current_element_in(0), next_element_out(0) {
+      for(auto& array : elements) {
+        memset(&array[0], 0, ELEMENT_SIZE * sizeof(float));
+      }
+    }
+    //// Call only when serialized ////
+    void ClearQueue() {
+      current_element_in = 0;
+      next_element_out = 0;
+      index_within_element = 0;
+    }
+    //// Call from PRODUCING THREAD ////
+    // Samples, not frames!!
+    void AddSamplesToQueue(const float* src, unsigned int sample_count) {
+      unsigned int current_element_in
+        = std::atomic_load_explicit(&this->current_element_in,
+                                    std::memory_order_relaxed);
+      auto remaining_space_in_element = ELEMENT_SIZE - index_within_element;
+      unsigned int samples_to_add;
+      if(sample_count > remaining_space_in_element) {
+        samples_to_add = remaining_space_in_element;
+      }
+      else {
+        samples_to_add = sample_count;
+      }
+      memcpy(&elements[current_element_in][index_within_element],
+             src, samples_to_add * sizeof(float));
+      assert(samples_to_add <= remaining_space_in_element);
+      if(samples_to_add == remaining_space_in_element) {
+        unsigned int check_element_in
+          = (current_element_in + 2) % ELEMENT_COUNT;
+        unsigned int next_element_out
+          = std::atomic_load_explicit(&this->next_element_out,
+                                      std::memory_order_relaxed);
+        if(check_element_in == next_element_out) {
+#if !NO_DEBUG_CORES
+          if(ARS::debugging_audio)
+            std::cerr << SDL_GetTicks() << ": audio queue overrun!\n";
+#endif
+          return;
+        }
+        unsigned int next_element_in
+          = (current_element_in + 1) % ELEMENT_COUNT;
+        std::atomic_store_explicit(&this->current_element_in,
+                                   next_element_in,
+                                   std::memory_order_release);
+        index_within_element = 0;
+      }
+      else
+        index_within_element += samples_to_add;
+      if(samples_to_add < sample_count)
+        AddSamplesToQueue(src + samples_to_add, sample_count - samples_to_add);
+    }
+#if !NO_DEBUG_CORES
+    void debug_update() const {
+      unsigned int current_element_in
+        = std::atomic_load_explicit(&this->current_element_in,
+                                    std::memory_order_relaxed);
+      unsigned int next_element_out
+        = std::atomic_load_explicit(&this->next_element_out,
+                                    std::memory_order_relaxed);
+      SDL_SetRenderDrawColor(debugrenderer, 0, 0, 0, 255);
+      SDL_RenderClear(debugrenderer);
+      SDL_SetRenderDrawColor(debugrenderer, 255, 255, 255, 255);
+      SDL_Rect r;
+      r.x = current_element_in * DEBUG_WINDOW_PIXEL_SIZE;
+      r.y = 0;
+      r.w = DEBUG_WINDOW_PIXEL_SIZE;
+      r.h = DEBUG_WINDOW_HEIGHT / 2;
+      SDL_RenderFillRect(debugrenderer, &r);
+      r.x = (ELEMENT_COUNT - 1) * DEBUG_WINDOW_PIXEL_SIZE;
+      r.y = DEBUG_WINDOW_HEIGHT / 2;
+      r.w = DEBUG_WINDOW_PIXEL_SIZE;
+      r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+      SDL_RenderFillRect(debugrenderer, &r);
+      SDL_SetRenderDrawColor(debugrenderer, 192, 128, 0, 255);
+      if(current_element_in > next_element_out) {
+        r.x = next_element_out * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = 0;
+        r.w = (current_element_in - next_element_out) *DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT / 2;
+        SDL_RenderFillRect(debugrenderer, &r);
+      }
+      else if(current_element_in < next_element_out) {
+        r.x = next_element_out * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = 0;
+        r.w = (ELEMENT_COUNT - next_element_out) *DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT / 2;
+        SDL_RenderFillRect(debugrenderer, &r);
+        r.x = 0;
+        r.y = 0;
+        r.w = current_element_in * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT / 2;
+        SDL_RenderFillRect(debugrenderer, &r);
+      }
+      int count;
+      if(current_element_in > next_element_out)
+        count = current_element_in - next_element_out;
+      else if(current_element_in < next_element_out)
+        count = (current_element_in + ELEMENT_COUNT) - next_element_out;
+      else
+        count = 0;
+      if(count > target_max_queue_depth) {
+        r.x = (ELEMENT_COUNT - 1 - count) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = DEBUG_WINDOW_HEIGHT / 2;
+        r.w = (count - target_max_queue_depth) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+        SDL_SetRenderDrawColor(debugrenderer, 192, 64, 64, 255);
+        SDL_RenderFillRect(debugrenderer, &r);
+        count -= (count - target_max_queue_depth);
+      }
+      else if(target_max_queue_depth > count) {
+        r.x = (ELEMENT_COUNT - 1 - target_max_queue_depth) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = DEBUG_WINDOW_HEIGHT / 2;
+        r.w = (target_max_queue_depth - count) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+        SDL_SetRenderDrawColor(debugrenderer, 64, 64, 128, 255);
+        SDL_RenderFillRect(debugrenderer, &r);
+      }
+      if(count > target_min_queue_depth) {
+        r.x = (ELEMENT_COUNT - 1 - count) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = DEBUG_WINDOW_HEIGHT / 2;
+        r.w = (count - target_min_queue_depth) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+        SDL_SetRenderDrawColor(debugrenderer, 64, 192, 64, 255);
+        SDL_RenderFillRect(debugrenderer, &r);
+        count -= (count - target_min_queue_depth);
+        r.x = (ELEMENT_COUNT - 1 - count) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = DEBUG_WINDOW_HEIGHT / 2;
+        r.w = count * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+        SDL_SetRenderDrawColor(debugrenderer, 64, 128, 64, 255);
+        SDL_RenderFillRect(debugrenderer, &r);
+      }
+      else if(count > 0) {
+        r.x = (ELEMENT_COUNT - 1 - count) * DEBUG_WINDOW_PIXEL_SIZE;
+        r.y = DEBUG_WINDOW_HEIGHT / 2;
+        r.w = count * DEBUG_WINDOW_PIXEL_SIZE;
+        r.h = DEBUG_WINDOW_HEIGHT - DEBUG_WINDOW_HEIGHT / 2;
+        SDL_SetRenderDrawColor(debugrenderer, 192, 64, 64, 255);
+        SDL_RenderFillRect(debugrenderer, &r);
+      }
+      SDL_RenderPresent(debugrenderer);
+    }
+#endif
+    //// Call from CONSUMING THREAD ////
+    int AvailableNumberOfElements() const {
+      unsigned int right = std::atomic_load_explicit(&current_element_in,
+                                                    std::memory_order_relaxed);
+      unsigned int left = std::atomic_load_explicit(&next_element_out,
+                                                    std::memory_order_relaxed);
+      if(left > right) right += ELEMENT_COUNT;
+      return right - left;
+    }
+    const float* ConsumeOneElement(bool& out_bumped) {
+      unsigned int current_element_in
+        = std::atomic_load_explicit(&this->current_element_in,
+                                    std::memory_order_relaxed);
+      unsigned int next_element_out
+        = std::atomic_load_explicit(&this->next_element_out,
+                                    std::memory_order_relaxed);
+      if(next_element_out == current_element_in) {
+        out_bumped = true;
+        return &elements[(next_element_out == 0)
+                         ? (ELEMENT_COUNT - 1) : (next_element_out - 1)][0];
+      }
+      else {
+        auto ret = &elements[next_element_out][0];
+        std::atomic_store_explicit(&this->next_element_out,
+                                   next_element_out
+                                   = (next_element_out + 1) % ELEMENT_COUNT,
+                                   std::memory_order_relaxed);
+        return ret;
+      }
+    }
+  };
+  std::unique_ptr<AudioQueue> audio_queue;
   constexpr float MIN_SPEAKER_SEPARATION = 1.f;
   constexpr float MAX_SPEAKER_SEPARATION = 180.f;
+  constexpr int MIN_BUFFER_LEN = 64;
+  constexpr int MAX_BUFFER_LEN = 2048;
   float prev_sample[2] = {0.f, 0.f};
-  // used for the headphones filter
+  // these two are used for the headphones filter
   float delayed_sample[2] = {0.f, 0.f};
   std::vector<float> stereo_delay_buf;
   size_t stereo_delay_pos;
-  std::array<float, QBUF_LEN> qbuf;
-  unsigned int qbuf_pos = 0;
   SDL_AudioDeviceID dev = 0;
-  bool autopaused = false;
+  SDL_AudioSpec audiospec;
   // configuration options
-  bool stereo, headphones;
+  bool stereo_desired, headphones;
   float virtual_speaker_separation;
-  int head_width_in_samples;
+  int head_width_in_samples, desired_sdl_buffer_length, resample_quality,
+    desired_sample_rate, audio_sync_type;
+  enum {
+    SYNC_NONE=0, SYNC_STATIC, SYNC_DYNAMIC, NUM_SYNC_TYPES
+  };
   // dependent on configuration
   float pan_filter_coefficient;
   const Config::Element audio_elements[] = {
-    {"stereo", stereo},
+    {"stereo", stereo_desired},
     {"headphones", headphones},
+    {"desired_sdl_buffer_length", desired_sdl_buffer_length},
     {"virtual_speaker_separation", virtual_speaker_separation},
     {"head_width_in_samples", head_width_in_samples},
+    // don't expose this right now, since it doesn't do anything
+    //{"resample_quality", resample_quality},
+    {"desired_sample_rate", desired_sample_rate},
+    {"audio_sync_type", audio_sync_type},
   };
   class AudioPrefsLogic : public PrefsLogic {
   protected:
@@ -50,56 +267,298 @@ namespace {
         virtual_speaker_separation = MIN_SPEAKER_SEPARATION;
       else if(virtual_speaker_separation > MAX_SPEAKER_SEPARATION)
         virtual_speaker_separation = MAX_SPEAKER_SEPARATION;
+      if(desired_sdl_buffer_length < MIN_BUFFER_LEN)
+        desired_sdl_buffer_length = MIN_BUFFER_LEN;
+      else if(desired_sdl_buffer_length > MAX_BUFFER_LEN)
+        desired_sdl_buffer_length = MAX_BUFFER_LEN;
       if(head_width_in_samples < 1)
         head_width_in_samples = 1;
       else if(head_width_in_samples > SAMPLE_RATE)
         head_width_in_samples = SAMPLE_RATE;
+      if(desired_sample_rate > 192000) desired_sample_rate = 192000;
+      else if(desired_sample_rate < 8000) desired_sample_rate = 8000;
+      if(audio_sync_type < 0) audio_sync_type = 0;
+      else if(audio_sync_type >= NUM_SYNC_TYPES)
+        audio_sync_type = NUM_SYNC_TYPES-1;
     }
     void Save() override {
       Config::Write("Audio.utxt",
                     audio_elements, elementcount(audio_elements));
     }
     void Defaults() override {
-      stereo = true;
+      stereo_desired = true;
       headphones = false;
       virtual_speaker_separation = 60;
       head_width_in_samples = 30;
+      desired_sdl_buffer_length = 1024; // about 20ms at 48KHz
+      desired_sample_rate = 48000;
+      resample_quality = 0; // NN when close, better otherwise
+      audio_sync_type = SYNC_DYNAMIC;
     }
   } audioPrefsLogic;
+  void get_sample_frame(float out_sample[2]) {
+    if(audiospec.channels != 1) {
+      int16_t raw_sample[2];
+      float new_sample[2];
+      ARS::apu.output_stereo_sample(raw_sample);
+      new_sample[0] = raw_sample[0] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
+      new_sample[1] = raw_sample[1] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
+      out_sample[0]
+        = prev_sample[0] = new_sample[0] + (prev_sample[0] - new_sample[0])
+        * FILTER_COEFFICIENT;
+      out_sample[1]
+        = prev_sample[1] = new_sample[1] + (prev_sample[1] - new_sample[1])
+        * FILTER_COEFFICIENT;
+      if(headphones) {
+        delayed_sample[1]
+          = out_sample[0] + (delayed_sample[1] - out_sample[0])
+          * pan_filter_coefficient;
+        delayed_sample[0]
+          = out_sample[1] + (delayed_sample[0] - out_sample[1])
+          * pan_filter_coefficient;
+        out_sample[0]
+          = (out_sample[0]+stereo_delay_buf[stereo_delay_pos])
+          * 0.5f;
+        stereo_delay_buf[stereo_delay_pos++] = delayed_sample[0];
+        out_sample[1] = (out_sample[1]+stereo_delay_buf[stereo_delay_pos])
+          * 0.5f;
+        stereo_delay_buf[stereo_delay_pos++] = delayed_sample[1];
+        if(stereo_delay_pos >= stereo_delay_buf.size())
+          stereo_delay_pos = 0;
+      }
+    }
+    else {
+      float new_sample
+        = ARS::apu.output_mono_sample()*ET209_OUTPUT_TO_FLOAT_SAMPLE;
+      out_sample[0]
+        = prev_sample[0] = new_sample + (prev_sample[0] - new_sample)
+        * FILTER_COEFFICIENT;
+    }
+  }
+  void drain_queue_dynamic(void* _ud, Uint8* _stream, int bytes) {
+    AudioQueue* audio_queue = reinterpret_cast<AudioQueue*>(_ud);
+    float* outp = reinterpret_cast<float*>(_stream);
+    int rem = bytes / sizeof(float);
+    bool bumped = false;
+    int effective_depth = audio_queue->AvailableNumberOfElements();
+    if(cur_in_rate < 0) {
+      target_in_rate = SAMPLE_RATE;
+    }
+    else {
+      hysteresis_accum
+        += MINIMUM_PERMITTED_SAMPLE_RATE
+        + (MAXIMUM_PERMITTED_SAMPLE_RATE - MINIMUM_PERMITTED_SAMPLE_RATE)
+        * (effective_depth - target_min_queue_depth)
+        / (target_max_queue_depth - target_min_queue_depth);
+      if(++hysteresis_count >= SAMPLE_RATE_HYSTERESIS) {
+        float new_rate = hysteresis_accum / SAMPLE_RATE_HYSTERESIS;
+        if(new_rate < MINIMUM_PERMITTED_SAMPLE_RATE)
+          new_rate = MINIMUM_PERMITTED_SAMPLE_RATE;
+        else if(new_rate > MAXIMUM_PERMITTED_SAMPLE_RATE)
+          new_rate = MAXIMUM_PERMITTED_SAMPLE_RATE;
+        if(std::abs(new_rate - target_in_rate) >= 1)
+          target_in_rate = new_rate;
+        hysteresis_accum = 0;
+        hysteresis_count = 0;
+      }
+    }
+    if(cur_in_rate != target_in_rate) {
+      if(cur_cvt) prev_cvt = std::move(cur_cvt);
+      cur_cvt.reset();
+      cur_in_rate = target_in_rate;
+    }
+    if(!cur_cvt) {
+      if(prev_cvt) {
+        auto rem_in_cvt = prev_cvt->GetNumberOfSamplesRemaining();
+        if(rem_in_cvt > 0) {
+          int amount_to_out = std::min(rem, rem_in_cvt);
+          memcpy(outp, prev_cvt->GetPointerToOutput(),
+                 amount_to_out * sizeof(float));
+          prev_cvt->AdvanceOutput(amount_to_out);
+          rem -= amount_to_out;
+          if(rem <= 0) return;
+          outp += amount_to_out;
+        }
+      }
+#if !NO_DEBUG_CORES
+      if(ARS::debugging_audio)
+        std::cerr << "New sample rate: " << target_in_rate << "\n";
+#endif
+      cur_cvt = MakeAudioCvt(resample_quality,
+                             target_in_rate,
+                             audiospec.freq,
+                             AudioQueue::ELEMENT_SIZE,
+                             audiospec.channels != 1);
+      if(prev_cvt) {
+        if(cur_cvt->NeedsLap() || prev_cvt->NeedsLap()) {
+          const float* ap = audio_queue->ConsumeOneElement(bumped);
+          prev_cvt->ConvertMore(ap);
+          cur_cvt->ConvertMore(ap);
+          cur_cvt->CrosslapAwayFrom(*prev_cvt);
+        }
+        prev_cvt.reset();
+      }
+    }
+    while(rem > 0) {
+      auto rem_in_cvt = cur_cvt->GetNumberOfSamplesRemaining();
+      if(rem_in_cvt == 0)
+        cur_cvt->ConvertMore(audio_queue->ConsumeOneElement(bumped));
+      else {
+        int amount_to_out = std::min(rem, rem_in_cvt);
+        memcpy(outp, cur_cvt->GetPointerToOutput(),
+               amount_to_out * sizeof(float));
+        cur_cvt->AdvanceOutput(amount_to_out);
+        outp += amount_to_out;
+        rem -= amount_to_out;
+      }
+    }
+    if(bumped) {
+#if !NO_DEBUG_CORES
+      if(ARS::debugging_audio)
+        std::cerr << SDL_GetTicks() << ": audio queue underrun!\n";
+#endif
+      SDL_PauseAudioDevice(dev, 1);
+      autopaused = true;
+    }
+  }
+  void drain_queue_static(void* _ud, Uint8* _stream, int bytes) {
+    AudioQueue* audio_queue = reinterpret_cast<AudioQueue*>(_ud);
+    float* outp = reinterpret_cast<float*>(_stream);
+    int rem = bytes / sizeof(float);
+    bool bumped = false;
+    if(!cur_cvt) {
+      cur_cvt = MakeAudioCvt(resample_quality,
+                             SAMPLE_RATE,
+                             audiospec.freq,
+                             AudioQueue::ELEMENT_SIZE,
+                             audiospec.channels != 1);
+    }
+    while(rem > 0) {
+      auto rem_in_cvt = cur_cvt->GetNumberOfSamplesRemaining();
+      if(rem_in_cvt == 0) {
+        cur_cvt->ConvertMore(audio_queue->ConsumeOneElement(bumped));
+      }
+      else {
+        int amount_to_out = std::min(rem, rem_in_cvt);
+        memcpy(outp, cur_cvt->GetPointerToOutput(),
+               amount_to_out * sizeof(float));
+        cur_cvt->AdvanceOutput(amount_to_out);
+        outp += amount_to_out;
+        rem -= amount_to_out;
+      }
+    }
+    if(bumped) {
+#if !NO_DEBUG_CORES
+      if(ARS::debugging_audio)
+        std::cerr << SDL_GetTicks() << ": audio queue underrun!\n";
+#endif
+      SDL_PauseAudioDevice(dev, 1);
+      autopaused = true;
+    }
+  }
+  void make_and_convert_lots_of_samples(void*, Uint8* _stream, int bytes) {
+    if(!cur_cvt) {
+      cur_cvt = MakeAudioCvt(resample_quality,
+                             SAMPLE_RATE,
+                             audiospec.freq,
+                             AudioQueue::ELEMENT_SIZE,
+                             audiospec.channels != 1);
+    }
+    float* outp = reinterpret_cast<float*>(_stream);
+    int rem = bytes / sizeof(float);
+    while(rem > 0) {
+      auto rem_in_cvt = cur_cvt->GetNumberOfSamplesRemaining();
+      if(rem_in_cvt == 0) {
+        float buf[AudioQueue::ELEMENT_SIZE];
+        float* localp = buf;
+        int localrem = AudioQueue::ELEMENT_SIZE / audiospec.channels;
+        while(localrem-- > 0) {
+          get_sample_frame(localp);
+          localp += audiospec.channels;
+        }
+        cur_cvt->ConvertMore(buf);
+      }
+      else {
+        int amount_to_out = std::min(rem, rem_in_cvt);
+        memcpy(outp, cur_cvt->GetPointerToOutput(),
+               amount_to_out * sizeof(float));
+        cur_cvt->AdvanceOutput(amount_to_out);
+        outp += amount_to_out;
+        rem -= amount_to_out;
+      }
+    }
+  }
+  void make_lots_of_samples(void*, Uint8* _stream, int bytes) {
+    float* outp = reinterpret_cast<float*>(_stream);
+    int rem = bytes / sizeof(float);
+    while(rem > 0) {
+      get_sample_frame(outp);
+      outp += audiospec.channels;
+      rem -= audiospec.channels;
+    }
+  }
+#if !NO_DEBUG_CORES
+  void debug_event(SDL_Event& evt) {
+    // er...
+    switch(evt.type) {
+    default:
+      if(evt.type == Windower::UPDATE_EVENT)
+        audio_queue->debug_update();
+    }
+  }
+#endif
 }
 
 ET209 ARS::apu;
 
 void ARS::init_apu() {
   if(dev != 0) SDL_CloseAudioDevice(dev);
-  SDL_version version;
-  SDL_GetVersion(&version);
   SDL_AudioSpec desired;
   memset(&desired, 0, sizeof(desired));
-  // in SDL, sample rates are always integers...
-  desired.freq = static_cast<int>(SAMPLE_RATE);
+  memset(&audiospec, 0, sizeof(audiospec));
+  desired.freq = desired_sample_rate;
   desired.format = AUDIO_F32SYS;
-  desired.channels = stereo ? 2 : 1;
-  if(version.major > 2
-     || (version.major == 2 && version.minor > 0)
-     || (version.major == 2 && version.minor == 0 && version.patch > 5)) {
-    desired.samples = 512*desired.channels;
-    desired.size = 512*desired.channels*sizeof(float);
+  desired.channels = stereo_desired ? 2 : 1;
+  desired.samples = desired_sdl_buffer_length;
+  switch(audio_sync_type) {
+  case SYNC_NONE:
+    audio_queue.reset();
+    if(desired.freq > MINIMUM_PERMITTED_SAMPLE_RATE
+       && desired.freq < MAXIMUM_PERMITTED_SAMPLE_RATE)
+      desired.callback = make_lots_of_samples;
+    else
+      desired.callback = make_and_convert_lots_of_samples;
+    break;
+  case SYNC_STATIC:
+  case SYNC_DYNAMIC:
+    if(!audio_queue) audio_queue = std::make_unique<AudioQueue>();
+    desired.callback = audio_sync_type == SYNC_DYNAMIC ? drain_queue_dynamic
+      : drain_queue_static;
+    desired.userdata = audio_queue.get();
   }
-  else {
-    // work around SDL bug 3685
-    desired.size = 8192;
-    desired.samples = 8192/sizeof(float);
+  cur_cvt.reset();
+  prev_cvt.reset();
+  dev = SDL_OpenAudioDevice(nullptr, 0,
+                            &desired, &audiospec,
+                            SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
+                            |SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
+  if(dev == 0) {
+    ui << SDL_GetError() << ui;
+    return;
   }
-  if(stereo && headphones) {
-    float cutoff_freq = 1000 * pow(1 / std::sin(virtual_speaker_separation
-                                                *3.14159265358f/360),// NOT 180
+  if(audiospec.channels != 1 && headphones) {
+    /* This is a very rough approximation of the effect that stereo separation
+       will have on the audio that reaches your ears. In some ways it's pure
+       fantasy. It seems to offer a good tradeoff between realism and
+       subjective quality. */
+    float other_speaker_angle = (virtual_speaker_separation/2)
+      *3.141592653589793f/180;
+    float cutoff_freq = 1000 * pow(1 / std::sin(other_speaker_angle),
                                    1.f / 0.8f);
     float tau = 1.f / (3.14159265358f * 2.0f * cutoff_freq);
     pan_filter_coefficient = std::exp(-1/(SAMPLE_RATE*tau));
     float stereo_delay
-      = std::floor(head_width_in_samples * std::sin(virtual_speaker_separation
-                                                    *3.14159265358f/360)+0.5f);
+      = std::floor(head_width_in_samples * std::sin(other_speaker_angle)+0.5f);
     int stereo_delay_samples;
     if(stereo_delay > SAMPLE_RATE) stereo_delay_samples = SAMPLE_RATE;
     else if(stereo_delay <= 1) stereo_delay_samples = 1;
@@ -107,64 +566,165 @@ void ARS::init_apu() {
     stereo_delay_buf.clear();
     stereo_delay_buf.resize(stereo_delay_samples * 2);
   }
-  dev = SDL_OpenAudioDevice(nullptr, 0, &desired, nullptr, 0);
-  if(dev == 0)
-    ui << SDL_GetError() << ui;
-  else
-    autopaused = true;
-}
-
-void ARS::output_apu_sample() {
-  if(dev <= 0) return;
-  if(stereo) {
-    int16_t raw_sample[2];
-    float new_sample[2];
-    apu.output_stereo_sample(raw_sample);
-    new_sample[0] = raw_sample[0] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-    new_sample[1] = raw_sample[1] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-    qbuf[qbuf_pos++] =
-      prev_sample[0] = new_sample[0] + (prev_sample[0] - new_sample[0])
-      * FILTER_COEFFICIENT;
-    qbuf[qbuf_pos++] =
-      prev_sample[1] = new_sample[1] + (prev_sample[1] - new_sample[1])
-      * FILTER_COEFFICIENT;
-    if(headphones) {
-      delayed_sample[1] = prev_sample[0] + (delayed_sample[1] - prev_sample[0])
-        * pan_filter_coefficient;
-      delayed_sample[0] = prev_sample[1] + (delayed_sample[0] - prev_sample[1])
-        * pan_filter_coefficient;
-      qbuf[qbuf_pos-2] = (qbuf[qbuf_pos-2]+stereo_delay_buf[stereo_delay_pos])
-        * 0.5f;
-      stereo_delay_buf[stereo_delay_pos++] = delayed_sample[0];
-      qbuf[qbuf_pos-1] = (qbuf[qbuf_pos-1]+stereo_delay_buf[stereo_delay_pos])
-        * 0.5f;
-      stereo_delay_buf[stereo_delay_pos++] = delayed_sample[1];
-      if(stereo_delay_pos >= stereo_delay_buf.size())
-        stereo_delay_pos = 0;
+  switch(audio_sync_type) {
+  case SYNC_NONE:
+    break;
+  case SYNC_STATIC:
+    target_min_queue_depth =
+      // bare minimum
+      1
+      // at least one buffer
+      + ((audiospec.samples*static_cast<int>(SAMPLE_RATE)/audiospec.freq)+AudioQueue::ELEMENT_SIZE-1)
+      / AudioQueue::ELEMENT_SIZE
+      // at least one frame
+      + AudioQueue::APPROX_ELEMENTS_PER_FRAME;
+    target_min_queue_depth *= audiospec.channels;
+    target_max_queue_depth
+      = AudioQueue::ELEMENT_COUNT-2;
+    break;
+  case SYNC_DYNAMIC:
+    cur_in_rate = -1.f;
+    hysteresis_accum = 0;
+    hysteresis_count = 0;
+    target_min_queue_depth =
+      // bare minimum
+      1
+      // at least one buffer
+      + ((audiospec.samples*static_cast<int>(SAMPLE_RATE)/audiospec.freq)+AudioQueue::ELEMENT_SIZE-1)
+      / AudioQueue::ELEMENT_SIZE
+      // at least one frame
+      + AudioQueue::APPROX_ELEMENTS_PER_FRAME;
+    target_min_queue_depth *= audiospec.channels;
+    target_max_queue_depth =
+      std::min((
+      // bare minimum
+      2
+      // at least two buffer
+      + ((audiospec.samples*static_cast<int>(SAMPLE_RATE)/audiospec.freq)+AudioQueue::ELEMENT_SIZE-1)
+      / AudioQueue::ELEMENT_SIZE * 2
+      // at least three frame
+      + AudioQueue::APPROX_ELEMENTS_PER_FRAME * 3)
+               * audiospec.channels,
+      AudioQueue::ELEMENT_COUNT - 2);
+    break;
+  }
+#if !NO_DEBUG_CORES
+  if(audio_sync_type == SYNC_NONE) {
+    if(debugwindow != nullptr) {
+      SDL_DestroyRenderer(debugrenderer);
+      Windower::Unregister(SDL_GetWindowID(debugwindow));
+      SDL_DestroyWindow(debugwindow);
+      debugwindow = nullptr;
     }
   }
   else {
-    float new_sample = apu.output_mono_sample() * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-    qbuf[qbuf_pos++] =
-      prev_sample[0] = new_sample + (prev_sample[0] -new_sample)
-      * FILTER_COEFFICIENT;
-  }
-  // TODO: more aggressive shortening
-  if(qbuf_pos == QBUF_LEN) {
-    //unsigned int throttle = SDL_GetQueuedAudioSize(dev) / QBUF_THROTTLE;
-    //SDL_QueueAudio(dev, qbuf.data(), (QBUF_LEN - throttle) * sizeof(float));
-    if(!autopaused && SDL_GetQueuedAudioSize(dev) == 0) {
-      autopaused = true;
-      SDL_PauseAudioDevice(dev, 1);
-    }
-    if(SDL_GetQueuedAudioSize(dev) <= QBUF_THROTTLE)
-      SDL_QueueAudio(dev, qbuf.data(), QBUF_LEN * sizeof(float));
-    qbuf_pos = 0;
-    if(autopaused) {
-      if(SDL_GetQueuedAudioSize(dev) >= UNPAUSE_THRESHOLD) {
-        autopaused = false;
-        SDL_PauseAudioDevice(dev, 0);
-      }
+    if(debugging_audio && debugwindow == nullptr) {
+      debugwindow = SDL_CreateWindow("ARS-emu Audio Queue",
+                                     SDL_WINDOWPOS_UNDEFINED,
+                                     SDL_WINDOWPOS_UNDEFINED,
+                                     DEBUG_WINDOW_PIXEL_SIZE
+                                     *AudioQueue::ELEMENT_COUNT,
+                                     DEBUG_WINDOW_HEIGHT,
+                                     0);
+      if(debugwindow == nullptr)
+        die("Couldn't create audio debugging window: %s", SDL_GetError());
+      Windower::Register(SDL_GetWindowID(debugwindow), debug_event);
+      debugrenderer = SDL_CreateRenderer(debugwindow, -1, 0);
+      if(debugrenderer == nullptr)
+        die("Couldn't create audio debugging renderer: %s", SDL_GetError());
     }
   }
+#endif
+  if(desired_sdl_buffer_length != audiospec.samples) {
+    std::string driver = SDL_GetCurrentAudioDriver();
+    if(driver == "pulseaudio"
+       && audiospec.samples == desired_sdl_buffer_length / 2)
+      ; // ignore it, Pulse always does that(?!)
+    else
+      sn.Out(std::cerr, "AUDIO_BUFFER_SIZE_MISMATCH"_Key,
+             {TEG::format("%i", desired_sdl_buffer_length),
+                 TEG::format("%i", static_cast<int>(audiospec.samples))});
+#if !NO_DEBUG_CORES
+    if(debugging_audio) {
+      std::cout << "Sample rate: " << audiospec.freq << "\n";
+      std::cout << "Channels: " << (int)audiospec.channels << "\n";
+      std::cout << "Buffer size: " << audiospec.samples << " ("
+                << audiospec.size << " bytes, "
+                << ((audiospec.samples * 2000) / audiospec.freq + 1) / 2
+                << "ms)\n";
+      if(audio_sync_type == SYNC_DYNAMIC)
+        std::cout << "Queue depth target: " << target_min_queue_depth
+                  << "-" << target_max_queue_depth
+                  << "/" << (AudioQueue::ELEMENT_COUNT-1) << "\n";
+      else
+        std::cout << "(Not using the queue; dynamic audio sync not enabled)\n";
+    }
+#endif
+  }
+  if(audio_sync_type == SYNC_NONE) {
+    autopaused = false;
+    SDL_PauseAudioDevice(dev, 0);
+  }
+  else autopaused = true;
+}
+
+void ARS::output_apu_sample() {
+  if(dev <= 0 || audio_sync_type == SYNC_NONE) return;
+  float samples[2];
+  get_sample_frame(samples);
+  audio_queue->AddSamplesToQueue(samples, audiospec.channels);
+  if(autopaused
+     && audio_queue->AvailableNumberOfElements() > target_min_queue_depth) {
+    autopaused = false;
+    SDL_PauseAudioDevice(dev, 0);
+  }
+}
+
+std::shared_ptr<Menu> Menu::createAudioMenu() {
+  static std::vector<int> samplerates = {
+    22050, 24000, 32000, 44100, 48000
+  };
+  static std::vector<std::string> samplerate_strings;
+  if(samplerate_strings.size() == 0) {
+    samplerate_strings.reserve(samplerates.size());
+    for(auto i : samplerates) {
+      samplerate_strings.emplace_back(TEG::format("%iHz", i));
+    }
+  }
+  size_t cur_samplerate = 0;
+  for(size_t i = 0; i < samplerates.size(); ++i) {
+    if(samplerates[i] == desired_sample_rate) {
+      cur_samplerate = i;
+      break;
+    }
+  }
+  std::vector<std::shared_ptr<Menu::Item> > items;
+  items.emplace_back(new Menu::Selector(sn.Get("AUDIO_MENU_SOUND_TYPE"_Key),
+                                        {sn.Get("AUDIO_MENU_STEREO"_Key),
+                                         sn.Get("AUDIO_MENU_HEADPHONES"_Key)},
+                                        headphones ? 1 : 0,
+                                        [](size_t opt) {
+                                          stereo_desired = true;
+                                          headphones = opt == 1;
+                                          ARS::init_apu();
+                                        }));
+  items.emplace_back(new Menu::Selector(sn.Get("AUDIO_MENU_SYNC_TYPE"_Key),
+                                        {sn.Get("AUDIO_MENU_SYNC_NONE"_Key),
+                                         sn.Get("AUDIO_MENU_SYNC_STATIC"_Key),
+                                        sn.Get("AUDIO_MENU_SYNC_DYNAMIC"_Key)},
+                                        audio_sync_type,
+                                        [](size_t opt) {
+                                          audio_sync_type = opt;
+                                          ARS::init_apu();
+                                        }));
+  items.emplace_back(new Menu::Selector(sn.Get("AUDIO_MENU_SAMPLERATE"_Key),
+                                        samplerate_strings,
+                                        cur_samplerate,
+                                        [](size_t opt) {
+                                          desired_sample_rate=samplerates[opt];
+                                          ARS::init_apu();
+                                        }));
+  items.emplace_back(new Menu::Divider());
+  items.emplace_back(new Menu::BackButton(sn.Get("GENERIC_MENU_FINISHED_LABEL"_Key)));
+  return std::make_shared<Menu>(sn.Get("AUDIO_MENU_TITLE"_Key), items);
 }
