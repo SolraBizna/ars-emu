@@ -585,7 +585,7 @@ Audio Options
 
 : Speaker configuration the user is using
 AUDIO_MENU_SOUND_TYPE
-Output
+Output:
 .
 
 : One speaker. (Currently unused)
@@ -603,7 +603,7 @@ Headphones
 
 : Which method of synchronizing the emulated audio and video to use
 AUDIO_MENU_SYNC_TYPE
-Audio sync
+Audio sync:
 .
 
 : No synchronization
@@ -621,5 +621,5 @@ Dynamic
 
 : Sample rate to output
 AUDIO_MENU_SAMPLERATE
-Samplerate
+Samplerate:
 .
