@@ -9,17 +9,17 @@ class AudioCvt {
 protected:
   const int number_of_input_frames;
   const int maximum_number_of_output_frames;
-  const bool input_is_stereo;
+  const int input_channels;
   float* output_buffer;
   float* position_in_output_buffer, *end_of_output_buffer;
-  AudioCvt(int number_of_input_frames, bool input_is_stereo,
+  AudioCvt(int number_of_input_frames, int input_channels,
            int maximum_number_of_output_frames)
     : number_of_input_frames(number_of_input_frames),
       maximum_number_of_output_frames(maximum_number_of_output_frames),
-      input_is_stereo(input_is_stereo),
+      input_channels(input_channels),
       output_buffer(reinterpret_cast<float*>
                     (safe_malloc(maximum_number_of_output_frames
-                                 * (input_is_stereo ? 2 : 1)
+                                 * input_channels
                                  * sizeof(float)))),
       position_in_output_buffer(nullptr),
       end_of_output_buffer(nullptr) {}
@@ -32,17 +32,18 @@ public:
   virtual void ConvertMore(const float* in) = 0;
   virtual bool NeedsLap() = 0;
   void CrosslapAwayFrom(AudioCvt& other) {
-    assert(other.input_is_stereo == input_is_stereo);
+    assert(other.input_channels == input_channels);
     int amount_to_lap = std::min(GetNumberOfSamplesRemaining(),
                                  other.GetNumberOfSamplesRemaining());
     assert(amount_to_lap > 1);
-    // it's okay that we ramp differently in left and right, the difference is
-    // slight and the code is simpler and faster
+    float* ap = position_in_output_buffer;
+    const float* bp = other.position_in_output_buffer;
     for(int i = 0; i < amount_to_lap; ++i) {
-      position_in_output_buffer[i]
-        = other.position_in_output_buffer[i]
-        + (position_in_output_buffer[i] - other.position_in_output_buffer[i])
-        * i / amount_to_lap;
+      for(int j = 0; j < input_channels; ++j) {
+        *ap = *bp + (*ap - *bp) * i / amount_to_lap;
+        ++ap;
+        ++bp;
+      }
     }
   }
   int GetNumberOfSamplesRemaining() const {
@@ -57,6 +58,7 @@ public:
   }
 };
 
+// supported channel counts: 1 2 3 4
 std::unique_ptr<AudioCvt> MakeAudioCvt(int quality_hint,
                                        float source_rate,
                                        float dest_rate,

@@ -37,6 +37,8 @@
   emulator would just have to recenter it anyway. Note that this IS the correct
   range, even though it appears to be centered closer to -4 than to 0!
 
+  (The above applies separately to each channel, and to L+C+B and R+C+B.)
+
   This class does NOT simulate the analog component of the ARS audio circuit,
   which also includes a low-pass RC filter with τ≈0.000024.
 
@@ -127,76 +129,27 @@ public:
     noise_accumulator = rand();
     sample_number = rand();
   }
-  int16_t output_mono_sample() {
-    int16_t accumulated = 0;
-    for(int voice = 0; voice < NUM_VOICES; ++voice) {
-      uint16_t target_rate = user.rate_lo[voice] | (user.rate_hi[voice]<<8);
-      auto shift_rate = target_rate>>14;
-      target_rate &= 0x3FFF;
-      switch(shift_rate) {
-      case 0: real_rate[voice] = target_rate; break;
-      default:
-        if(sample_number & ((1<<shift_rate<<2)-1)) break;
-        if(real_rate[voice] < target_rate) ++real_rate[voice];
-        else if(real_rate[voice] > target_rate) --real_rate[voice];
-        break;
-      }
-      if(user.volume[voice] & VOLUME_RESET_FLAG) {
-        user.volume[voice] &= ~VOLUME_RESET_FLAG;
-        voice_accumulator[voice]
-          = (user.waveform[voice] & WAVEFORM_SIGNED_RESET_MASK)
-          == WAVEFORM_SIGNED_RESET_MASK ? 0x8000 : 0;
-      }
-      else {
-        uint32_t nuccumulator = voice_accumulator[voice] + real_rate[voice] +1;
-        if(nuccumulator >= 65536) {
-          if(user.waveform[voice] & WAVEFORM_TOGGLE_INVERT_ON_CARRY_FLAG) {
-            user.waveform[voice] ^= WAVEFORM_INVERT_ALL_FLAG;
-          }
-        }
-        voice_accumulator[voice] = static_cast<uint16_t>(nuccumulator);
-      }
-      auto val = q6_multiply(eval_waveform(voice_accumulator[voice],
-                                               user.waveform[voice]),
-                                 user.volume[voice] & 127);
-      switch(user.waveform[voice] & WAVEFORM_PAN_MASK) {
-      case WAVEFORM_PAN_HALF:
-      case WAVEFORM_PAN_LEFT:
-      case WAVEFORM_PAN_RIGHT:
-        accumulated += val >> 1;
-        break;
-      default:
-        accumulated += val;
-        break;
-      }
-    }
-    uint8_t noise_sum = 0;
-    if((user.noise_volume & VOLUME_RESET_FLAG) != 0) {
-      user.noise_volume &= ~VOLUME_RESET_FLAG;
-      lfsr = 1;
-    }
-    for(int step = 0; step < 8; ++step) {
-      noise_sum += (lfsr&1);
-      if(step != 7 && (user.noise_waveform & (1<<step))) continue;
-      if(noise_accumulator == user.noise_period) {
-        noise_accumulator = 0;
-        bool feedback;
-        if(user.noise_waveform & 0x80)
-          feedback = ((lfsr>>6)^lfsr)&1;
-        else
-          feedback = ((lfsr>>1)^lfsr)&1;
-        lfsr >>= 1;
-        if(feedback) lfsr |= 16384;
-      }
-      else ++noise_accumulator;
-    }
-    accumulated += q6_multiply(noise_sum|(noise_sum<<3),
-                               user.noise_volume&127);
-    ++sample_number;
-    return accumulated;
-  }
-  void output_stereo_sample(int16_t out_samples[2]) {
-    int16_t accumulated_left = 0, accumulated_right = 0;
+  /*
+    out_frame indices map directly to hardware pan values, and the samples are
+    therefore in the order: Center, Right, Left, Boosted. (noise is mapped to
+    Boosted.)
+
+    My "replica" will have four DACs and output these signals separately,
+    allowing various effects including surround sound. This emulation does the
+    equivalent, giving you the freedom to either add wacky filters of your own
+    or just implement the "original" logic at very little extra cost.
+
+    The "original" ET209 had only two DACs, which outputted the equivalent of:
+
+     left DAC = L+B+(C>>1)
+    right DAC = R+B+(C>>1)
+
+    If L and R are 0dB, B is +6dB (because it's present on both channels, and
+    correlated) and C is also 0dB (attenuated by 6dB and then placed into both
+    channels). Any mixing you do should try to preserve these volume levels.
+  */
+  void output_frame(int16_t out_samples[4]) {
+    out_samples[3] = out_samples[2] = out_samples[1] = out_samples[0] = 0;
     for(int voice = 0; voice < NUM_VOICES; ++voice) {
       uint16_t target_rate = user.rate_lo[voice] | (user.rate_hi[voice]<<8);
       auto shift_rate = target_rate>>14;
@@ -227,21 +180,7 @@ public:
       auto val = q6_multiply(eval_waveform(voice_accumulator[voice],
                                            user.waveform[voice]),
                              user.volume[voice] & 127);
-      switch(user.waveform[voice] & WAVEFORM_PAN_MASK) {
-      case WAVEFORM_PAN_HALF:
-        accumulated_left += val >> 1;
-        accumulated_right += val >> 1;
-        break;
-      case WAVEFORM_PAN_LEFT:
-        accumulated_left += val;
-        break;
-      default:
-        accumulated_left += val;
-        // fallthrough
-      case WAVEFORM_PAN_RIGHT:
-        accumulated_right += val;
-        break;
-      }
+      out_samples[user.waveform[voice] & WAVEFORM_PAN_MASK] += val;
     }
     uint8_t noise_sum = 0;
     if((user.noise_volume & VOLUME_RESET_FLAG) != 0) {
@@ -265,11 +204,8 @@ public:
     }
     int16_t noise = q6_multiply(noise_sum|(noise_sum<<3),
                                 user.noise_volume&127);
-    accumulated_left += noise;
-    accumulated_right += noise;
+    out_samples[3] += noise;
     ++sample_number;
-    out_samples[0] = accumulated_left;
-    out_samples[1] = accumulated_right;
   }
   void write(int addr, uint8_t value) {
     addr &= 0x1F;

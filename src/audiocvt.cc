@@ -11,7 +11,7 @@ namespace {
   public:
     NNCvt(int number_of_input_frames,
           float source_rate, float dest_rate)
-      : AudioCvt(number_of_input_frames, CHANNELS != 1,
+      : AudioCvt(number_of_input_frames, CHANNELS,
                  static_cast<int>(std::ceil(number_of_input_frames
                                             *dest_rate/source_rate))),
         dda_acc(0), dda_num(source_rate), dda_den(dest_rate) {}
@@ -46,17 +46,29 @@ std::unique_ptr<AudioCvt> MakeAudioCvt(int quality_hint,
                                        float source_rate,
                                        float dest_rate,
                                        int number_of_input_samples,
-                                       bool input_is_stereo) {
+                                       int input_channels) {
   if(true
      || quality_hint < 0
      || (quality_hint == 0
          && source_rate > MINIMUM_CLOSE_SAMPLE_RATE
          && source_rate < MAXIMUM_CLOSE_SAMPLE_RATE)) {
     // nearest neighbor
-    if(input_is_stereo) return std::make_unique<NNCvt<2>>
-                          (number_of_input_samples/2, source_rate, dest_rate);
-    else return std::make_unique<NNCvt<1>>
-           (number_of_input_samples, source_rate, dest_rate);
+    switch(input_channels) {
+    case 1:
+      return std::make_unique<NNCvt<1>>
+        (number_of_input_samples/1, source_rate, dest_rate);
+    case 2:
+      return std::make_unique<NNCvt<2>>
+        (number_of_input_samples/2, source_rate, dest_rate);
+    case 3:
+      return std::make_unique<NNCvt<3>>
+        (number_of_input_samples/3, source_rate, dest_rate);
+    case 4:
+      return std::make_unique<NNCvt<4>>
+        (number_of_input_samples/4, source_rate, dest_rate);
+    default:
+      die("Internal error: wrong number of channels for MakeAudioCvt");
+    }
   }
   else {
     // TODO: other resamplers

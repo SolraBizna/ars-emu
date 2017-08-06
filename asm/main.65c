@@ -13,7 +13,6 @@ g_ptr2 DW
 
 _notPresentTiles:
 .INCBIN "asm/need_config_option.bin" FSIZE _notPresentTilesLength
-_notPresentTilesEnd:
 .DEFINE _notPresentTilesWide (_notPresentTilesLength)>>5
 .DEFINE MessageStart $5800 + (32-_notPresentTilesWide)>>1<<5
 
@@ -127,10 +126,10 @@ notPresent:
 	BNE +
 	INC g_ptr2+1
 +	LDA g_ptr1
-	CMP #<_notPresentTilesEnd
+	CMP #<(_notPresentTiles+_notPresentTilesLength)
 	BNE -
 	LDA g_ptr1+1
-	CMP #>_notPresentTilesEnd
+	CMP #>(_notPresentTiles+_notPresentTilesLength)
 	BNE -
 	LDA #96
 	STA g_HilightStart

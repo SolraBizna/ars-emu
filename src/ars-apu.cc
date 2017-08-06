@@ -232,24 +232,23 @@ namespace {
   constexpr int MAX_BUFFER_LEN = 2048;
   float prev_sample[2] = {0.f, 0.f};
   // these two are used for the headphones filter
-  float delayed_sample[2] = {0.f, 0.f};
+  float delayed_sample[2];
   std::vector<float> stereo_delay_buf;
   size_t stereo_delay_pos;
   SDL_AudioDeviceID dev = 0;
   SDL_AudioSpec audiospec;
   // configuration options
-  bool stereo_desired, headphones;
+  int sound_type;
   float virtual_speaker_separation;
   int head_width_in_samples, desired_sdl_buffer_length, resample_quality,
     desired_sample_rate, audio_sync_type;
-  enum {
-    SYNC_NONE=0, SYNC_STATIC, SYNC_DYNAMIC, NUM_SYNC_TYPES
-  };
+  enum { SYNC_NONE=0, SYNC_STATIC, SYNC_DYNAMIC, NUM_SYNC_TYPES };
+  enum { SOUND_MONO, SOUND_STEREO, SOUND_HEADPHONES, SOUND_QUADRAPHONIC,
+         SOUND_SURROUND_40, SOUND_SURROUND_51, SOUND_SURROUND_71,
+         NUM_SOUND_TYPES };
   // dependent on configuration
   float pan_filter_coefficient;
   const Config::Element audio_elements[] = {
-    {"stereo", stereo_desired},
-    {"headphones", headphones},
     {"desired_sdl_buffer_length", desired_sdl_buffer_length},
     {"virtual_speaker_separation", virtual_speaker_separation},
     {"head_width_in_samples", head_width_in_samples},
@@ -297,32 +296,27 @@ namespace {
     }
   } audioPrefsLogic;
   void get_sample_frame(float out_sample[2]) {
+    int16_t frame[4];
+    ARS::apu.output_frame(frame);
     if(audiospec.channels != 1) {
-      int16_t raw_sample[2];
-      float new_sample[2];
+      float new_sample[3];
       ARS::apu.output_stereo_sample(raw_sample);
       new_sample[0] = raw_sample[0] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
       new_sample[1] = raw_sample[1] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-      out_sample[0]
-        = prev_sample[0] = new_sample[0] + (prev_sample[0] - new_sample[0])
-        * FILTER_COEFFICIENT;
-      out_sample[1]
-        = prev_sample[1] = new_sample[1] + (prev_sample[1] - new_sample[1])
-        * FILTER_COEFFICIENT;
+      new_sample[2] = raw_sample[1] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
+      new_sample[0] += (prev_sample[0] - new_sample[0]) * FILTER_COEFFICIENT;
+      new_sample[1] += (prev_sample[1] - new_sample[1]) * FILTER_COEFFICIENT;
+      new_sample[2] += (prev_sample[2] - new_sample[2]) * FILTER_COEFFICIENT;
       if(headphones) {
-        delayed_sample[1]
-          = out_sample[0] + (delayed_sample[1] - out_sample[0])
+        // float l_plus_r = out_sample[0] + out_sample[1];
+        float l_minus_r = out_sample[0] - out_sample[1];
+        delayed_sample = l_minus_r + (delayed_sample - l_minus_r)
           * pan_filter_coefficient;
-        delayed_sample[0]
-          = out_sample[1] + (delayed_sample[0] - out_sample[1])
-          * pan_filter_coefficient;
-        out_sample[0]
-          = (out_sample[0]+stereo_delay_buf[stereo_delay_pos])
-          * 0.5f;
-        stereo_delay_buf[stereo_delay_pos++] = delayed_sample[0];
-        out_sample[1] = (out_sample[1]+stereo_delay_buf[stereo_delay_pos])
-          * 0.5f;
-        stereo_delay_buf[stereo_delay_pos++] = delayed_sample[1];
+        stereo_delay_buf[stereo_delay_pos++] = delayed_sample;
+        out_sample[0] = out_sample[0] - (l_minus_r * 0.5)
+          + stereo_delay_buf[stereo_delay_pos];
+        out_sample[1] = out_sample[1] + (l_minus_r * 0.5)
+          - stereo_delay_buf[stereo_delay_pos];
         if(stereo_delay_pos >= stereo_delay_buf.size())
           stereo_delay_pos = 0;
       }
