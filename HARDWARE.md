@@ -710,4 +710,4 @@ Then, use code like the following (assuming the standard ET license block is pre
         STA r_CRAMPort
         RTS
 
-SimpleConfig will clobber RAM addresses `$0000-$0012` and `$4000-$7FFF`. It makes no assumptions about the initial values of these addresses.
+SimpleConfig will clobber RAM addresses `$00`, `$00EE-$00FF`, and `$4000-$7FFF`. It makes no assumptions about the initial values of these addresses.

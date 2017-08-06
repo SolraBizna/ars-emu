@@ -6,7 +6,7 @@
 .MEMORYMAP
 DEFAULTSLOT 0
 SLOT 0 $F000 $0800
-SLOT 1 $0001 $00FF ; zero page
+SLOT 1 $00EE $0012 ; the part of zero page we can use
 SLOT 2 $0256 $79AA ; WRAM
 .ENDME
 .ROMBANKSIZE $0800
