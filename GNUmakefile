@@ -135,7 +135,7 @@ obj/%.res: src/%.rc
 obj/%.65c.o: asm/%.65c $(wildcard asm/*.inc)
 	@mkdir -p obj
 	@echo Assembling "$<"...
-	@wla-65c02 -qo "$<" "$@"
+	@wla-65c02 -q -o "$@" "$<"
 
 clean:
 	rm -rf bin obj include/gen
