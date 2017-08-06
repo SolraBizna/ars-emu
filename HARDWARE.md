@@ -424,8 +424,8 @@ On any cycle where a particular meaningful read or write does not take place, th
 - `$4`: Mapping type (must be `$00`)
 - `$5`: Expansion hardware flags
   - `$01`: Developer debug port
-  - `$40`: emulator configuration module
-  - `$80`: homebrew achievements module
+  - `$40`: homebrew achievements module
+  - `$80`: emulator configuration module
 - (remaining bytes describe mapping type 0)
 - `$6`: ROM1 size
 - `$7`: ROM2 size
@@ -634,6 +634,8 @@ Commands:
 With a proper `.BANK` directive, this will put SimpleConfig into your ROM. SimpleConfig expects to be mapped to `$F000` through `$F7FF`.
 
 Use the standard handshake to determine if the Emulator Configuration port is present in the first place. If it is, you can present a menu option to the user (for example) to enter the configuration screen.
+
+Don't forget to set bit 7 of byte `$5` of the header!
 
 Then, use code like the following (assuming the standard ET license block is present and active):
 
