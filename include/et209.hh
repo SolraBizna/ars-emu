@@ -141,7 +141,7 @@ public:
 
     The "original" ET209 had only two DACs, which outputted the equivalent of:
 
-     left DAC = L+B+(C>>1)
+     left DAC = L+B+(C>>1)    (the low bit of C is *discarded*)
     right DAC = R+B+(C>>1)
 
     If L and R are 0dB, B is +6dB (because it's present on both channels, and
@@ -180,7 +180,7 @@ public:
       auto val = q6_multiply(eval_waveform(voice_accumulator[voice],
                                            user.waveform[voice]),
                              user.volume[voice] & 127);
-      out_samples[user.waveform[voice] & WAVEFORM_PAN_MASK] += val;
+      out_samples[user.waveform[voice] >> 6] += val;
     }
     uint8_t noise_sum = 0;
     if((user.noise_volume & VOLUME_RESET_FLAG) != 0) {

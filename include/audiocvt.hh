@@ -9,17 +9,17 @@ class AudioCvt {
 protected:
   const int number_of_input_frames;
   const int maximum_number_of_output_frames;
-  const int input_channels;
+  const int channels;
   float* output_buffer;
   float* position_in_output_buffer, *end_of_output_buffer;
-  AudioCvt(int number_of_input_frames, int input_channels,
+  AudioCvt(int number_of_input_frames, int channels,
            int maximum_number_of_output_frames)
     : number_of_input_frames(number_of_input_frames),
       maximum_number_of_output_frames(maximum_number_of_output_frames),
-      input_channels(input_channels),
+      channels(channels),
       output_buffer(reinterpret_cast<float*>
                     (safe_malloc(maximum_number_of_output_frames
-                                 * input_channels
+                                 * channels
                                  * sizeof(float)))),
       position_in_output_buffer(nullptr),
       end_of_output_buffer(nullptr) {}
@@ -32,14 +32,14 @@ public:
   virtual void ConvertMore(const float* in) = 0;
   virtual bool NeedsLap() = 0;
   void CrosslapAwayFrom(AudioCvt& other) {
-    assert(other.input_channels == input_channels);
+    assert(other.channels == channels);
     int amount_to_lap = std::min(GetNumberOfSamplesRemaining(),
                                  other.GetNumberOfSamplesRemaining());
     assert(amount_to_lap > 1);
     float* ap = position_in_output_buffer;
     const float* bp = other.position_in_output_buffer;
     for(int i = 0; i < amount_to_lap; ++i) {
-      for(int j = 0; j < input_channels; ++j) {
+      for(int j = 0; j < channels; ++j) {
         *ap = *bp + (*ap - *bp) * i / amount_to_lap;
         ++ap;
         ++bp;
@@ -53,6 +53,10 @@ public:
     return position_in_output_buffer;
   }
   void AdvanceOutput(int amount_to_advance) {
+    //assert(channels == 1 || amount_to_advance % channels == 0);
+    if(!(channels == 1 || amount_to_advance % channels == 0)) {
+      printf("%i, %i\n", amount_to_advance, channels);
+    }
     assert(GetNumberOfSamplesRemaining() >= amount_to_advance);
     position_in_output_buffer += amount_to_advance;
   }
@@ -63,6 +67,6 @@ std::unique_ptr<AudioCvt> MakeAudioCvt(int quality_hint,
                                        float source_rate,
                                        float dest_rate,
                                        int number_of_input_samples,
-                                       bool input_is_stereo);
+                                       int number_of_channels);
 
 #endif

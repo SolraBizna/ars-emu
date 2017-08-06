@@ -56,7 +56,7 @@ std::unique_ptr<AudioCvt> MakeAudioCvt(int quality_hint,
     switch(input_channels) {
     case 1:
       return std::make_unique<NNCvt<1>>
-        (number_of_input_samples/1, source_rate, dest_rate);
+        (number_of_input_samples, source_rate, dest_rate);
     case 2:
       return std::make_unique<NNCvt<2>>
         (number_of_input_samples/2, source_rate, dest_rate);
@@ -67,7 +67,8 @@ std::unique_ptr<AudioCvt> MakeAudioCvt(int quality_hint,
       return std::make_unique<NNCvt<4>>
         (number_of_input_samples/4, source_rate, dest_rate);
     default:
-      die("Internal error: wrong number of channels for MakeAudioCvt");
+      die("Internal error: wrong number of channels for MakeAudioCvt (%i)",
+          input_channels);
     }
   }
   else {

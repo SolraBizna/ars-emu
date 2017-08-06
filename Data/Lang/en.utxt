@@ -313,6 +313,15 @@ GAMEPAD_IGNORED
 extra gamepad ignored
 .
 
+: Displayed if the audio system couldn't initialize with a given channel count.
+: $1: SOUND_TYPE_* value for the setup that is being used instead of the one
+: the user asked for.
+:::::::::::::::::::::::::::
+AUDIO_TYPE_DOWNGRADED_TO
+Unsupported output type.
+Downgraded to $1.
+.
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : TEG messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -588,17 +597,38 @@ AUDIO_MENU_SOUND_TYPE
 Output:
 .
 
+: These are also used in UI messages, when downgrading occurs
 : One speaker. (Currently unused)
-AUDIO_MENU_MONO
+SOUND_TYPE_MONO
 Mono
 .
 : Two speakers.
-AUDIO_MENU_STEREO
+SOUND_TYPE_STEREO
 Stereo
 .
 : Headphones.
-AUDIO_MENU_HEADPHONES
+SOUND_TYPE_HEADPHONES
 Headphones
+.
+: Four speakers, in a square.
+SOUND_TYPE_QUADRAPHONIC
+Quadraphonic
+.
+: Front Left/Right, Center, and LFE speakers.
+SOUND_TYPE_SURROUND_31
+3.1 Surround
+.
+: Front Left/Right, Center, and Rear speakers.
+SOUND_TYPE_SURROUND_40
+4.0 Surround
+.
+: Front Left/Right, Center, LFE, and Rear (or Side) Left/Right speakers.
+SOUND_TYPE_SURROUND_51
+5.1 Surround
+.
+: Front Left/Right, Center, LFE, Rear Left/Right, and Side Left/Right speakers.
+SOUND_TYPE_SURROUND_71
+7.1 Surround
 .
 
 : Which method of synchronizing the emulated audio and video to use
