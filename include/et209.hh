@@ -37,7 +37,8 @@
   emulator would just have to recenter it anyway. Note that this IS the correct
   range, even though it appears to be centered closer to -4 than to 0!
 
-  (The above applies separately to each channel, and to L+C+B and R+C+B.)
+  (The above applies both to each individual channel, and to the sum of each
+  channel.)
 
   This class does NOT simulate the analog component of the ARS audio circuit,
   which also includes a low-pass RC filter with τ≈0.000024.
