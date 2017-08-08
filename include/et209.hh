@@ -73,7 +73,7 @@ public:
   static constexpr uint8_t WAVEFORM_OUTPUT_ACCUMULATOR_FLAG = 32;
   static constexpr uint8_t WAVEFORM_SIGNED_RESET_MASK = 48;
   static constexpr uint8_t WAVEFORM_PAN_MASK = 192;
-  static constexpr uint8_t WAVEFORM_PAN_HALF = 0;
+  static constexpr uint8_t WAVEFORM_PAN_CENTER = 0;
   static constexpr uint8_t WAVEFORM_PAN_LEFT = 128;
   static constexpr uint8_t WAVEFORM_PAN_RIGHT = 64;
   static constexpr uint8_t WAVEFORM_PAN_FULL = 192;
