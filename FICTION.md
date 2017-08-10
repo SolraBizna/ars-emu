@@ -49,7 +49,7 @@ Finally, there is the overlay. It is a non-scrollable 32x28 tilemap, which is al
 
 ## Audio
 
-The ARS contains a custom "digital synthesizer" chip. It theoretically outputs at just over 47988Hz&mdash;the main clock divided by 256. It supports seven "voices", each of which can be a square, sawtooth, triangle, pulse, or strange hybrid wave. It also has a noise generator that can output white or periodic noise at various bandwidths.
+The ARS contains a custom "digital synthesizer" chip. It theoretically outputs at just over 47988Hz&mdash;the main clock divided by 256. It supports seven "voices", each of which can be a square, sawtooth, triangle, pulse, or strange hybrid wave. It also has a noise generator that can output white or periodic noise at various bandwidths. It has limited stereo capability; each voice can either be Center, Left, Right, or Boosted. (Noise is always Boosted.)
 
 ## Controller
 

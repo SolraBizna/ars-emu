@@ -285,7 +285,7 @@ Note that even though `$0227` is not used, writes to this address can still stal
 
 ## Noise
 
-The APU uses a 15-bit LFSR to produce white-ish noise. The APU "block clock" (1/16th APU clock, 1/32nd main clock) is divided by `$022F`+1 to clock the LFSR. Thus, higher `$022F` values produce a greater divisor, and therefore noise with a lower "pitch". In each block, the current output of the LFSR (1 or 0) is added to a counter, and in the final block that counter is modulated into the output sample as if it were an eighth voice output.
+The APU uses a 15-bit LFSR to produce white-ish noise. The APU "block clock" (1/16th APU clock, 1/32nd main clock) is divided by `$022F`+1 to clock the LFSR. Thus, higher `$022F` values produce a greater divisor, and therefore noise with a lower "pitch". In each block, the current output of the LFSR (1 or 0) is added to a counter, and in the final block that counter is modulated into the output samples as if it were an eighth voice output.
 
 The volume register is just as with the voices. The high bit resets the LFSR.
 
@@ -348,7 +348,7 @@ Waveform bits:
 - Bit 3: Invert all (toggled on carry if bit 4)  
 - Bit 4: Toggle "invert all" bit on carry  
 - Bit 5: Output accumulator  
-- Bit 6 and 7: Unused
+- Bit 6 and 7: Pan (see below)
 
 Invert bits stack. e.g. if bit 0 and 1 are set, this results in an inverted 12.5-25%.
 
@@ -361,6 +361,14 @@ Some useful waveforms:
 - `$09`: Inverted 25% like NES duty cycle 3 (1x rate)
 - `$20`: Sawtooth wave (1/2 rate)
 - `$30`: Triangle wave (1x rate)
+- `$F0`: Boosted triangle wave, good for bass
+
+Pan values:
+
+- `00`: Center. The voice will be played on both speakers at half volume. (Unless the speakers are out of phase, this results in the same volume as Left or Right.)
+- `01`: Right. The voice will be played at full volume, but only on the right speaker.
+- `10`: Left. The voice will be played at full volume, but only on the left speaker.
+- `11`: Boosted. The voice will be played at full volume in both speakers. This is used almost exclusively with triangle waves. (Unless the speakers are out of phase, this results in double the volume of Center/Left/Right.)
 
 Volume bits:
 
@@ -383,8 +391,8 @@ Voice block cycle timings:
 2. Read actual rate high byte, begin comparison for slide
 3. Read target rate low byte
 4. Read actual rate low byte
-5. Write actual rate low byte, load accumulator into adder B
-6. Write actual rate high byte, load actual rate into adder A
+5. Write actual rate low byte, load accumulator into first adder A
+6. Write actual rate high byte, load actual rate into first adder B
 7. Read volume register into multiplier A, write {Q,0} (depending on reset flag) into accumulator
 8. Evalute waveform, load waveform sample into multiplier B
 9. Add LFSR state to noise counter
@@ -392,9 +400,9 @@ Voice block cycle timings:
 11. (dead cycle)
 12. (dead cycle)
 13. (dead cycle)
-14. Read multiplier Q into adder A
-15. Read sample accumulator into adder B
-16. Write adder Q to sample accumulator
+14. Read multiplier Q, shift/mask and write to both adder As
+15. Read sample accumulators into adder Bs
+16. Write adder Qs to sample accumulators
 
 Mix block cycle timings:
 
@@ -411,9 +419,9 @@ Mix block cycle timings:
 11. (dead cycle)
 12. (dead cycle)
 13. (dead cycle)
-14. Read multiplier Q into adder A
-15. Read sample accumulator into adder B
-16. Write adder Q to DAC latch, and 0 to sample accumulator
+14. Read multiplier Q into both adder As
+15. Read sample accumulators into both adder Bs
+16. Write adder Qs to DAC latches, and 0 to sample accumulators
 
 On any cycle where a particular meaningful read or write does not take place, the last address accessed is generally read.
 
