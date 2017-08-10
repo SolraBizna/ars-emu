@@ -10,6 +10,7 @@
 #include <functional>
 
 class Menu : public std::enable_shared_from_this<Menu> {
+  static std::vector<std::shared_ptr<Menu> > menus;
 public:
   class Item;
 private:
@@ -124,6 +125,9 @@ public:
   static void backOutOfMenu();
   static void weaklyBackOutOfMenu();
   static void tearDownMenus(bool mayReset = true);
+  static bool anyMenuIsActive() {
+    return !menus.empty();
+  }
   static std::shared_ptr<Menu> getTopMenu();
   static std::shared_ptr<Menu> createMainMenu();
   static std::shared_ptr<Menu> createFightMenu();

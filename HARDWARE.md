@@ -545,11 +545,13 @@ The emulator will load a cartridge which contains a HAM, but will always ignore 
 
 ## Emulator configuration
 
-Provides generic access to emulator configuration. Homebrew games can use this to provide in-game configuration menus. The built-in configuration system for the emulator uses this. (It is recommended to embed SimpleConfig into your ROM rather than write your own configuration system.)
+Provides generic access to emulator configuration. Homebrew games can use this to provide in-game configuration menus. The built-in configuration system for the emulator (SimpleConfig) uses this.
 
-On a cold read (no other command in progress), returns `$EC`. Whenever a byte is written to the port, any previous command result is discarded.
+If (and ONLY if) the Configuration port is enabled on the command line, *and* the ROM image has bit 7 set in its expansion hardware flags, will the port be fully enabled. If the port is neither enabled nor disabled on the command line, and bit 7 is set in the expansion hardware flags, the port will be enabled in "secure" mode. (See below.)
 
-Configuration must be enabled on the command line to be usable. If the command line does not include that option, the configuration module will be missing even if the ROM image requests it. Configuration is always disabled in movie playback.
+When the port is enabled, a cold read (no other command in progress), returns `$EC`, and whenever a byte is written to the port, any previous command result is discarded.
+
+If the Configuration port is not enabled, reads will normally be open bus.
 
 Recommended handshake sequence:
 
@@ -561,7 +563,7 @@ Recommended handshake sequence:
     ; Test cold read
     LDA r_EmuConfig
     CMP #$EC
-    BNE notPresent
+    BNE _notPresent
     ; Echo sequence, unlikely on an open bus, even a badly emulated one
     STZ r_EmuConfig
     LDA #$22
@@ -569,10 +571,28 @@ Recommended handshake sequence:
     STA r_EmuConfig
     STX r_EmuConfig
     CMP r_EmuConfig
-    BNE notPresent
+    BNE _notPresent
     CPX r_EmuConfig
-    BNE notPresent
+    BNE _notPresent
     ; If execution reaches here, the device is present and usable
+
+This is sufficient if you are just planning to jump into SimpleConfig. To determine if you have permission to run non-standard configuration code (which I don't recommend writing in the first place), an additional check is required:
+
+    ; Read menu cookie
+    LDA #$0B
+    STA r_EmuConfig
+    LDA r_EmuConfig
+    ; If the Configuration Port is working, the menu cookie will never be $EC
+    CMP #$EC
+    BEQ _customConfigCodeNotAllowed
+
+When the emulator is in its default, "secure" configuration mode, all reads and writes to the Emulator Configuration port are open bus, just like if the port is disabled... *unless* an untampered, known-good SimpleConfig program is present in the `$F000-$F7FF` region. If that code is present, all reads to the port from outside that code return `$EC`, and all writes are ignored. To summarize, there are three possible outcomes to program against:
+
+- Handshake fails. Configuration is disabled (or SimpleConfig is not mapped correctly)
+- Handshake succeeds, but reading the menu cookie gives `$EC`. Custom configuration code will not run, but jumping into SimpleConfig will work correctly.
+- Handshake succeeds, and reading the menu cookie gives something other than `$EC`. Custom configuration code will run.
+
+To reiterate, it will always be safe to activate SimpleConfig if the standard handshake succeeds. **You only need to care about the difference between "secure" and fully enabled mode if you are writing your own configuration code.** (Which, again, you probably shouldn't do.)
 
 When reading a rendered string, read a byte giving the number of columns, then sixteen bytes per column giving a two-tile-high 1-bit bitmap containing the rendered text. Rendered strings will never contain more than 28 columns. 
 
@@ -618,10 +638,14 @@ Commands:
   Calling this on anything that isn't a key config item is a bad idea.
 - `$0A`, `n`: Change selection in reverse direction (for selectors only)
 - `$0B`: Read menu cookie  
-  Reads a value that will change whenever the currently active menu changes.
+  Reads a value that will change whenever the currently active menu changes. This cookie will never equal `$EC`; this is important in "secure" configuration mode.
 - `$FF`: Guaranteed to do nothing (except that, like any other command, it discards any previous command result)
 
+The Emulator Configuration port is always disabled in movie recording and playback.
+
 ### Embedding SimpleConfig
+
+Unless requested otherwise on the command line, the emulator *will* trust SimpleConfig with configuration port manipulation, even if it won't trust third-party code. If you follow the directions below, your ROM will have access to the emulator configuration port by default... as long as it only accesses it through SimpleConfig.
 
     .ORGA $F000
     .SECTION "!SimpleConfig" FORCE
@@ -633,7 +657,7 @@ Commands:
 
 With a proper `.BANK` directive, this will put SimpleConfig into your ROM. SimpleConfig expects to be mapped to `$F000` through `$F7FF`.
 
-Use the standard handshake to determine if the Emulator Configuration port is present in the first place. If it is, you can present a menu option to the user (for example) to enter the configuration screen.
+**Make sure SimpleConfig's bank is mapped**, then use the standard handshake to determine if the Emulator Configuration port is present. If it is, you could (for example) present a menu option within your game's menu system to enter the configuration screen, confident that jumping into SimpleConfig will work as desired. (However, this does not necessarily mean that custom code accessing the Emulator Configuration port will work.)
 
 Don't forget to set bit 7 of byte `$5` of the header!
 
@@ -710,4 +734,4 @@ Then, use code like the following (assuming the standard ET license block is pre
         STA r_CRAMPort
         RTS
 
-SimpleConfig will clobber RAM addresses `$00`, `$00EE-$00FF`, and `$4000-$7FFF`. It makes no assumptions about the initial values of these addresses.
+SimpleConfig will clobber RAM addresses `$00`, `$00EE-$00FF`, and `$4000-$7FFF`. It makes no assumptions about the initial values of these addresses. If the emulator is in "secure" configuration mode, and the configuration system is currently active, writes to these addresses from outside SimpleConfig are blocked.

@@ -11,7 +11,7 @@ LD=i386-apple-darwin10-g++
 MIN_VERSION_OPTION=-mmacosx-version-min=10.6
 
 # Flags passed to all calls that involve a C preprocessor.
-CPPFLAGS=-Iinclude/ -Isrc/teg/ -Isrc/libsn/ -I/opt/releng/mac/include/lua5.3 -DMACOSX -DDROPPY_OS
+CPPFLAGS=-Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -I/opt/releng/mac/include/lua5.3 -DMACOSX -DDROPPY_OS
 CPPFLAGS_DEBUG=-DDEBUG=1
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.

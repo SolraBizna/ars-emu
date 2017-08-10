@@ -29,6 +29,7 @@ SN::Context sn;
 
 namespace {
   uint8_t bankMap[8];
+  uint16_t last_known_pc;
   std::string rom_path;
   bool rom_path_specified = false;
   std::unique_ptr<CPU>(*makeCPU)(const std::string&) = makeScanlineCPU;
@@ -41,8 +42,10 @@ namespace {
   constexpr int MESSAGES_MARGIN_Y = 8;
   constexpr int MESSAGE_LIFESPAN = 300;
   bool window_visible = true, window_minimized = false, quit = false,
-    allow_debug_port = false, allow_config_port = false, quit_on_stop = false,
-    stop_has_been_detected = false, need_reset = true;
+    allow_debug_port = false, always_allow_config_port = false,
+    allow_secure_config_port = true, quit_on_stop = false,
+    stop_has_been_detected = false, need_reset = true,
+    secure_config_port_checked = false, secure_config_port_available;
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
   SDL_Texture* frametexture = nullptr, *messagetexture = nullptr;
@@ -172,12 +175,16 @@ namespace {
   void busconflict(uint16_t addr) {
     ui << sn.Get("BUS_CONFLICT"_Key, {TEG::format("%04X",addr)}) << ui;
   }
+  bool config_port_access_is_secure(uint16_t pc) {
+    return pc >= 0xF000 || pc <= 0xF7FF;
+  }
   void mainLoop() {
     if(need_reset) {
       need_reset = false;
       cartridge->handleReset();
       PPU::handleReset();
       cpu->handleReset();
+      secure_config_port_checked = false;
       for(size_t n = 0; n < sizeof(bankMap); ++n)
         bankMap[n] = cartridge->getPowerOnBank();
       epoch = std::chrono::high_resolution_clock::now();
@@ -323,8 +330,13 @@ namespace {
           case 'A':
             debugging_audio = true;
             break;
+          case 'z':
+            always_allow_config_port = false;
+            allow_secure_config_port = false;
+            break;
           case 'C':
-            allow_config_port = true;
+            always_allow_config_port = true;
+            allow_secure_config_port = false;
             /* fall through */
           case 'q':
             quit_on_stop = true;
@@ -430,6 +442,7 @@ void ARS::temporalAnomaly() {
 
 uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
   // TODO: detect bus conflicts
+  if(SYNC) last_known_pc = addr;
   (void)busconflict;
   if(addr < 0x8000) {
     if((addr & 0xFFF9) == 0x0211)
@@ -440,9 +453,23 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
       case 1: return controller2->input();
       case 5: return 0; break; // TODO: HAM
       case 6:
-        if(allow_config_port
-           && cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG))
-          return Configurator::read();
+        if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
+          if(always_allow_config_port)
+            return Configurator::read();
+          else if(allow_secure_config_port) {
+            if(!secure_config_port_checked) {
+              secure_config_port_checked = true;
+              secure_config_port_available
+                = Configurator::is_secure_configurator_present();
+            }
+            if(secure_config_port_available) {
+              if(config_port_access_is_secure(last_known_pc))
+                return Configurator::read();
+              else
+                return 0xEC;
+            }
+          }
+        }
         return 0xBB;
       case 7:
         if(allow_debug_port
@@ -465,6 +492,13 @@ void ARS::write(uint16_t addr, uint8_t value) {
   // TODO: detect bus conflicts
   (void)busconflict;
   if(addr < 0x8000) {
+    // prevent writes to SimpleConfig's working or display memory as long as
+    // the configurator is in use
+    if(allow_secure_config_port
+       && Configurator::is_protected_memory_address(addr)
+       && !Configurator::is_secure_configuration_address(last_known_pc)
+       && Configurator::is_active())
+      return;
     dram[addr] = value;
     if(addr >= 0x0200 && addr < 0x0250) {
       if((addr ^ 0x0210) < 16) PPU::complexWrite(addr, value);
@@ -474,6 +508,7 @@ void ARS::write(uint16_t addr, uint8_t value) {
           auto bs = cartridge->getBS();
           auto startBank = (addr&7)&~(7>>bs);
           auto stopBank = ((addr&7)|(7>>bs))+1;
+          secure_config_port_checked = false;
           for(auto n = startBank; n < stopBank; ++n) {
             bankMap[n] = value;
           }
@@ -492,9 +527,20 @@ void ARS::write(uint16_t addr, uint8_t value) {
             }
             break;
           case 6:
-            if(allow_config_port
-               && cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
-              Configurator::write(value);
+            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
+              if(always_allow_config_port)
+                return Configurator::write(value);
+              else if(allow_secure_config_port) {
+                if(!secure_config_port_checked) {
+                  secure_config_port_checked = true;
+                  secure_config_port_available
+                    = Configurator::is_secure_configurator_present();
+                }
+                if(secure_config_port_available) {
+                  if(config_port_access_is_secure(last_known_pc))
+                    return Configurator::write(value);
+                }
+              }
             }
             return;
           case 7:

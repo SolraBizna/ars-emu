@@ -12,9 +12,10 @@ namespace {
     std::array<std::string,4> getLabels() const override { return {}; }
   };
   std::shared_ptr<Dummy> dummyItem = std::make_shared<Dummy>();
-  std::vector<std::shared_ptr<Menu> > menus;
   std::shared_ptr<Menu> emptyMenu = std::make_shared<Menu>();
 }
+
+std::vector<std::shared_ptr<Menu> > Menu::menus;
 
 Menu::Item::~Item() {}
 void Menu::Item::activate() {}
@@ -102,17 +103,20 @@ void Menu::replaceActiveMenu(std::shared_ptr<Menu> menu) {
   SDL_assert(!menus.empty());
   menus.back() = menu;
   ++cookie;
+  if(cookie == 0xEC) ++cookie;
 }
 
 void Menu::addNewMenu(std::shared_ptr<Menu> menu) {
   menus.push_back(menu);
   ++cookie;
+  if(cookie == 0xEC) ++cookie;
 }
 
 void Menu::backOutOfMenu() {
   SDL_assert(!menus.empty());
   menus.pop_back();
   ++cookie;
+  if(cookie == 0xEC) ++cookie;
 }
 
 void Menu::weaklyBackOutOfMenu() {
@@ -120,6 +124,7 @@ void Menu::weaklyBackOutOfMenu() {
   if(menus.size() > 1) {
     menus.pop_back();
     ++cookie;
+    if(cookie == 0xEC) ++cookie;
   }
 }
 

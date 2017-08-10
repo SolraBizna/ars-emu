@@ -12,7 +12,7 @@ CROSS_COMPILE=1
 RELEASE_ONLY=1
 
 # Flags passed to all calls that involve a C preprocessor.
-CPPFLAGS=-MP -MMD -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -I../ars-emscripten-libs -DNO_MASK_MALLOC -DNO_MASK_STRDUP -DNO_DEBUG_CORES -DEMSCRIPTEN
+CPPFLAGS=-MP -MMD -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -I../ars-emscripten-libs -DNO_MASK_MALLOC -DNO_MASK_STRDUP -DNO_DEBUG_CORES -DEMSCRIPTEN
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.
 CFLAGS=-Wall -Wextra -Werror -s USE_SDL=2 -c

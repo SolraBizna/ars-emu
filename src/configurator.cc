@@ -7,8 +7,20 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include "lsx.hh"
 
 namespace {
+  /*
+    Note: if more SimpleConfig hashes are added here, it may be necessary to
+    make the range of "secured" addresses depend on exactly which one matched
+  */
+  const std::array<std::array<uint8_t, SHA256_HASHBYTES>, 1>
+  secure_simpleconfig_hashes = {
+    // first version considered "secure"
+    {0x1a, 0x77, 0x22, 0xe9, 0x62, 0x30, 0xba, 0x94, 0xec, 0x26, 0x00, 0xc9,
+     0x94, 0x6b, 0x63, 0x18, 0x8e, 0x64, 0xf9, 0xf6, 0xd6, 0xc5, 0xaa, 0xf1,
+     0x33, 0xd7, 0x36, 0xd0, 0x46, 0x1a, 0x7d, 0xe8},
+  };
   namespace Command {
     enum {
       ECHO_TWO = 0x00,
@@ -158,6 +170,35 @@ namespace {
     command_in_progress = Command::NOP;
     awaited_parameter_count = 0;
   }
+}
+
+bool ARS::Configurator::is_active() {
+  return Menu::anyMenuIsActive();
+}
+
+bool ARS::Configurator::is_secure_configurator_present() {
+  static_assert((0xF800 - 0xF000) % SHA256_BLOCKBYTES == 0,
+                "The length of the SimpleConfig secure area must be a multiple"
+                " of the SHA-256 block size");
+  uint8_t buf[SHA256_BLOCKBYTES];
+  lsx::sha256_expert sha256;
+  for(unsigned addr = 0xF000; addr < 0xF800; addr += SHA256_BLOCKBYTES) {
+    for(unsigned subindex = 0; subindex < SHA256_BLOCKBYTES; ++subindex) {
+      buf[subindex] = ARS::read(addr+subindex, false, false, false);
+      if(ARS::read(addr+subindex, false, false, true) != buf[subindex]) {
+        // cursory SYNC lo/hi check helps ensure that future mapper trickery
+        // doesn't cause a subtle security leak
+        return false;
+      }
+    }
+    sha256.input(buf, 1);
+  }
+  std::array<uint8_t, SHA256_HASHBYTES> hash;
+  sha256.finish(hash.data());
+  for(auto& known_secure_hash : secure_simpleconfig_hashes) {
+    if(known_secure_hash == hash) return true;
+  }
+  return false;
 }
 
 uint8_t ARS::Configurator::read() {

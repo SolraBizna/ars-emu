@@ -27,7 +27,9 @@ Known options:
       fast_debug: Scanline-based renderer, built-in (English only) debugger.
       fast_intprof: Scanline-based renderer. Does some simple performance
         profiling of the emulated code and outputs it on stdout.
--C: Allow access to emulator configuration features (implies -q)
+-C: Always allow access to emulator configuration features (implies -q)
+-z: Never allow access to emulator configuration features, even for embedded
+    copies of SimpleConfig
 -d: Allow the cartridge to print to stderr (for debugging purposes)
 -q: Quit when STP is executed
 -s: Use safe video and sound settings (for recovering from bad configurations)
