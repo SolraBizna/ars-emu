@@ -202,7 +202,7 @@ namespace ARS {
     inline bool is_protected_memory_address(uint16_t addr) {
       return (addr >= 0xEE && addr <= 0xFF)
         || (addr >= 0x4000 && addr <= 0x7FEF)
-        || is_secure_configuration_address(addr);
+        || addr >= 0x8000;
     }
     void write(uint8_t d);
     uint8_t read();
