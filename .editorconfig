@@ -1,0 +1,27 @@
+# I concur with @AdmiralPotato. EditorConfig is awesome.
+# http://editorconfig.org
+
+# This is the top-most file
+root = true
+
+# Things that apply to all files
+[*]
+# What everyone calls UNIX line endings... I wonder if I should call C line
+# endings...
+end_of_line = lf
+# Always end in a newline.
+insert_final_newline = true
+# What other 8-bit encodings are there?
+charset = utf-8
+
+[*.{c,cc,h,hh}]
+indent_style = space
+indent_size = 2
+
+[*.lua]
+indent_style = space
+indent_size = 3
+
+[{GNUmakefile,*.mk,*.{65c,inc}}]
+indent_style = tab
+indent_size = 8
