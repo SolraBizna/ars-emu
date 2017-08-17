@@ -338,6 +338,8 @@ namespace {
       // preserve volumes
       out_frame[0] = (raw_frame[0]+raw_frame[1]+raw_frame[2]+2*raw_frame[3])
         * ET209_OUTPUT_TO_FLOAT_SAMPLE * 0.5f;
+      prev_frame[0] =
+        out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
       break;
     case 2:
       // do exactly what a "real" ARS would do
@@ -345,8 +347,10 @@ namespace {
         * ET209_OUTPUT_TO_FLOAT_SAMPLE;
       out_frame[1] = (raw_frame[1]+(raw_frame[0]>>1)+raw_frame[3])
         * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-      out_frame[0] += (prev_frame[0] - out_frame[0]) * DAC_FILTER_COEFFICIENT;
-      out_frame[1] += (prev_frame[1] - out_frame[1]) * DAC_FILTER_COEFFICIENT;
+      prev_frame[0] =
+        out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[1] =
+        out_frame[1] += (prev_frame[1] - out_frame[1]) *DAC_FILTER_COEFFICIENT;
       break;
     case 3:
       // let's start rearranging things with tweezers now
@@ -354,9 +358,12 @@ namespace {
       out_frame[1] = raw_frame[1] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
       out_frame[2] = ((raw_frame[0]>>1) + raw_frame[3])
         * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-      out_frame[0] += (prev_frame[0] - out_frame[0]) * DAC_FILTER_COEFFICIENT;
-      out_frame[1] += (prev_frame[1] - out_frame[1]) * DAC_FILTER_COEFFICIENT;
-      out_frame[2] += (prev_frame[2] - out_frame[2]) * DAC_FILTER_COEFFICIENT;
+      prev_frame[0] =
+        out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[1] =
+        out_frame[1] += (prev_frame[1] - out_frame[1]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[2] =
+        out_frame[2] += (prev_frame[2] - out_frame[2]) *DAC_FILTER_COEFFICIENT;
       break;
     case 4:
       // the onion has blossomed
@@ -366,10 +373,14 @@ namespace {
         * ET209_OUTPUT_TO_FLOAT_SAMPLE;
       // TODO: Selectable LFE ratios
       out_frame[3] = raw_frame[3] * ET209_OUTPUT_TO_FLOAT_SAMPLE;
-      out_frame[0] += (prev_frame[0] - out_frame[0]) * DAC_FILTER_COEFFICIENT;
-      out_frame[1] += (prev_frame[1] - out_frame[1]) * DAC_FILTER_COEFFICIENT;
-      out_frame[2] += (prev_frame[2] - out_frame[2]) * DAC_FILTER_COEFFICIENT;
-      out_frame[3] += (prev_frame[3] - out_frame[3]) * LFE_FILTER_COEFFICIENT;
+      prev_frame[0] =
+        out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[1] =
+        out_frame[1] += (prev_frame[1] - out_frame[1]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[2] =
+        out_frame[2] += (prev_frame[2] - out_frame[2]) *DAC_FILTER_COEFFICIENT;
+      prev_frame[3] =
+        out_frame[3] += (prev_frame[3] - out_frame[3]) *LFE_FILTER_COEFFICIENT;
       break;
     }
   }
