@@ -536,7 +536,7 @@ namespace {
         }
         else {
           uint8_t bg_color, sprite_color = 0;
-          bool bg_priority, sprite_priority = false;
+          bool bg_priority, sprite_priority = false, sprite_exists = false;
           bg_engine.getState(bg_color, bg_priority);
           int sfi = 0;
           for(uint8_t i = 0; i < num_active_sprites; ++i, sfi += 3) {
@@ -553,12 +553,13 @@ namespace {
                            >>SA_PALETTE_SHIFT)
                           &SA_PALETTE_MASK)<<3)
                        |me_color)]+ARS::Regs.colorMod);
+              sprite_exists = true;
               sprite_priority = !!(sprite.TileAddr
                                    & SpriteState::FOREGROUND_MASK);
               break;
             }
           }
-          if(sprite_color != 0 && (sprite_priority || !bg_priority)
+          if(sprite_exists && (sprite_priority || !bg_priority)
              && show_sprites) {
             out_color = sprite_color;
           }
