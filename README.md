@@ -107,3 +107,41 @@ The emulator includes a compiled version of GNU Unifont. The source repository f
 
 The included version of GNU Unifont is 9.0.06, and is copyright (C) 2016 Roman Czyborra, Paul Hardy, Qianqian Fang, Andrew Miller, et al. It is licensed under the GNU General Public License version 2 or later, with the GNU Font Embedding Exception.
 
+# Missing, Planned Features
+
+## Video
+
+- Configuration, at all
+- Window resizeable by user
+- Selectable window size based on desired scaling (2x, 3x, 4x, etc.)
+- Option to reduce or disable overscan
+- Fullscreen mode
+- CRT effects
+    - NTSC modulation
+    - Scanlines
+    - Pixel layouts
+    - Bloom
+    - Ghosting
+    - Barrel distortion
+    - CRT housing
+
+## Audio
+
+- "Pinky mode" (aggressive lowpass filter for those with sensitive ears)
+
+## Input
+
+- Support for physical controllers outside the SDL Game Controller API
+- Support alternative controller setups
+- Additional controller types
+    - Light pen
+    - Light gun
+    - Keyboard
+
+## Emulation
+
+- Freeze/defrost
+- Fast forward
+- Game Genie-alike cheat support
+- Movie recording, playback, and rendering
+
