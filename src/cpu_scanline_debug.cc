@@ -6,6 +6,7 @@
 #include "w65c02_dis.hh"
 #include "io.hh"
 #include "eval.hh"
+#include "windower.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -99,6 +100,7 @@ namespace {
       stopped = true;
       ARS::temporalAnomaly();
       do {
+        Windower::Update();
         std::cout << "> ";
         std::string input_line;
         std::getline(std::cin, input_line);

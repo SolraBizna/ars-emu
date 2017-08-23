@@ -1,6 +1,7 @@
 #include "ars-emu.hh"
 #include <iostream>
 #include <iomanip>
+#include "windower.hh"
 
 using namespace ARS::PPU;
 
@@ -9,6 +10,37 @@ bool ARS::PPU::show_overlay = true,
   ARS::PPU::show_background = true;
 
 namespace {
+#if !NO_DEBUG_CORES
+  constexpr int DEBUG_WINDOW_PIXEL_SIZE = 1,
+    DEBUG_TILES_WIDE = 128, DEBUG_TILES_HIGH = 64,
+    DEBUG_DIVIDER_COUNT=15, DEBUG_TILES_PER_DIVIDER = 8;
+  SDL_Window* debugwindow = nullptr;
+  SDL_Renderer* debugrenderer;
+  SDL_Texture* debugtexture;
+  void debug_event(SDL_Event& evt);
+  void maybe_make_debug_window() {
+    if(debugwindow != nullptr) return;
+    debugwindow = SDL_CreateWindow("ARS-emu VRAM",
+                                   SDL_WINDOWPOS_UNDEFINED,
+                                   SDL_WINDOWPOS_UNDEFINED,
+                                   (8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT)
+                                   *DEBUG_WINDOW_PIXEL_SIZE,
+                                   DEBUG_WINDOW_PIXEL_SIZE*8*DEBUG_TILES_HIGH,
+                                   0);
+    if(debugwindow == nullptr)
+      die("Couldn't create video debugging window: %s", SDL_GetError());
+    Windower::Register(SDL_GetWindowID(debugwindow), debug_event);
+    debugrenderer = SDL_CreateRenderer(debugwindow, -1, 0);
+    if(debugrenderer == nullptr)
+      die("Couldn't create video debugging renderer: %s", SDL_GetError());
+    SDL_RenderSetLogicalSize(debugrenderer, 8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT, 8*DEBUG_TILES_HIGH);
+    debugtexture = SDL_CreateTexture(debugrenderer,
+                                     SDL_PIXELFORMAT_RGB332,
+                                     SDL_TEXTUREACCESS_STREAMING,
+                                     8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT,
+                                     8*DEBUG_TILES_HIGH);
+  }
+#endif
   constexpr int NUM_SPRITES = 64;
   struct SpriteState {
     // $0, $1; Y>240 = effectively disabled
@@ -285,6 +317,45 @@ namespace {
     ARS::cpu->setIRQ(curScanline >= ARS::Regs.irqScanline
                      && (curScanline & 0x80)==(ARS::Regs.irqScanline & 0x80));
   }
+#if !NO_DEBUG_CORES
+  void debug_event(SDL_Event& evt) {
+    switch(evt.type) {
+    default:
+      if(evt.type == Windower::UPDATE_EVENT) {
+        maybe_make_debug_window();
+        uint8_t* pixels;
+        int pitch;
+        SDL_LockTexture(debugtexture, nullptr,
+                        reinterpret_cast<void**>(&pixels), &pitch);
+        const uint8_t* vramp = vram;
+        for(int x = 0; x < DEBUG_TILES_WIDE; ++x) {
+          if(x % DEBUG_TILES_PER_DIVIDER == 0 && x != 0) {
+            for(int y = 0; y < DEBUG_TILES_HIGH * 8; ++y) {
+              pixels[pitch*y] = 0x80;
+            }
+            ++pixels;
+          }
+          for(int y = 0; y < DEBUG_TILES_HIGH; ++y) {
+            for(int r = 0; r < 8; ++r) {
+              uint8_t inv = (vramp-vram) == vramAccessPtr ? 0xFF : 0x00;
+              uint8_t plane = *vramp++;
+              for(int bit = 0; bit < 8; ++bit) {
+                pixels[bit] = ((plane&(128>>bit))?0x1C:0x00)^inv;
+              }
+              pixels += pitch;
+            }
+          }
+          pixels -= pitch * DEBUG_TILES_HIGH * 8;
+          pixels += 8;
+        }
+        SDL_UnlockTexture(debugtexture);
+        SDL_RenderClear(debugrenderer);
+        SDL_RenderCopy(debugrenderer, debugtexture, NULL, NULL);
+        SDL_RenderPresent(debugrenderer);
+      }
+    }
+  }
+#endif
 }
 
 void ARS::PPU::complexWrite(uint16_t addr, uint8_t value) {
@@ -511,6 +582,8 @@ namespace {
 }
 
 void ARS::PPU::renderToTexture(SDL_Texture* texture) {
+  if(ARS::debugging_video)
+    maybe_make_debug_window();
   ARS::cpu->setNMI(false);
   if(!(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK)) {
     ARS::cpu->runCycles((ARS::BLANK_CYCLES_PER_SCANLINE

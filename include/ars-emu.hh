@@ -31,7 +31,7 @@ namespace ARS {
                 "Incorrect CYCLES_PER_FRAME");
   static constexpr int CYCLES_PER_SCANOUT = CYCLES_PER_FRAME-CYCLES_PER_VBLANK;
   static constexpr int SAMPLES_PER_LOAD = 400;
-  extern bool safe_mode, debugging_audio;
+  extern bool safe_mode, debugging_audio, debugging_video;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
   static struct Regs {

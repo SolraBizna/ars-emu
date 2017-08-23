@@ -23,7 +23,8 @@ using namespace ARS;
 ARS::MessageImp ARS::ui;
 std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
-bool ARS::safe_mode = false, ARS::debugging_audio = false;
+bool ARS::safe_mode = false, ARS::debugging_audio = false,
+  ARS::debugging_video = false;
 uint8_t ARS::dram[0x8000];
 SN::Context sn;
 
@@ -329,6 +330,9 @@ namespace {
             break;
           case 'A':
             debugging_audio = true;
+            break;
+          case 'V':
+            debugging_video = true;
             break;
           case 'z':
             always_allow_config_port = false;

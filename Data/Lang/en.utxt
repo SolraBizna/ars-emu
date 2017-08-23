@@ -32,9 +32,10 @@ Known options:
     copies of SimpleConfig
 -d: Allow the cartridge to print to stderr (for debugging purposes)
 -q: Quit when STP is executed
--s: Use safe video and sound settings (for recovering from bad configurations)
+-S: Use safe video and sound settings (for recovering from bad configurations)
 -A: Enable additional (English only) audio debugging output (useful only when
     developing or porting ARS-emu)
+-V: Display VRAM in separate window (SLOW, but useful when developing games)
 
 .
 
