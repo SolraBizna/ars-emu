@@ -199,8 +199,8 @@ namespace {
       bg_color = (ARS::Regs.bgBasePalette[cur_screen]
                   <<4)|(palette<<2)|raw_color;
       auto bg_num_background_colors =
-        3 - ((ARS::Regs.bgForegroundInfo[cur_screen]>>(palette<<1))&3);
-      if(bg_num_background_colors != 0) ++bg_num_background_colors;
+        4 - ((ARS::Regs.bgForegroundInfo[cur_screen]>>(palette<<1))&3);
+      if(bg_num_background_colors != 4) --bg_num_background_colors;
       bg_priority = raw_color >= bg_num_background_colors;
     }
     uint8_t getPalette() {
@@ -278,8 +278,8 @@ namespace {
       bg_color = (ARS::Regs.bgBasePalette[cur_screen]
                   <<4)|(palette<<2)|raw_color;
       auto bg_num_background_colors =
-        3 - ((ARS::Regs.bgForegroundInfo[cur_screen] >>(palette<<1))&3);
-      if(bg_num_background_colors != 0) ++bg_num_background_colors;
+        4 - ((ARS::Regs.bgForegroundInfo[cur_screen] >>(palette<<1))&3);
+      if(bg_num_background_colors != 4) --bg_num_background_colors;
       bg_priority = raw_color >= bg_num_background_colors;
     }
     uint8_t getPalette() {
