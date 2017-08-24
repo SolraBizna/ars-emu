@@ -583,8 +583,10 @@ namespace {
 }
 
 void ARS::PPU::renderToTexture(SDL_Texture* texture) {
+#if !NO_DEBUG_CORES
   if(ARS::debugging_video)
     maybe_make_debug_window();
+#endif
   ARS::cpu->setNMI(false);
   if(!(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK)) {
     ARS::cpu->runCycles((ARS::BLANK_CYCLES_PER_SCANLINE
