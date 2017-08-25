@@ -1,4 +1,7 @@
 #include "ars-emu.hh"
+#include "cpu.hh"
+#include "ppu.hh"
+#include "apu.hh"
 #include "w65c02.hh"
 
 #if INTPROF

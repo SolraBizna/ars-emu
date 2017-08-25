@@ -1,4 +1,5 @@
 #include "ars-emu.hh"
+#include "apu.hh"
 #include "et209.hh"
 #include "prefs.hh"
 #include "config.hh"

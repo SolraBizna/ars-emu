@@ -1,5 +1,6 @@
 #if !NO_KEYBOARD
 #include "menu.hh"
+#include "controller.hh"
 
 #include "teg.hh"
 

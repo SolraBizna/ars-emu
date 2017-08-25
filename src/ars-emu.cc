@@ -6,6 +6,12 @@
 #include "utfit.hh"
 #include "prefs.hh"
 #include "windower.hh"
+#include "cpu.hh"
+#include "cartridge.hh"
+#include "controller.hh"
+#include "configurator.hh"
+#include "apu.hh"
+#include "ppu.hh"
 
 #include <iostream>
 #include <iomanip>

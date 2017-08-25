@@ -10,8 +10,6 @@
 extern "C" void die(const char* format, ...) __attribute__((noreturn,
                                                           format(printf,1,2)));
 
-class ET209;
-
 extern SN::Context sn;
 
 namespace ARS {
@@ -30,7 +28,13 @@ namespace ARS {
   static_assert(CYCLES_PER_FRAME == CYCLES_PER_SCANLINE * 525 / 2,
                 "Incorrect CYCLES_PER_FRAME");
   static constexpr int CYCLES_PER_SCANOUT = CYCLES_PER_FRAME-CYCLES_PER_VBLANK;
-  static constexpr int SAMPLES_PER_LOAD = 400;
+  static constexpr int LIVE_PIXELS_PER_SCANLINE = 256;
+  static_assert(LIVE_PIXELS_PER_SCANLINE == LIVE_CYCLES_PER_SCANLINE / 2,
+                "wrong implied dot clock");
+  static constexpr int LIVE_SCANLINES_PER_FRAME = 240;
+  static_assert((LIVE_SCANLINES_PER_FRAME * CYCLES_PER_SCANLINE
+                 + CYCLES_PER_VBLANK) * 60 == 12285000,
+                "wrong implied core clock");
   extern bool safe_mode, debugging_audio, debugging_video;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
@@ -68,149 +72,6 @@ namespace ARS {
     // $0228-$022F are complex on write
     uint8_t bankMap[8];
   }& Regs = *reinterpret_cast<struct Regs*>(dram+0x0200);
-  namespace PPU {
-    constexpr int INTERNAL_SCREEN_WIDTH = 256, INTERNAL_SCREEN_HEIGHT = 240;
-    constexpr int INTERNAL_SCREEN_TILES_WIDE = 32,
-      INTERNAL_SCREEN_TILES_HIGH = 30;
-    static_assert(INTERNAL_SCREEN_WIDTH/8 == INTERNAL_SCREEN_TILES_WIDE,
-                  "faulty WIDTH constant");
-    static_assert(INTERNAL_SCREEN_HEIGHT/8 == INTERNAL_SCREEN_TILES_HIGH,
-                  "faulty HEIGHT constant");
-    constexpr int INVISIBLE_SCANLINE_COUNT = 8;
-    constexpr int INVISIBLE_COLUMN_COUNT = 8;
-    constexpr int VISIBLE_SCREEN_WIDTH = 240, VISIBLE_SCREEN_HEIGHT = 224;
-    constexpr int VISIBLE_SCREEN_TILES_WIDE = 30, VISIBLE_SCREEN_TILES_HIGH=28;
-    static_assert(VISIBLE_SCREEN_WIDTH/8 == VISIBLE_SCREEN_TILES_WIDE,
-                  "faulty WIDTH constant");
-    static_assert(VISIBLE_SCREEN_HEIGHT/8 == VISIBLE_SCREEN_TILES_HIGH,
-                  "faulty HEIGHT constant");
-    constexpr int MODE1_BACKGROUND_TILES_WIDE = 32;
-    constexpr int MODE1_BACKGROUND_TILES_HIGH = 30;
-    constexpr int MODE2_BACKGROUND_TILES_WIDE = 32;
-    constexpr int MODE2_BACKGROUND_TILES_HIGH = 32;
-    constexpr int OVERLAY_TILES_WIDE = 32;
-    constexpr int OVERLAY_TILES_HIGH = 28;
-    void renderToTexture(SDL_Texture*);
-    void dummyRender();
-    void fillWithGarbage();
-    void handleReset();
-    void dumpSpriteMemory();
-    extern bool show_overlay, show_sprites, show_background;
-    // $0211, $0213, $0215, $0217
-    uint8_t complexRead(uint16_t addr);
-    // $0210-$021F
-    void complexWrite(uint16_t addr, uint8_t value);
-  }
-  static_assert(CYCLES_PER_SCANOUT == CYCLES_PER_SCANLINE
-                * PPU::INTERNAL_SCREEN_HEIGHT,
-                "CYCLES_PER_SCAN needs to be updated");
-  /* more of Cartridge's methods can be made virtual if more than one mapper
-     ever needs to be implemented */
-  extern class Cartridge {
-    std::string sram_path;
-    int sram_dirty = 0;
-    static constexpr int SRAM_DIRTY_FRAMES = 60;
-  protected:
-    const uint8_t* rom1, *rom2;
-    uint8_t* dram, *sram;
-    size_t sram_size;
-    size_t rom1_mask, rom2_mask, dram_mask, sram_mask;
-    uint8_t bank_shift, bank_size, dip_switches, power_on_bank,
-      expansion_hardware, overlay_bank;
-    Cartridge(const std::string& rom_path,
-              size_t rom1_size, const uint8_t* rom1_data,
-              size_t rom2_size, const uint8_t* rom2_data,
-              size_t dram_size, const uint8_t* dram_data,
-              size_t sram_size, const uint8_t* sram_data,
-              uint8_t bank_shift, uint8_t bank_size, 
-              uint8_t dip_switches, uint8_t power_on_bank,
-              uint8_t expansion_hardware, uint8_t overlay_bank);
-    /*virtual*/ ~Cartridge();
-    void markSramAsDirty() { sram_dirty = SRAM_DIRTY_FRAMES; }
-    uint32_t map_addr(uint8_t bank, uint16_t addr, bool OL = false,
-                      bool VPB = false, bool SYNC = false,
-                      bool write = false);
-  public:
-    static constexpr uint8_t EXPANSION_DEBUG_PORT = 0x01;
-    static constexpr uint8_t EXPANSION_HAM = 0x40;
-    static constexpr uint8_t EXPANSION_CONFIG = 0x80;
-    static constexpr uint8_t SUPPORTED_EXPANSION_HARDWARE = 0xC1;
-    static constexpr int IMAGE_HEADER_SIZE = 16;
-    /*virtual*/ uint8_t read(uint8_t bank, uint16_t addr,
-                             bool OL = false, bool VPB = false,
-                             bool SYNC = false);
-    /*virtual*/ void write(uint8_t bank, uint16_t addr, uint8_t value);
-    /*virtual*/ void handleReset();
-    uint8_t getPowerOnBank() { return power_on_bank; }
-    uint8_t getBS() { return bank_size; }
-    void flushSRAM();
-    /* Throws a std::string if loading the cartridge failed */
-    static void loadRom(const std::string& rom_path_name, std::istream&);
-    void oncePerFrame() {
-      if(sram_dirty > 1) --sram_dirty;
-      else if(sram_dirty == 1) flushSRAM();
-    }
-    bool hasHardware(uint8_t h) {
-      return !!(expansion_hardware & h);
-    }
-  }* cartridge;
-  class CPU {
-  protected:
-    CPU() {}
-  public:
-    virtual ~CPU() {}
-    virtual void handleReset() = 0;
-    virtual void eatCycles(int count) = 0;
-    virtual void runCycles(int count) = 0;
-    virtual void setIRQ(bool irq) = 0;
-    virtual void setSO(bool so) = 0;
-    virtual void setNMI(bool nmi) = 0;
-    virtual bool isStopped() = 0;
-    virtual void frameBoundary() {}
-    // don't forget, NMI active = masked IRQ
-  };
-  extern std::unique_ptr<CPU> cpu;
-  std::unique_ptr<CPU> makeScanlineCPU(const std::string& rom_path);
-  std::unique_ptr<CPU> makeScanlineIntProfCPU(const std::string& rom_path);
-  std::unique_ptr<CPU> makeScanlineDebugCPU(const std::string& rom_path);
-  class Controller {
-    uint8_t dOut, dIn;
-    bool dataIsFresh, strobeIsHigh;
-  protected:
-    Controller() : strobeIsHigh(true) {}
-    virtual uint8_t onStrobeFall(uint8_t curData) = 0;
-  public:
-    virtual ~Controller() {}
-    void output(uint8_t d);
-    uint8_t input();
-    static void initControllers();
-    /* returns true if the event was fully handled, false if the event needs
-       further handling (it may have been modified in the mean time) */
-    static bool filterEvent(SDL_Event&);
-    static std::string getNameOfHardKey(int player, int button);
-    static std::string getNamesOfBoundKeys(int player, int button);
-    static void startBindingKey(int player, int button);
-    static bool keyIsBeingBound();
-    static std::string getKeyBindingInstructions(int player, int button);
-  };
-  namespace Configurator {
-    bool is_active();
-    bool is_secure_configurator_present();
-    inline bool is_secure_configuration_address(uint16_t addr) {
-      return addr >= 0xF000 && addr <= 0xF7FF;
-    }
-    inline bool is_protected_memory_address(uint16_t addr) {
-      return (addr >= 0xEE && addr <= 0xFF)
-        || (addr >= 0x4000 && addr <= 0x7FEF)
-        || addr >= 0x8000;
-    }
-    void write(uint8_t d);
-    uint8_t read();
-  }
-  extern ET209 apu;
-  void init_apu(); // may be called more than once
-  void output_apu_sample();
-  extern std::unique_ptr<Controller> controller1, controller2;
   extern class MessageImp {
     std::ostringstream stream;
     void outputLine(std::string line, int lifespan_value);

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <iomanip>
 #include "windower.hh"
+#include "cpu.hh"
+#include "ppu.hh"
 
 using namespace ARS::PPU;
 

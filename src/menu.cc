@@ -1,4 +1,5 @@
 #include "menu.hh"
+#include "controller.hh"
 
 #include <vector>
 #include <algorithm>

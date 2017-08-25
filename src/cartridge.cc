@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "io.hh"
 #include <zlib.h>
+#include "cartridge.hh"
 
 #if ZLIB_VERNUM < 0x1210
 #error zlib version 1.2.1 or later is required

@@ -2,6 +2,8 @@
 #include "utfit.hh"
 #include "font.hh"
 #include "menu.hh"
+#include "configurator.hh"
+#include "controller.hh"
 
 #include <array>
 #include <vector>

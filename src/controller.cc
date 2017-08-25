@@ -1,5 +1,6 @@
 #include "ars-emu.hh"
 #include "teg.hh"
+#include "controller.hh"
 
 #include "prefs.hh"
 #include "config.hh"

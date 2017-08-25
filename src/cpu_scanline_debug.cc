@@ -7,6 +7,9 @@
 #include "io.hh"
 #include "eval.hh"
 #include "windower.hh"
+#include "cpu.hh"
+#include "apu.hh"
+#include "ppu.hh"
 
 #include <iostream>
 #include <iomanip>
