@@ -2,17 +2,7 @@ This is an emulator for a fictional 8-bit home video game system from the mid 19
 
 # Status
 
-Emulates all ARS hardware, as well as a fake Emulator Configuration port. Includes a fairly accurate, scanline-based emulator core, and a simple debugger. The scanline-based core probably runs at full speed on any 800MHz or faster system. Configuration and UI can be localized to any Unicode-compatible language that doesn't require combining characters.
-
-Still to be done:
-
-- <del>Better</del> Any video/audio configuration
-- Various levels of TV fakery
-- 100% cycle-accurate core, with accompanying debugger
-- ARM-optimized core, usable on the EOMA68 A20 Computer Card (if needed)
-- Exotic input devices (light pen, light gun, keyboard)
-- Modem cartridge
-- "Homebrew Achievements Module"
+Emulates all ARS hardware, as well as a fake Emulator Configuration port. Includes a fairly accurate, scanline-based emulator core, and a simple debugger. The scanline-based core probably runs at full speed on any 800MHz or faster system. Configuration and UI can be localized to any Unicode-compatible language that can be rendered entirely using precomposed characters, and that is readable in a horizontal layout. (LTR and RTL are both supported.)
 
 # Building
 
@@ -20,11 +10,11 @@ Building on Windows or macOS is not tested, but should be doable by tweaking the
 
 ## Dependencies
 
-The current version of ARS-emu requires SDL 2.0.4 or later. A future version will be usable all the way back to 2.0.0. Lua 5.3 and a recent zlib are also required.
+The current version of ARS-emu requires SDL 2.0.2 or later. A future version will be usable all the way back to 2.0.0. Lua 5.3 and a recent zlib are also required.
 
 Packages to install on Debian Stretch or later: `libsdl2.0-dev liblua5.3-dev zlib-dev`
 
-ARS-emu makes use of C++14 features, and requires a very recent C++ compiler. The code should compile with recent clang or GCC. Maybe it compiles with Microsoft's compiler too.
+ARS-emu makes use of C++14 features, and requires a very recent C++ compiler. The code should compile with recent clang or GCC. Maybe it compiles with Microsoft's compiler too, but you're on your own if you want to do that.
 
 ## Linux
 
@@ -53,7 +43,7 @@ and include the resulting JavaScript files in addition to `ars-emu-release.js`.
 
 You'll either have to edit one of the files in `make/target` or write one of your own. All of the targets already present (other than `Linux`) are intended for cross-compiling from my releng environment, and will require minor tweaking.
 
-If your build is happening with the wrong target, delete `make/cur_target.mk` and run `make` again again.
+If your build is happening with the wrong target, run `choose_target.sh`.
 
 # Limits (and lack thereof)
 
@@ -61,7 +51,7 @@ Ways in which the ARS's limitations are typical of 8-bit systems:
 
 - Simple controller (hat switch, three face buttons, and a pause button)
 - Limited audio synthesis (7 simple waveform channels and a noise channel)
-- Restricted color palette (based on the NTSC NES palette)
+- Restricted color palette (loosely based on the NTSC NES palette)
 - Small video resolution (approximately 240x224 usable area)
 - One scrollable background layer, with a limited palette
 - 64 sprites on screen, 8 pixels wide
@@ -70,8 +60,8 @@ Ways in which the ARS's limitations are typical of 8-bit systems:
 
 Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit system:
 
-- CPU is clocked *very* fast by 8-bit console standards (12.285MHz)
-- Memory is plentiful (see table below)
+- CPU is clocked *very* fast by 8-bit console standards (12.273MHz)
+- RAM is plentiful (see table below)
 - 3-bit sprites rather than the usual 2-bit ones (allowing Mega Man like sprites with ease)
 - No limit on sprites per scanline (which I **EARNED** by careful design and wanton wasting of gates!)
 
@@ -88,14 +78,16 @@ Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit syst
 
 # Documentation
 
-A brief history of Eiling Technologies and the Artificial Reality System console is in `FICTION.md`. A detailed description of the ARS hardware is in `HARDWARE.md`. Both documents are written in an "in-universe" tone.
+A brief history of Eiling Technologies and the Artificial Reality System console is in `FICTION.md`. A detailed description of the ARS hardware is in `HARDWARE.md`. Both documents are written in an "in-universe" tone, as if the ARS were a real product and Eiling Technologies were a real electronics company.
 
 # License
 
 ARS-emu is distributed under the GNU General Public License version 3 or later.
 
+This means:
+
 - If you distribute a modified binary of ARS-emu, you *must* provide the source code to your modifications.
-- Bundling a closed-source or otherwise GPL-incompatible game with a copy of ARS-emu is permitted, even encouraged. Doing so *does not* "infect" the game with the GPL. The only requirement is that the user must be free to subsitute their own build of ARS-emu, or a different emulator entirely, for the one you bundled.
+- Bundling a closed-source or otherwise GPL-incompatible game with a copy of ARS-emu is permitted, even encouraged. Doing so *does not* "infect" the game with the GPL. The only requirement for GPL compliance is that the user must be free to subsitute their own build of ARS-emu, or a different emulator entirely, for the one you bundled.
 
 ## SimpleConfig
 
@@ -138,10 +130,16 @@ The included version of GNU Unifont is 9.0.06, and is copyright (C) 2016 Roman C
     - Light gun
     - Keyboard
 
+## Hardware
+
+- Modem cartridge?
+
 ## Emulation
 
 - Freeze/defrost
 - Fast forward
 - Game Genie-alike cheat support
 - Movie recording, playback, and rendering
-
+- Cycle-based core and debugger (slightly more accurate, but much slower)
+- Low-fidelity core, usable on the original Raspberry Pi and on the EOMA68 A20 Computer Card
+- "Homebrew Achievements Module"
