@@ -14,6 +14,7 @@ while true; do
     echo "Please type one of the above target names (e.g. Linux) and press enter."
     read choice
     if [ -f "make/target/$choice.mk" ]; then
+        rm -f make/cur_target.mk
         ln -s "target/$choice.mk" make/cur_target.mk
         break
     else
