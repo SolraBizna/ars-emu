@@ -56,7 +56,7 @@ bin/Data:
 	@(cd bin; ln -s ../Data)
 
 ifndef CROSS_COMPILE
-Data/Font: bin/compile-font-release$(EXE) unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
+Data/Font: bin/compile-font-release$(EXE) dist/unifont-$(UNIFONT_VERSION)/font/precompiled/unifont-$(UNIFONT_VERSION).hex dist/unifont-$(UNIFONT_VERSION)/font/precompiled/unifont_upper-$(UNIFONT_VERSION).hex
 	@echo "Compiling font..."
 	@mkdir -p Data
 	@$^ > $@
