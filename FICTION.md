@@ -23,7 +23,7 @@ The fate of the two million unsold ARS units is unknown.
 
 ## CPU<a name="cpu">
 
-The main processor of the ARS is a [W65C02](https://en.wikipedia.org/wiki/WDC_65C02) running at 12.285MHz. This was excessive for the time, and few games made much actual use of this processing power.
+The main processor of the ARS is a [W65C02](https://en.wikipedia.org/wiki/WDC_65C02) running at about 12.273MHz. This was excessive for the time, and few games made much actual use of this processing power.
 
 ## Memory<a name="memory">
 
@@ -49,7 +49,7 @@ Finally, there is the overlay. It is a non-scrollable 32x28 tilemap, which is al
 
 ## Audio
 
-The ARS contains a custom "digital synthesizer" chip. It theoretically outputs at just over 47988Hz&mdash;the main clock divided by 256. It supports seven "voices", each of which can be a square, sawtooth, triangle, pulse, or strange hybrid wave. It also has a noise generator that can output white or periodic noise at various bandwidths. It has limited stereo capability; each voice can either be Center, Left, Right, or Boosted. (Noise is always Boosted.)
+The ARS contains a custom "digital synthesizer" chip. It theoretically outputs at just over 47940Hz&mdash;the main clock divided by 256. It supports seven "voices", each of which can be a square, sawtooth, triangle, pulse, or strange hybrid wave. It also has a noise generator that can output white or periodic noise at various bandwidths. It has limited stereo capability; each voice can either be Center, Left, Right, or Boosted. (Noise is always Boosted.)
 
 ## Controller
 

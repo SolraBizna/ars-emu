@@ -1,5 +1,17 @@
 <!--*- word-wrap: t; mode:markdown -*-->
 
+# Clocks
+
+The core clock of the ARS is exactly 135/11 MHz. This is because it's tied to the NTSC field rate of 59.94 fields per second. This results in the rather weird number 12.27272727...MHz for the core frequency, and this weirdness propagates downward to all the related clocks. However, computers output video at 60 frames per second, not 59.94. Therefore, it's convenient to multiply all these clocks by 1.001 when emulating on a computer. This makes games run 0.1% faster, and audio play back 1.73 cents out of tune, but everything else becomes so much easier that it's worth the hardly noticeable difference.
+
+Here are all the interesting clock rates in the console:
+
+| Clock   | NTSC                             | Emulated       | Notes    |
+| ------- | -------------------------------- | -------------- | -------- |
+| Core    | 135MHz/11 = 12.2727...MHz        |      12.285MHz |          |
+| Dot,APU | 135MHz/22 = 6.13636...MHz        |      6.1425MHz | Core/2   |
+| Audio   | 135MHz/2816 = 47.940340909...kHz | 47.98828125kHz | Core/256 |
+
 # Memory Map
 
 A15 might as well be an active-high "cartridge select" signal.
@@ -28,7 +40,7 @@ Note on registers: Writes to register space write both to the register and to Wo
 (no mark) Safe at all times, writes take effect immediately  
 [+] Writes take effect at some point during next H-blank  
 [H] Dangerous during (part of) H-blank, safe at other times  
-[O] Dangerous during scan-out, safe at other times  
+[O] Dangerous during scan-out, safe at other times
 
 `$0200`: [+]BG scroll X  
 `$0201`: [+]BG scroll Y  
@@ -52,9 +64,9 @@ Note on registers: Writes to register space write both to the register and to Wo
 
 `$0205`: Sprite palette info, per background region
 
-- Bit 0-1: High 2 bits of base location in CRAM for sprite palette (in BG0 region)  
-- Bit 2-3: As above for BG1 region  
-- Bit 4-5: As above for BG2 region  
+- Bit 0-1: High 2 bits of base location in CRAM for sprite palette (in BG0 region)
+- Bit 2-3: As above for BG1 region
+- Bit 4-5: As above for BG2 region
 - Bit 6-7: As above for BG3 region
 
 `$0206`: High 4 bits of base location in CRAM for BG0 palette  
@@ -63,9 +75,9 @@ Note on registers: Writes to register space write both to the register and to Wo
 `$0209`: As above for BG3  
 `$020A`: BG0 foreground info
 
-- Bit 0-1: For palette 0: 00 = no foreground colors, 01 = colors 2 and 3 are foreground, 10 = colors 1-3 are foreground, 11 = all colors are foreground  
-- Bit 2-3: As above for palette 1  
-- Bit 4-5: As above for palette 2  
+- Bit 0-1: For palette 0: 00 = no foreground colors, 01 = colors 2 and 3 are foreground, 10 = colors 1-3 are foreground, 11 = all colors are foreground
+- Bit 2-3: As above for palette 1
+- Bit 4-5: As above for palette 2
 - Bit 6-7: As above for palette 3
 
 `$020B`: As above for BG1  
@@ -265,7 +277,7 @@ The cartridge contains four 30-pin SIMM slots. The four slots are identical, and
 3. DRAM
 4. SRAM
 
-SIMMs must be capable of single-cycle operation at 12.285MHz. If there's a way to communicate to the IPL or the glue logic how large the modules are, I wasn't able to find it.
+SIMMs must be capable of single-cycle operation at 12.273MHz. If there's a way to communicate to the IPL or the glue logic how large the modules are, I wasn't able to find it.
 
 The cartridge also contains a bank of eight DIP switches that control how the B6/B7 pins select between the slots. Not coincidentally, the switches work in exactly the same way as mapping type `$00` in the ROM file format, and can describe the mappings of every official cartridge.
 
@@ -324,30 +336,30 @@ Here are the ET209 period and waveform values that come closest to matching part
 
 Rate is the value (minus one) added to the accumulator on each output sample. The mapping between rate values and frequencies is:
 
-    freq = rate * 47988.28125 / 65536
-    rate = freq * 65536 / 47988.28125
+    freq = rate * 47940.341 / 65536
+    rate = freq * 65536 / 47940.341
 
 As an example, assuming you wanted to output a standard "middle A" (440Hz):
 
-    rate = 440 * 65536 / 47988.28125 = 600.893369...
+    rate = 440 * 65536 / 47940.341 = 601.49426137791...
 
-A rate value of 601 is as close as you can get. It works out to be within 0.1Hz of the correct frequency. Subtract 1, and the value you write to the rate register is 600.
+A rate value of 601 is as close as you can get. It works out to be within 0.5Hz of the correct frequency. Subtract 1, and the value you write to the rate register is 600.
 
 The high 2 bits of the rates control hardware pitch slides.
 
 `00`: Instantaneous change  
-`01`: Four samples per 1-unit change (~8784.8Hz/s)  
-`10`: Eight sample per 1-unit change (~4392.4Hz/s)  
-`11`: Sixteen samples per 1-unit change (~2196.2Hz/s)
+`01`: Four samples per 1-unit change (~8767.2Hz/s)  
+`10`: Eight sample per 1-unit change (~4383.6Hz/s)  
+`11`: Sixteen samples per 1-unit change (~2191.8Hz/s)
 
 Waveform bits:
 
-- Bit 0: Invert 0-12.5%  
-- Bit 1: Invert 0-25%  
-- Bit 2: Invert 0-50%  
-- Bit 3: Invert all (toggled on carry if bit 4)  
-- Bit 4: Toggle "invert all" bit on carry  
-- Bit 5: Output accumulator  
+- Bit 0: Invert 0-12.5%
+- Bit 1: Invert 0-25%
+- Bit 2: Invert 0-50%
+- Bit 3: Invert all (toggled on carry if bit 4)
+- Bit 4: Toggle "invert all" bit on carry
+- Bit 5: Output accumulator
 - Bit 6 and 7: Pan (see below)
 
 Invert bits stack. e.g. if bit 0 and 1 are set, this results in an inverted 12.5-25%.
@@ -602,7 +614,7 @@ When the emulator is in its default, "secure" configuration mode, all reads and 
 
 To reiterate, it will always be safe to activate SimpleConfig if the standard handshake succeeds. **You only need to care about the difference between "secure" and fully enabled mode if you are writing your own configuration code.** (Which, again, you probably shouldn't do.)
 
-When reading a rendered string, read a byte giving the number of columns, then sixteen bytes per column giving a two-tile-high 1-bit bitmap containing the rendered text. Rendered strings will never contain more than 28 columns. 
+When reading a rendered string, read a byte giving the number of columns, then sixteen bytes per column giving a two-tile-high 1-bit bitmap containing the rendered text. Rendered strings will never contain more than 28 columns.
 
 Commands:
 
