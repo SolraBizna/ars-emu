@@ -16,6 +16,10 @@ charset = utf-8
 # Trim trailing whitespace, like the man says
 trim_trailing_whitespace = true
 
+[*.md]
+# Trailing whitespace is important in Markdown files
+trim_trailing_whitespace = false
+
 [*.{c,cc,h,hh}]
 indent_style = space
 indent_size = 2
