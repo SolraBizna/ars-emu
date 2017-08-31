@@ -43,7 +43,7 @@ namespace {
   // 4: Surround+LFE
   const int REQUIRED_SOURCE_CHANNELS[NUM_SOUND_TYPES]={1, 2, 3, 3, 4, 3, 4, 4};
   const int REQUIRED_HARD_CHANNELS[NUM_SOUND_TYPES] = {1, 2, 2, 4, 4, 4, 6, 8};
-  constexpr float SAMPLE_RATE = 47988.28125f;
+  constexpr float SAMPLE_RATE = 47896.875f;
   constexpr int SAMPLE_RATE_HYSTERESIS = 128;
   // These are about four cents off from the nominal sample rate. That SHOULD
   // be just small enough that it's nearly impossible to hear the difference,

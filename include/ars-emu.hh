@@ -21,11 +21,11 @@ namespace ARS {
   static constexpr int LIVE_CYCLES_PER_SCANLINE = 512;
   static constexpr int CYCLES_PER_SCANLINE = BLANK_CYCLES_PER_SCANLINE
     + LIVE_CYCLES_PER_SCANLINE;
-  static constexpr int CYCLES_PER_VBLANK = 17550;
-  static constexpr int CYCLES_PER_FRAME = 204750;
-  static_assert(CYCLES_PER_VBLANK == CYCLES_PER_SCANLINE * 45 / 2,
+  static constexpr int CYCLES_PER_VBLANK = 17160;
+  static constexpr int CYCLES_PER_FRAME = 204360;
+  static_assert(CYCLES_PER_VBLANK == CYCLES_PER_SCANLINE * 22,
                 "Incorrect CYCLES_PER_VBLANK");
-  static_assert(CYCLES_PER_FRAME == CYCLES_PER_SCANLINE * 525 / 2,
+  static_assert(CYCLES_PER_FRAME == CYCLES_PER_SCANLINE * 262,
                 "Incorrect CYCLES_PER_FRAME");
   static constexpr int CYCLES_PER_SCANOUT = CYCLES_PER_FRAME-CYCLES_PER_VBLANK;
   static constexpr int LIVE_PIXELS_PER_SCANLINE = 256;
@@ -33,7 +33,7 @@ namespace ARS {
                 "wrong implied dot clock");
   static constexpr int LIVE_SCANLINES_PER_FRAME = 240;
   static_assert((LIVE_SCANLINES_PER_FRAME * CYCLES_PER_SCANLINE
-                 + CYCLES_PER_VBLANK) * 60 == 12285000,
+                 + CYCLES_PER_VBLANK) * 60 == 12261600,
                 "wrong implied core clock");
   extern bool safe_mode, debugging_audio, debugging_video;
   // $0000-7FFF

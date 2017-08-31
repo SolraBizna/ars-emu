@@ -2,15 +2,18 @@
 
 # Clocks
 
-The core clock of the ARS is exactly 135/11 MHz. This is because it's tied to the NTSC field rate of 59.94 fields per second. This results in the rather weird number 12.27272727...MHz for the core frequency, and this weirdness propagates downward to all the related clocks. However, computers output video at 60 frames per second, not 59.94. Therefore, it's convenient to multiply all these clocks by 1.001 when emulating on a computer. This makes games run 0.1% faster, and audio play back 1.73 cents out of tune, but everything else becomes so much easier that it's worth the hardly noticeable difference.
+The ARS has a seemingly strange core clock frequency. It experiences 780 clock ticks for every scanline of output. With color NTSC's line rate fixed at &approx;15734.266Hz (exactly 2250/143 kHz), this gives a clock rate of &approx;12.272727MHz (exactly 135/11 MHz.) However, where normal interlaced video signals contain 262.5 lines per field, the ARS's video outputs 262 lines per frame. The framerate is thus &approx;60.05445fps (exactly 1125000/18733 fps).
+
+However, computers output video at 60 frames per second, not 60.05445. If an emulator simulates 204360 clocks per frame, and outputs 60 frames per second, all these clocks will effectively be slowed down by 0.09%; this makes everything else so much simpler that it's worth the hardly noticeable difference.
 
 Here are all the interesting clock rates in the console:
 
-| Clock   | NTSC                             | Emulated       | Notes    |
-| ------- | -------------------------------- | -------------- | -------- |
-| Core    | 135MHz/11 = 12.2727...MHz        |      12.285MHz |          |
-| Dot,APU | 135MHz/22 = 6.13636...MHz        |      6.1425MHz | Core/2   |
-| Audio   | 135MHz/2816 = 47.940340909...kHz | 47.98828125kHz | Core/256 |
+| Clock      | Real ratio  | Real value         | Emulated    | Notes     |
+| ---------- | ----------- | ------------------ | ----------- | --------- |
+| Core       |   135MHz/11 |      12.2727...MHz |  12.2616MHz |           |
+| Dot,APU    |   135MHz/22 |      6.13636...MHz |   6.1308MHz | Core/2    |
+| Audio      | 135MHz/2816 | 47.940340909...kHz | 47896.875Hz | Core/256  |
+| Colorburst | 39375KHz/11 |   3.57954545...MHz |         N/A | Core*7/24 |
 
 # Memory Map
 

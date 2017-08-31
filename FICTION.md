@@ -35,7 +35,9 @@ There is a six-byte hole in the work RAM space where no hardware is mapped. The 
 
 ## Graphics<a name="graphics">
 
-The console generates a 256x240 video signal, of which most emulators display 240x224 for overscan reasons. The console generates square pixels, unlike its contemporaries. Though ET never officially endorsed or supported this, many users modify their ARS to output its internal RGB signal directly to a suitable monitor, giving a considerable improvement in quality. (It is believed that ET's own engineers, including its in-house game developers, may have used such setups.)
+The console generates a 256x240 video signal, of which most emulators display 256x224 for overscan reasons. The console generates square pixels, unlike its contemporaries. There were visible black bars on the left and right side of the visible area, due to the fact that 256 square pixels isn't enough to cover the width of the screen.
+
+Though ET never officially endorsed or supported this, many users modify their ARS to output its internal RGB signal directly to a suitable monitor, giving a considerable improvement in quality. (It is believed that ET's own engineers, including its in-house game developers, may have used such setups.)
 
 It has a hardware palette containing 85 colors, including 7 levels of gray. Each of the four background "regions" can choose a group of four four-color palettes to use for its background tiles, and a group of eight seven-color palettes to use for sprites within that region. On top of that, the overlay can choose a group of two three-color palettes. This means that, in theory, the ARS can display up to 182 different colors, even without scanline trickery. (Or it could, if its color generator weren't limited to 85 colors.)
 
