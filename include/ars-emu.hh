@@ -13,6 +13,7 @@ extern "C" void die(const char* format, ...) __attribute__((noreturn,
 extern SN::Context sn;
 
 namespace ARS {
+  static constexpr int HARD_BLANK_CYCLES_PER_SCANLINE = 134;
   static constexpr int SAFE_BLANK_CYCLES_PER_SCANLINE = 74;
   static constexpr int UNSAFE_BLANK_CYCLES_PER_SCANLINE = 194;
   static constexpr int BLANK_CYCLES_PER_SCANLINE = 268;

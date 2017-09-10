@@ -18,7 +18,7 @@ CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.
 CFLAGS=-I/opt/releng/w32/include/SDL2 -I/opt/releng/w32/include/lua5.3 -Dmain=SDL_main -Wall -Wextra -Werror -municode -c
 CFLAGS_DEBUG=-Og -ggdb
-CFLAGS_RELEASE=-Ofast -flto
+CFLAGS_RELEASE=-Ofast -ffast-math -flto
 # Flags passed the C++ compiler.
 CXXFLAGS=$(CFLAGS) -std=c++14 -Woverloaded-virtual
 CXXFLAGS_DEBUG=$(CFLAGS_DEBUG)
@@ -26,7 +26,7 @@ CXXFLAGS_RELEASE=$(CFLAGS_RELEASE) -fno-enforce-eh-specs
 # Flags passed to the linker.
 LDFLAGS=-mwindows -municode -static-libgcc -static-libstdc++
 LDFLAGS_DEBUG=-ggdb
-LDFLAGS_RELEASE=-Ofast -flto
+LDFLAGS_RELEASE=-Ofast -ffast-math -flto
 # Libraries.
 LIBS=-L/opt/releng/w32/lib -static -lmingw32 -lz -llua5.3 /opt/releng/w32/bin/SDL2.dll
 

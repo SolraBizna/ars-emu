@@ -12,6 +12,8 @@
 #include "configurator.hh"
 #include "apu.hh"
 #include "ppu.hh"
+#include "fx.hh"
+#include "display.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -26,7 +28,6 @@
 
 using namespace ARS;
 
-ARS::MessageImp ARS::ui;
 std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
 bool ARS::safe_mode = false, ARS::debugging_audio = false,
@@ -43,136 +44,19 @@ namespace {
   bool experiencing_temporal_anomaly = true;
   int64_t logic_frame;
   decltype(std::chrono::high_resolution_clock::now()) epoch;
-  int window_width = PPU::VISIBLE_SCREEN_WIDTH*3,
-    window_height = PPU::VISIBLE_SCREEN_HEIGHT*3;
-  constexpr int MESSAGES_MARGIN_X = 12;
-  constexpr int MESSAGES_MARGIN_Y = 8;
-  constexpr int MESSAGE_LIFESPAN = 300;
+  std::unique_ptr<Display> display;
   bool window_visible = true, window_minimized = false, quit = false,
     allow_debug_port = false, always_allow_config_port = false,
     allow_secure_config_port = true, quit_on_stop = false,
     stop_has_been_detected = false, need_reset = true,
     secure_config_port_checked = false, secure_config_port_available;
-  SDL_Window* window = nullptr;
-  SDL_Renderer* renderer = nullptr;
-  SDL_Texture* frametexture = nullptr, *messagetexture = nullptr;
+  PPU::raw_screen screenbuf;
   void cleanup() {
     if(cartridge != nullptr) cartridge->flushSRAM();
-    if(messagetexture != nullptr) SDL_DestroyTexture(messagetexture);
-    if(frametexture != nullptr) SDL_DestroyTexture(frametexture);
-    if(renderer != nullptr) SDL_DestroyRenderer(renderer);
-    if(window != nullptr) SDL_DestroyWindow(window);
+    display.reset();
     SDL_Quit();
   }
   struct EscapeException {};
-  struct LoggedMessage {
-    std::string string;
-    int lifespan;
-    LoggedMessage(std::string&& string, int lifespan)
-      : string(string), lifespan(lifespan) {}
-  };
-  std::list<LoggedMessage> logged_messages;
-  bool messages_dirty = false;
-  SDL_Rect messages_local_rect = {0,0,0,0}, messages_global_rect = {0,0,0,0};
-  void cycle_messages() {
-    while(!logged_messages.empty() && logged_messages.begin()->lifespan-- <=0){
-      logged_messages.pop_front();
-      messages_dirty = true;
-    }
-  }
-  void draw_glyph(uint8_t* _pixels, const Font::Glyph& glyph, int skip_rows,
-                  int pitch) {
-    for(int y = skip_rows; y < Font::HEIGHT + 2; ++y) {
-      uint16_t* pixels = reinterpret_cast<uint16_t*>(_pixels);
-      int w = glyph.wide ? 18 : 10;
-      // uint32_t avoids negative bitshift
-      uint32_t bitmap = y > 0 ? glyph.tiles[y-1]<<16 : 0,
-        bitmap2 = y < Font::HEIGHT ? glyph.tiles[y]<<16 : 0,
-        bitmap3 = y < Font::HEIGHT-1 ? glyph.tiles[y+1]<<16 : 0;
-      if(glyph.wide) {
-        bitmap |= y > 0 ? glyph.tiles[y+15]<<8 : 0;
-        bitmap2 |= y < Font::HEIGHT ? glyph.tiles[y+16]<<8 : 0;
-        bitmap3 |= y < Font::HEIGHT-1 ? glyph.tiles[y+17]<<8 : 0;
-      }
-      uint32_t shadowmap = bitmap|bitmap2|bitmap3;
-      shadowmap |= shadowmap<<1; shadowmap |= shadowmap>>1;
-      for(int x = 0; x < w; ++x) {
-        if(bitmap2 & (0x1000000>>x))
-          *pixels = 0xFFFF;
-        else if(shadowmap & (0x1000000>>x))
-          *pixels = 0xF000;
-        ++pixels;
-      }
-      _pixels += pitch;
-    }
-  }
-  void render_messages(SDL_Texture* texture) {
-    messages_local_rect.x = 0;
-    messages_local_rect.y = 0;
-    messages_local_rect.w = 0;
-    messages_local_rect.h = 2;
-    for(LoggedMessage& msg : logged_messages) {
-      messages_local_rect.h += Font::HEIGHT;
-      int width = 2;
-      auto cit = msg.string.cbegin();
-      while(cit != msg.string.cend()) {
-        uint32_t c = getNextCodePoint(cit, msg.string.cend());
-        if(c == 0x20) width += 8;
-        else if(c == 0x3000) width += 16;
-        else {
-          auto& glyph = Font::GetGlyph(c);
-          width += glyph.wide ? 16 : 8;
-        }
-      }
-      if(width > PPU::VISIBLE_SCREEN_WIDTH-MESSAGES_MARGIN_X*2)
-        width = PPU::VISIBLE_SCREEN_WIDTH-MESSAGES_MARGIN_X*2;
-      if(width > messages_local_rect.w)
-        messages_local_rect.w = width;
-    }
-    if(messages_local_rect.w != 0) {
-      if(messages_local_rect.h > PPU::VISIBLE_SCREEN_HEIGHT-MESSAGES_MARGIN_Y*2)
-        messages_local_rect.h = PPU::VISIBLE_SCREEN_HEIGHT-MESSAGES_MARGIN_Y*2;
-      messages_local_rect.y = PPU::VISIBLE_SCREEN_HEIGHT-MESSAGES_MARGIN_Y*2-messages_local_rect.h;
-      uint8_t* pixels;
-      int pitch;
-      SDL_LockTexture(texture, &messages_local_rect,
-                      reinterpret_cast<void**>(&pixels), &pitch);
-      for(int y = 0; y < messages_local_rect.h; ++y) {
-        memset(pixels, 0, messages_local_rect.w * 2);
-        pixels += pitch;
-      }
-      pixels -= pitch;
-      int y = messages_local_rect.h-1;
-      auto it = logged_messages.crbegin();
-      while(it != logged_messages.crend() && y > -Font::HEIGHT) {
-        y -= Font::HEIGHT;
-        pixels -= Font::HEIGHT * pitch;
-        auto& msg = *it;
-        int x = 0;
-        auto cit = msg.string.cbegin();
-        while(cit != msg.string.cend()) {
-          uint32_t c = getNextCodePoint(cit, msg.string.cend());
-          if(c == 0x20) x += 8;
-          else if(c == 0x3000) x += 16;
-          else {
-            auto& glyph = Font::GetGlyph(c);
-            if(x + (glyph.wide ? 16 : 8) > messages_local_rect.w) break;
-            int skip_rows = y >= 0 ? 0 : -y;
-            draw_glyph(pixels + skip_rows * pitch + x * 2,
-                       glyph, skip_rows, pitch);
-            x += glyph.wide ? 16 : 8;
-          }
-          if(x > messages_local_rect.w-2) break;
-        }
-        ++it;
-      }
-      SDL_UnlockTexture(texture);
-    }
-    messages_global_rect.x = messages_local_rect.x + MESSAGES_MARGIN_X;
-    messages_global_rect.y = messages_local_rect.y + MESSAGES_MARGIN_Y;
-    messages_global_rect.w = messages_local_rect.w;
-    messages_global_rect.h = messages_local_rect.h;
-  }
   void badread(uint16_t addr) {
     ui << sn.Get("BAD_READ"_Key, {TEG::format("%04X",addr)}) << ui;
   }
@@ -217,37 +101,18 @@ namespace {
     while(logic_frame < target_frame) {
       ++logic_frame;
       cartridge->oncePerFrame();
-      cpu->runCycles(CYCLES_PER_VBLANK);
-      PPU::dummyRender();
-      cpu->frameBoundary();
-      cycle_messages();
+      PPU::renderInvisible();
     }
 #endif
     cartridge->oncePerFrame();
-    cpu->runCycles(CYCLES_PER_VBLANK);
     if(logic_frame >= target_frame && window_visible && !window_minimized) {
-      PPU::renderToTexture(frametexture);
-      if(messages_dirty) {
-        render_messages(messagetexture);
-        messages_dirty = false;
-      }
-      SDL_RenderClear(renderer);
-      SDL_Rect srcrect = {PPU::INVISIBLE_SCANLINE_COUNT,
-                          PPU::INVISIBLE_COLUMN_COUNT,
-                          PPU::VISIBLE_SCREEN_WIDTH,
-                          PPU::VISIBLE_SCREEN_HEIGHT};
-      SDL_RenderCopy(renderer, frametexture, &srcrect, NULL);
-      if(messages_local_rect.w != 0)
-        SDL_RenderCopy(renderer, messagetexture,
-                       &messages_local_rect, &messages_global_rect);
-      SDL_RenderPresent(renderer);
+      PPU::renderFrame(screenbuf);
+      display->update(screenbuf);
     }
     else {
-      PPU::dummyRender();
+      PPU::renderInvisible();
     }
     Windower::Update();
-    cpu->frameBoundary();
-    cycle_messages();
     if(target_frame < logic_frame) {
 #ifdef __WIN32__
       SDL_Delay(std::chrono::duration_cast<std::chrono::milliseconds>((epoch + std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(frame_duration(logic_frame))) - now).count());
@@ -413,29 +278,6 @@ namespace {
   }
 }
 
-void MessageImp::outputLine(std::string line, int lifespan_value) {
-  std::cerr << sn.Get("UI_MESSAGE_STDERR"_Key, {line}) << std::endl;
-  logged_messages.emplace_back(std::move(line), lifespan_value);
-}
-
-void MessageImp::outputBuffer() {
-  std::string msg = stream.str();
-  int lifespan = MESSAGE_LIFESPAN;
-  for(auto& lmsg : logged_messages)
-    lifespan -= lmsg.lifespan;
-  auto begin = msg.begin();
-  do {
-    auto it = std::find(begin, msg.end(), '\n');
-    outputLine(std::string(begin, it), lifespan);
-    if(it != msg.end()) ++it;
-    begin = it;
-    lifespan = 0;
-  } while(begin != msg.end());
-  stream.clear();
-  stream.str("");
-  messages_dirty = true;
-}
-
 void ARS::triggerReset() {
   need_reset = true;
   throw EscapeException();
@@ -591,35 +433,10 @@ extern "C" int teg_main(int argc, char** argv) {
   PrefsLogic::DefaultsAll();
   PrefsLogic::LoadAll();
   ARS::init_apu();
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+  FX::init();
   std::string windowtitle = sn.Get("WINDOW_TITLE"_Key, {rom_path});
-  window = SDL_CreateWindow(windowtitle.c_str(),
-                            SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                            window_width, window_height,
-                            SDL_WINDOW_RESIZABLE);
-  if(window == NULL) die("%s",sn.Get("WINDOW_FAIL"_Key,
-                                     {SDL_GetError()}).c_str());
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-  if(renderer == NULL) die("%s",sn.Get("RENDERER_FAIL"_Key,
-                                       {SDL_GetError()}).c_str());
-  SDL_RenderSetLogicalSize(renderer, PPU::VISIBLE_SCREEN_WIDTH,
-                           PPU::VISIBLE_SCREEN_HEIGHT);
-  frametexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
-                                   SDL_TEXTUREACCESS_STREAMING,
-                                   PPU::INTERNAL_SCREEN_WIDTH,
-                                   PPU::INTERNAL_SCREEN_HEIGHT);
-  if(frametexture == NULL) die("%s",sn.Get("FRAMETEXTURE_FAIL"_Key,
-                                           {SDL_GetError()}).c_str());
-  messagetexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB4444,
-                                     SDL_TEXTUREACCESS_STREAMING,
-                                     PPU::VISIBLE_SCREEN_WIDTH
-                                     -MESSAGES_MARGIN_X*2,
-                                     PPU::VISIBLE_SCREEN_HEIGHT
-                                     -MESSAGES_MARGIN_Y*2);
-  if(messagetexture == NULL) die("%s",
-                                 sn.Get("MESSAGETEXTURE_FAIL"_Key,
-                                        {SDL_GetError()}).c_str());
-  SDL_SetTextureBlendMode(messagetexture, SDL_BLENDMODE_BLEND);
+  display = safe_mode ? Display::makeSafeModeDisplay(windowtitle)
+    : Display::makeConfiguredDisplay(windowtitle);
   Controller::initControllers();
   quit = false;
   cpu = makeCPU(rom_path);

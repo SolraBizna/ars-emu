@@ -7,95 +7,9 @@
 
 using namespace ARS::PPU;
 
-bool ARS::PPU::show_overlay = true,
-  ARS::PPU::show_sprites = true,
-  ARS::PPU::show_background = true;
-
 namespace {
-#if !NO_DEBUG_CORES
-  constexpr int DEBUG_WINDOW_PIXEL_SIZE = 1,
-    DEBUG_TILES_WIDE = 128, DEBUG_TILES_HIGH = 64,
-    DEBUG_DIVIDER_COUNT=15, DEBUG_TILES_PER_DIVIDER = 8;
-  SDL_Window* debugwindow = nullptr;
-  SDL_Renderer* debugrenderer;
-  SDL_Texture* debugtexture;
-  void debug_event(SDL_Event& evt);
-  void maybe_make_debug_window() {
-    if(debugwindow != nullptr) return;
-    debugwindow = SDL_CreateWindow("ARS-emu VRAM",
-                                   SDL_WINDOWPOS_UNDEFINED,
-                                   SDL_WINDOWPOS_UNDEFINED,
-                                   (8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT)
-                                   *DEBUG_WINDOW_PIXEL_SIZE,
-                                   DEBUG_WINDOW_PIXEL_SIZE*8*DEBUG_TILES_HIGH,
-                                   0);
-    if(debugwindow == nullptr)
-      die("Couldn't create video debugging window: %s", SDL_GetError());
-    Windower::Register(SDL_GetWindowID(debugwindow), debug_event);
-    debugrenderer = SDL_CreateRenderer(debugwindow, -1, 0);
-    if(debugrenderer == nullptr)
-      die("Couldn't create video debugging renderer: %s", SDL_GetError());
-    SDL_RenderSetLogicalSize(debugrenderer, 8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT, 8*DEBUG_TILES_HIGH);
-    debugtexture = SDL_CreateTexture(debugrenderer,
-                                     SDL_PIXELFORMAT_RGB332,
-                                     SDL_TEXTUREACCESS_STREAMING,
-                                     8*DEBUG_TILES_WIDE+DEBUG_DIVIDER_COUNT,
-                                     8*DEBUG_TILES_HIGH);
-  }
-#endif
-  constexpr int NUM_SPRITES = 64;
-  struct SpriteState {
-    // $0, $1; Y>240 = effectively disabled
-    uint8_t X, Y;
-    // $2: TTTTTFVH
-    // $3: TTTTTTTT
-    // H = horizontal flip
-    // V = vertical flip
-    // F = foreground bit
-    // TTTT TTTT TTTT T000 = starting address
-    static constexpr uint8_t TILE_ADDR_MASK = 0xF8;
-    static constexpr uint8_t HFLIP_MASK = 1;
-    static constexpr uint8_t VFLIP_MASK = 2;
-    static constexpr uint8_t FOREGROUND_MASK = 4;
-    uint8_t TileAddr, TilePage;
-  } ssm[NUM_SPRITES];
-#define ssmBytes reinterpret_cast<uint8_t*>(ssm)
-  static_assert(sizeof(SpriteState) == 4, "Sprite size has slipped");
-  // HHHHHPPP
-  // H = tile height-1, range 1..32 (8..128)
-  typedef uint8_t SpriteAttr;
-  SpriteAttr sam[NUM_SPRITES];
-  constexpr uint8_t* samBytes = sam;
-  static constexpr uint8_t SA_HEIGHT_SHIFT = 3;
-  static constexpr uint8_t SA_HEIGHT_MASK = 0x1F;
-  static constexpr uint8_t SA_PALETTE_SHIFT = 0;
-  static constexpr uint8_t SA_PALETTE_MASK = 0x07;
-  uint8_t vram[0x10000];
-  uint8_t cram[0x100];
-  uint16_t vramAccessPtr;
-  uint8_t cramAccessPtr, ssmAccessPtr, samAccessPtr;
-  int curScanline = INTERNAL_SCREEN_HEIGHT;
-  struct Background_Mode1 {
-    uint8_t Tiles[MODE1_BACKGROUND_TILES_WIDE*MODE1_BACKGROUND_TILES_HIGH];
-    uint8_t Attributes[MODE1_BACKGROUND_TILES_WIDE*MODE1_BACKGROUND_TILES_HIGH
-                       /16];
-    uint8_t padding[4];
-  }* backgrounds_mode1 = reinterpret_cast<struct Background_Mode1*>(vram);
-  struct Background_Mode2 {
-    uint8_t Tiles[MODE2_BACKGROUND_TILES_WIDE*MODE2_BACKGROUND_TILES_HIGH];
-  }* backgrounds_mode2 = reinterpret_cast<struct Background_Mode2*>(vram);
-  static_assert(sizeof(Background_Mode1) == 0x400, "Background size slipped");
-  static_assert(sizeof(Background_Mode2) == 0x400, "Background size slipped");
-  struct Overlay {
-    uint8_t Tiles[OVERLAY_TILES_WIDE*OVERLAY_TILES_HIGH];
-    uint8_t Attributes[OVERLAY_TILES_WIDE*OVERLAY_TILES_HIGH/8];
-    uint8_t padding[16];
-  }& overlay = *reinterpret_cast<struct Overlay*>(ARS::dram+sizeof(ARS::dram)
-                                                  -sizeof(struct Overlay));
-  static_assert(sizeof(Overlay) == 0x400, "Overlay size has slipped");
   uint8_t spriteFetch[NUM_SPRITES*3];
-  bool lastRenderWasBlank = false;
-  uint8_t horizFlip[256] = {
+  const uint8_t horizFlip[256] = {
     0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0,
     0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0,
     0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8,
@@ -128,34 +42,6 @@ namespace {
     0x17, 0x97, 0x57, 0xD7, 0x37, 0xB7, 0x77, 0xF7,
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF,
     0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
-  };
-  uint32_t hardwarePalette[128] = {
-    0xFF2B2B2B, 0xFF552B2B, 0xFF55402B, 0xFF554A2B,
-    0xFF55552B, 0xFF4A552B, 0xFF2B552B, 0xFF2B5555,
-    0xFF2B4A55, 0xFF2B4055, 0xFF2B2B55, 0xFF402B55,
-    0xFF4A2B55, 0xFF552B55, 0xFF000000, 0xFF000000,
-    0xFF555555, 0xFF550000, 0xFF552B00, 0xFF554000,
-    0xFF555500, 0xFF405500, 0xFF005500, 0xFF005555,
-    0xFF004055, 0xFF002B55, 0xFF000055, 0xFF2B0055,
-    0xFF400055, 0xFF550055, 0xFF000000, 0xFF000000,
-    0xFF808080, 0xFFAA5555, 0xFFAA8055, 0xFFAA9555,
-    0xFFAAAA55, 0xFF95AA55, 0xFF55AA55, 0xFF55AAAA,
-    0xFF5595AA, 0xFF5580AA, 0xFF5555AA, 0xFF8055AA,
-    0xFF9555AA, 0xFFAA55AA, 0xFF000000, 0xFF000000,
-    0xFFAAAAAA, 0xFFAA0000, 0xFFAA5500, 0xFFAA8000,
-    0xFFAAAA00, 0xFF80AA00, 0xFF00AA00, 0xFF00AAAA,
-    0xFF0080AA, 0xFF0055AA, 0xFF0000AA, 0xFF5500AA,
-    0xFF8000AA, 0xFFAA00AA, 0xFF000000, 0xFF000000,
-    0xFFD5D5D5, 0xFFFF8080, 0xFFFFBF80, 0xFFFFDF80,
-    0xFFFFFF80, 0xFFDFFF80, 0xFF80FF80, 0xFF80FFFF,
-    0xFF80DFFF, 0xFF80BFFF, 0xFF8080FF, 0xFFBF80FF,
-    0xFFDF80FF, 0xFFFF80FF, 0xFF000000, 0xFF000000,
-    0xFFFFFFFF, 0xFFFF0000, 0xFFFF8000, 0xFFFFBF00,
-    0xFFFFFF00, 0xFFBFFF00, 0xFF00FF00, 0xFF00FFFF,
-    0xFF00BFFF, 0xFF0080FF, 0xFF0000FF, 0xFF8000FF,
-    0xFFBF00FF, 0xFFFF00FF, 0xFF000000, 0xFF000000,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   };
   struct mode1_bg_engine {
     int bg_x_tile, bg_x_col;
@@ -315,147 +201,17 @@ namespace {
       }
     }
   };
-  void updateIRQ() {
-    ARS::cpu->setIRQ(curScanline >= ARS::Regs.irqScanline
-                     && (curScanline & 0x80)==(ARS::Regs.irqScanline & 0x80));
-  }
-#if !NO_DEBUG_CORES
-  void debug_event(SDL_Event& evt) {
-    switch(evt.type) {
-    default:
-      if(evt.type == Windower::UPDATE_EVENT) {
-        maybe_make_debug_window();
-        uint8_t* pixels;
-        int pitch;
-        SDL_LockTexture(debugtexture, nullptr,
-                        reinterpret_cast<void**>(&pixels), &pitch);
-        const uint8_t* vramp = vram;
-        for(int x = 0; x < DEBUG_TILES_WIDE; ++x) {
-          if(x % DEBUG_TILES_PER_DIVIDER == 0 && x != 0) {
-            for(int y = 0; y < DEBUG_TILES_HIGH * 8; ++y) {
-              pixels[pitch*y] = 0x80;
-            }
-            ++pixels;
-          }
-          for(int y = 0; y < DEBUG_TILES_HIGH; ++y) {
-            for(int r = 0; r < 8; ++r) {
-              uint8_t inv = (vramp-vram) == vramAccessPtr ? 0xFF : 0x00;
-              uint8_t plane = *vramp++;
-              for(int bit = 0; bit < 8; ++bit) {
-                pixels[bit] = ((plane&(128>>bit))?0x1C:0x00)^inv;
-              }
-              pixels += pitch;
-            }
-          }
-          pixels -= pitch * DEBUG_TILES_HIGH * 8;
-          pixels += 8;
-        }
-        SDL_UnlockTexture(debugtexture);
-        SDL_RenderClear(debugrenderer);
-        SDL_RenderCopy(debugrenderer, debugtexture, NULL, NULL);
-        SDL_RenderPresent(debugrenderer);
-      }
-    }
-  }
-#endif
-}
-
-void ARS::PPU::complexWrite(uint16_t addr, uint8_t value) {
-  switch(addr) {
-  case 0x0210: vramAccessPtr = value<<8; break;
-  case 0x0211: vram[vramAccessPtr++] = value; break;
-  case 0x0212: cramAccessPtr = value; break;
-  case 0x0213: cram[cramAccessPtr++] = value; break;
-  case 0x0214: ssmAccessPtr = value; break;
-  case 0x0215: ssmBytes[ssmAccessPtr++] = value; break;
-  case 0x0216: samAccessPtr = value; break;
-  case 0x0217: samBytes[(samAccessPtr++)&63] = value; break;
-  case 0x0218: vramAccessPtr = (vramAccessPtr&0xFF00)|value; break;
-  case 0x0219: updateIRQ(); break;
-  case 0x021A: {
-    uint16_t addr = value<<8;
-    for(int n = 0; n < 256; ++n) {
-      vram[vramAccessPtr++] = ARS::read(addr++);
-    }
-    ARS::cpu->eatCycles(257);
-  } break;
-  case 0x021B: {
-    uint16_t addr = value<<8;
-    for(int y = 0; y < 16; ++y) {
-      for(int x = 0; x < 16; ++x) {
-        vram[vramAccessPtr++] = ARS::read(addr+x);
-        vram[vramAccessPtr++] = ARS::read(addr+x);
-      }
-      for(int x = 0; x < 16; ++x) {
-        vram[vramAccessPtr++] = ARS::read(addr+x);
-        vram[vramAccessPtr++] = ARS::read(addr+x);
-      }
-      addr += 16;
-    }
-    ARS::cpu->eatCycles(1025);
-  } break;
-  case 0x021C: {
-    uint16_t addr = value<<8;
-    for(int n = 0; n < 256; ++n) {
-      cram[cramAccessPtr++] = ARS::read(addr++);
-    }
-    ARS::cpu->eatCycles(257);
-  } break;
-  case 0x021D: {
-    uint16_t addr = value<<8;
-    for(int n = 0; n < 256; ++n) {
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr++);
-    }
-    ARS::cpu->eatCycles(257);
-  } break;
-  case 0x021E: {
-    uint16_t addr = value<<8;
-    for(int n = 0; n < 64; ++n) {
-      samBytes[(samAccessPtr++)&63] = ARS::read(addr++);
-    }
-    ARS::cpu->eatCycles(65);
-  } break;
-  case 0x021F: {
-    uint16_t addr = value<<8;
-    for(int n = 0; n < 64; ++n) {
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0x40);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0x80);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0xC0);
-      ++addr;
-    }
-    ARS::cpu->eatCycles(257);
-  } break;
-  default:
-    // harmless
-    break;
-  }
-}
-
-uint8_t ARS::PPU::complexRead(uint16_t addr) {
-  switch(addr) {
-  case 0x0211: return vram[vramAccessPtr];
-  case 0x0213: return cram[cramAccessPtr];
-  case 0x0215: return ssmBytes[ssmAccessPtr];
-  case 0x0217: return samBytes[samAccessPtr];
-  default:
-    SDL_assert("ARS::Regs::complexRead called with an inappropriate address"
-               && false); // "interesting" idiom there...
-    return 0xCC;
-  }
 }
 
 namespace {
-  template<class BGEngine> void renderBits(uint8_t* basep, int pitch) {
+  template<class BGEngine> void renderBits(raw_screen& out) {
     uint16_t overlay_ptr = 0, overlay_attr_ptr = 0;
     uint8_t active_sprites[NUM_SPRITES];
     uint8_t num_active_sprites;
-    for(int scanline = 0; scanline < INTERNAL_SCREEN_HEIGHT; ++scanline) {
-      curScanline = scanline;
-      updateIRQ();
+    for(int scanline = 0; scanline < LIVE_SCREEN_HEIGHT; ++scanline) {
+      updateScanline(scanline);
       ARS::cpu->runCycles(ARS::SAFE_BLANK_CYCLES_PER_SCANLINE);
-      uint32_t* outp = reinterpret_cast<uint32_t*>(basep);
-      basep += pitch;
+      auto& out_row = out[scanline];
       /* "prefetch" all sprite tiles */
       num_active_sprites = 0;
       int spriteFetchIndex = 0;
@@ -496,8 +252,10 @@ namespace {
       uint8_t overlay_tile, overlay_attr = 0;
       uint8_t overlay_low_plane = 0, overlay_high_plane = 0;
       ARS::cpu->runCycles(ARS::UNSAFE_BLANK_CYCLES_PER_SCANLINE);
+      memset(out_row.data(), static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+             LIVE_SCREEN_LEFT);
       /* Draw! */
-      for(int column = 0; column < INTERNAL_SCREEN_WIDTH; ++column) {
+      for(int column = 0; column < LIVE_SCREEN_WIDTH; ++column) {
         uint8_t out_color;
         if((ARS::Regs.multi1>>ARS::Regs::M1_OLBASE_SHIFT)
            &ARS::Regs::M1_OLBASE_MASK) {
@@ -571,12 +329,15 @@ namespace {
           }
           else out_color = cram[ARS::Regs.colorMod];
         }
-        *outp++ = hardwarePalette[out_color<128?out_color:127];
+        out_row[column+LIVE_SCREEN_LEFT] = out_color;
         bg_engine.advance();
       }
       ARS::cpu->runCycles(ARS::LIVE_CYCLES_PER_SCANLINE);
+      memset(out_row.data() + LIVE_SCREEN_RIGHT,
+             static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+             TOTAL_SCREEN_WIDTH - LIVE_SCREEN_RIGHT);
       if((scanline&7) != 7 || (scanline < 8)
-         || (scanline > INTERNAL_SCREEN_HEIGHT-8)) {
+         || (scanline > LIVE_SCREEN_HEIGHT-8)) {
         overlay_ptr -= OVERLAY_TILES_WIDE;
         overlay_attr_ptr -= OVERLAY_TILES_WIDE/8;
       }
@@ -584,49 +345,35 @@ namespace {
   }
 }
 
-void ARS::PPU::renderToTexture(SDL_Texture* texture) {
-#if !NO_DEBUG_CORES
-  if(ARS::debugging_video)
-    maybe_make_debug_window();
-#endif
+void ARS::PPU::renderFrame(raw_screen& out) {
+  cpu->frameBoundary();
+  cpu->runCycles(CYCLES_PER_VBLANK);
   ARS::cpu->setNMI(false);
   if(!(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK)) {
     ARS::cpu->runCycles((ARS::BLANK_CYCLES_PER_SCANLINE
                          + ARS::LIVE_CYCLES_PER_SCANLINE)
-                        * INTERNAL_SCREEN_HEIGHT);
-    if(!lastRenderWasBlank) {
-      uint8_t* pixels;
-      int pitch;
-      SDL_LockTexture(texture, nullptr,
-                      reinterpret_cast<void**>(&pixels), &pitch);
-      memset(pixels, 0, pitch * INTERNAL_SCREEN_HEIGHT);
-      SDL_UnlockTexture(texture);
-      lastRenderWasBlank = true;
-    }
+                        * LIVE_SCREEN_HEIGHT);
+    memset(out.data(), static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+           sizeof(out));
   }
   else {
-    lastRenderWasBlank = false;
-    uint8_t* basep;
-    int pitch;
-    SDL_LockTexture(texture, nullptr,
-                    reinterpret_cast<void**>(&basep), &pitch);
     if(ARS::Regs.multi1 & ARS::Regs::M1_BACKGROUND_MODE_MASK)
-      renderBits<mode2_bg_engine>(basep, pitch);
+      renderBits<mode2_bg_engine>(out);
     else
-      renderBits<mode1_bg_engine>(basep, pitch);
-    SDL_UnlockTexture(texture);
-    curScanline = INTERNAL_SCREEN_HEIGHT;
-    updateIRQ();
+      renderBits<mode1_bg_engine>(out);
+    updateScanline(LIVE_SCREEN_HEIGHT);
   }
   ARS::cpu->setNMI(true);
+  renderMessages(out);
 }
 
-void ARS::PPU::dummyRender() {
+void ARS::PPU::renderInvisible() {
+  cpu->frameBoundary();
+  cpu->runCycles(CYCLES_PER_VBLANK);
   ARS::cpu->setNMI(false);
   if(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK) {
-    for(int scanline = 0; scanline < INTERNAL_SCREEN_HEIGHT; ++scanline) {
-      curScanline = scanline;
-      updateIRQ();
+    for(int scanline = 0; scanline < LIVE_SCREEN_HEIGHT; ++scanline) {
+      updateScanline(scanline);
       if((ARS::Regs.multi1>>ARS::Regs::M1_OLBASE_SHIFT)
          &ARS::Regs::M1_OLBASE_MASK)
         ARS::cpu->eatCycles(3*OVERLAY_TILES_WIDE);
@@ -637,35 +384,9 @@ void ARS::PPU::dummyRender() {
   else {
     ARS::cpu->runCycles((ARS::BLANK_CYCLES_PER_SCANLINE
                          + ARS::LIVE_CYCLES_PER_SCANLINE)
-                        * INTERNAL_SCREEN_HEIGHT);
+                        * LIVE_SCREEN_HEIGHT);
   }
-  curScanline = INTERNAL_SCREEN_HEIGHT;
-  updateIRQ();
+  updateScanline(LIVE_SCREEN_HEIGHT);
   ARS::cpu->setNMI(true);
-}
-
-void ARS::PPU::fillWithGarbage() {
-  fillDramWithGarbage(vram, sizeof(vram));
-  fillDramWithGarbage(cram, sizeof(cram));
-  fillDramWithGarbage(ssmBytes, sizeof(ssm));
-  fillDramWithGarbage(samBytes, sizeof(sam));
-}
-
-void ARS::PPU::handleReset() {
-  ARS::Regs.multi1 = 0;
-  ARS::Regs.irqScanline = 255;
-}
-
-void ARS::PPU::dumpSpriteMemory() {
-  std::cerr << "Sprite memory:\n## ...SM... AM\n";
-  std::cerr << std::hex;
-  for(int n = 0; n < NUM_SPRITES; ++n) {
-    std::cerr << std::setw(2) << std::setfill('0') << n << " " <<
-      std::setw(2) << std::setfill('0') << (int)ssm[n].X <<
-      std::setw(2) << std::setfill('0') << (int)ssm[n].Y <<
-      std::setw(2) << std::setfill('0') << (int)ssm[n].TileAddr <<
-      std::setw(2) << std::setfill('0') << (int)ssm[n].TilePage << " " <<
-      std::setw(2) << std::setfill('0') << (int)sam[n] << "\n";
-  }
-  std::cerr << std::dec;
+  cycleMessages();
 }

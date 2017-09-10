@@ -5,18 +5,20 @@
 Language-Code: en
 Language-Name: English
 
+: Note: Text "written to stdout/stderr" usually ends up in a terminal. If the
+: user doesn't redirect output to a file, and is using a terminal emulator that
+: doesn't handle non-LTR text properly, the text may display incorrectly. In
+: addition, nearly all such text should include an "extra" trailing blank line.
+
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Command line options and usage information
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Character order: Logical
 : Combining characters: Allowed
-: Note: Text in this section is usually written to the terminal. If the user
-: doesn't redirect output to a file, and is using a terminal emulator that
-: doesn't handle non-LTR text properly, the text may display incorrectly.
 
-: Displayed when the emulator is run with no parameters, incorrect parameters,
-: or insufficient parameters. Should fully describe how to run the emulator.
-: Must contain a trailing blank line.
+: Written to stderr when the emulator is run with no parameters, incorrect
+: parameters, or insufficient parameters. Should fully describe how to run the
+: emulator.
 USAGE
 Usage: ars-emu [options] cartridge.etarz
 Known options:
@@ -39,43 +41,39 @@ Known options:
 
 .
 
-: Displayed, followed by USAGE, when an option that requires an argument is not
-: given an argument.
-: Must contain a trailing blank line.
+: Written to stderr, followed by USAGE, when an option that requires an
+: argument is not given an argument.
 : $1: The option that was missing its argument, including a leading `-`
 MISSING_COMMAND_LINE_ARGUMENT
 Error: Option $1 requires an argument
 
 .
 
-: Displayed, followed by USAGE, when -c is given a parameter that doesn't match
-: any of the available emulator cores.
-: Must contain a trailing blank line.
+: Written to stderr, followed by USAGE, when -c is given a parameter that
+: doesn't match any of the available emulator cores.
 : $1: The parameter of -c.
 UNKNOWN_CORE
 Error: Unknown core: $1
 
 .
 
-: Displayed, followed by USAGE, when any unknown command line option is given.
-: Must contain a trailing blank line.
+: Written to stderr, followed by USAGE, when any unknown command line option is
+: given.
 : $1: The option that was unrecognized, WITHOUT a leading `-`
 UNKNOWN_OPTION
 Error: Unknown command line option: -$1
 
 .
 
-: Displayed, followed by USAGE, when more than one ROM path is specified on
-: the command line.
-: Must contain a trailing blank line.
+: Written to stderr, followed by USAGE, when more than one ROM path is
+: specified on the command line.
 MULTIPLE_ROM_PATHS
 Error: More than one ROM path specified
 
 .
 
-: Displayed, followed by USAGE, if no ROM path is specified on the command
-: line.
-: Must contain a trailing blank line.
+: Written to stderr, followed by USAGE, if no ROM path is specified on the
+: command line.
 NO_ROM_PATHS
 Error: No ROM path specified
 
@@ -88,7 +86,8 @@ DRAG_AND_DROP_A_ROM
 Please drag and drop a .etars or .etarz file onto ARS-emu.
 .
 
-: Displayed if SDL chose a different buffer size for audio
+: Written to stderr if SDL chose a different buffer size for audio than the one
+: we asked for.
 : $1: The value of the desired_sdl_buffer_length configuration key
 : $2: The number of sample frames we actually got
 AUDIO_BUFFER_SIZE_MISMATCH
@@ -102,6 +101,28 @@ Requested a $1-frame audio buffer, but got a $2-frame one instead.
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Character order: Logical
 : Combining characters: Allowed
+
+: Written to stderr if a preferred display is set in the configuration, but
+: that display type is unknown.
+UNKNOWN_DISPLAY_TYPE
+Unknown display type present in configuration file. Ignoring.
+
+.
+
+: Written to stderr if attempting to set up a display failed.
+: $1: The pretty name of the display that failed.
+: $2: The reason setup failed.
+DISPLAY_FAILURE
+Setting up "$1" display failed:
+$2
+
+.
+
+: Displayed after completely failing to set up any working display.
+TOTAL_DISPLAY_FAILURE
+Failed to set up display. This should really never happen. Details were written
+to stderr.
+.
 
 : Displayed when SDL fails to initialize entirely.
 SDL_FAIL
@@ -178,7 +199,7 @@ UI_MESSAGE_STDERR
 .
 
 : UI messages must fit within this bar
-:::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::
 
 : Displayed when the program reads from open bus.
 BAD_READ
@@ -294,7 +315,7 @@ CPU halted
 .
 
 : Displayed if an unrecognized gamepad is connected
-:::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::
 GAMEPAD_INVALID
 unknown gamepad ignored
 .
@@ -319,10 +340,22 @@ extra gamepad ignored
 : Displayed if the audio system couldn't initialize with a given channel count.
 : $1: SOUND_TYPE_* value for the setup that is being used instead of the one
 : the user asked for.
-:::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::
 AUDIO_TYPE_DOWNGRADED_TO
 Unsupported output type.
 Downgraded to $1.
+.
+
+: Displayed if the display system encountered at least one failure while
+: setting up the preferred display.
+: $1: The pretty name of the display type currently in use.
+::::::::::::::::::::::::::::::
+DISPLAY_SETUP_ERRORS
+Unable to set up the preferred
+display type. Error details
+were written to stderr.
+Currently active display type:
+$1
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -531,7 +564,7 @@ KEYBOARD_PLAYER_CONTROLLER_SUBMENU_BUTTON_LABEL
 $1 Controller…
 .
 MULTI_KEY_BINDING_SEP
-, 
+,
 .
 NO_KEY_BINDING
 (unbound)
@@ -655,4 +688,14 @@ Dynamic
 : Sample rate to output
 AUDIO_MENU_SAMPLERATE
 Samplerate:
+.
+
+: Video menu
+::::::::::::::::::::::::::::
+DISPLAY_NAME_SAFE
+Safe Mode
+.
+
+DISPLAY_NAME_SDL
+SDL
 .
