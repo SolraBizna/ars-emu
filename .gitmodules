@@ -6,4 +6,4 @@
 	url = http://github.com/SolraBizna/libsn.git
 [submodule "src/lsx"]
 	path = src/lsx
-	url = git@github.com:SolraBizna/lsx
+	url = http://github.com/SolraBizna/lsx.git
