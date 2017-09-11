@@ -7,14 +7,21 @@
 #include "fx.hh"
 
 namespace {
+  template<class T> constexpr T clamp(T value, T min, T max) {
+    if(value < min) return min;
+    else if(value > max) return max;
+    else return value;
+  }
+  enum { SIGNAL_RGB=0, SIGNAL_SVIDEO, SIGNAL_COMPOSITE,
+         NUM_SIGNAL_TYPES };
   enum { UPSCALE_NONE=0, UPSCALE_SMOOTH=1, UPSCALE_SCANLINES_CRISP=2,
          UPSCALE_SCANLINES_BRIGHT=3, NUM_UPSCALE_MODES };
   // don't forget to copy these into the instance so we don't completely go
   // crazy when configuration is a thing
-  bool television_mode, enable_overscan;
-  int upscale_mode;
+  bool enable_overscan;
+  int signal_type, upscale_mode;
   const Config::Element elements[] = {
-    {"television_mode", television_mode},
+    {"signal_type", signal_type},
     {"upscale_mode", upscale_mode},
     {"enable_overscan", enable_overscan},
   };
@@ -23,6 +30,8 @@ namespace {
     void Load() override {
       Config::Read("SDL Display.utxt",
                    elements, elementcount(elements));
+      signal_type = clamp(signal_type, 0, NUM_SIGNAL_TYPES-1);
+      upscale_mode = clamp(upscale_mode, 0, NUM_UPSCALE_MODES-1);
     }
     void Save() override {
       Config::Write("SDL Display.utxt",
@@ -30,12 +39,12 @@ namespace {
     }
     void Defaults() override {
       enable_overscan = true;
-      television_mode = true;
+      signal_type = SIGNAL_COMPOSITE;
       upscale_mode = UPSCALE_SCANLINES_BRIGHT;
     }
   } displaySystemPrefsLogic;
   class SDLDisplay : public ARS::Display {
-    bool television_mode = ::television_mode;
+    int signal_type = ::signal_type;
     bool enable_overscan = ::enable_overscan;
     int upscale_mode = ::upscale_mode;
     SDL_Window* window = nullptr;
@@ -53,10 +62,10 @@ namespace {
     // these are relative to the upscaled region
     unsigned int visible_width, visible_height;
     unsigned int visible_left, visible_top, visible_right, visible_bottom;
-    // output region: size of the region in display pixels (sort of)
+    // output region: size of the visible region before upscaling
     unsigned int output_width, output_height;
     bool need_pixbuf() {
-      return television_mode;
+      return signal_type != SIGNAL_RGB;
     }
   public:
     SDLDisplay(const std::string& window_title) {
@@ -78,7 +87,7 @@ namespace {
       active_right = (visible_right&7) ? (visible_right&~7)+8 : visible_right;
       active_top = visible_top;
       active_bottom = visible_bottom;
-      if(television_mode) {
+      if(signal_type != SIGNAL_COMPOSITE) {
         // we need to include about 8 more pixels on either side, to avoid
         // artifacts when a background color is in effect
         active_left -= 8;
@@ -94,7 +103,7 @@ namespace {
       window_height = visible_height * 2;
       output_width = visible_width;
       output_height = visible_height;
-      if(television_mode) {
+      if(signal_type != SIGNAL_RGB || upscale_mode != UPSCALE_SMOOTH) {
         upscaled_width = active_width * 2;
         visible_left *= 2;
         visible_right *= 2;
@@ -164,14 +173,29 @@ namespace {
       SDL_LockTexture(frametexture, nullptr,
                       reinterpret_cast<void**>(&pixels), &pitch);
       assert(static_cast<unsigned int>(pitch) == upscaled_width * 4);
-      FX::raw_screen_to_bgra(src, pixbuf == nullptr ? pixels : pixbuf,
-                             active_left, active_top,
-                             active_right, active_bottom,
-                             do_scanlines && !television_mode);
-      if(television_mode) {
-        FX::televise_bgra(pixbuf, pixels,
-                          active_width, active_height,
-                          do_scanlines);
+      if(signal_type == SIGNAL_RGB && upscale_mode >= UPSCALE_SMOOTH)
+        FX::raw_screen_to_bgra_2x(src, pixbuf == nullptr ? pixels : pixbuf,
+                                  active_left, active_top,
+                                  active_right, active_bottom,
+                                  do_scanlines && signal_type == SIGNAL_RGB);
+      else
+        FX::raw_screen_to_bgra(src, pixbuf == nullptr ? pixels : pixbuf,
+                               active_left, active_top,
+                               active_right, active_bottom,
+                               do_scanlines && signal_type == SIGNAL_RGB);
+      switch(signal_type) {
+      case SIGNAL_RGB:
+        break;
+      case SIGNAL_SVIDEO:
+        FX::svideo_bgra(pixbuf, pixels,
+                        active_width, active_height,
+                        do_scanlines);
+        break;
+      case SIGNAL_COMPOSITE:
+        FX::composite_bgra(pixbuf, pixels,
+                           active_width, active_height,
+                           do_scanlines);
+        break;
       }
       switch(upscale_mode) {
       case UPSCALE_NONE:

@@ -13,12 +13,20 @@ namespace FX {
                           unsigned int right = ARS::PPU::TOTAL_SCREEN_WIDTH,
                           unsigned int bottom = ARS::PPU::TOTAL_SCREEN_HEIGHT,
                           bool output_skips_rows = false);
+  void raw_screen_to_bgra_2x(const ARS::PPU::raw_screen& in,
+                             void* out,
+                             unsigned int left = 0, unsigned int top = 0,
+                             unsigned int right = ARS::PPU::TOTAL_SCREEN_WIDTH,
+                           unsigned int bottom = ARS::PPU::TOTAL_SCREEN_HEIGHT,
+                             bool output_skips_rows = false);
   // doubles the width of the input
   // CANNOT be in-place
-  // also note that this filter shifts the input right by one pixel!
-  void televise_bgra(const void* in, void* out,
-                     unsigned int width, unsigned int height,
-                     bool output_skips_rows);
+  void composite_bgra(const void* in, void* out,
+                      unsigned int width, unsigned int height,
+                      bool output_skips_rows);
+  void svideo_bgra(const void* in, void* out,
+                   unsigned int width, unsigned int height,
+                   bool output_skips_rows);
   // assumes the input skipped rows
   void scanline_crisp(void* buf,
                       unsigned int width, unsigned int height);
