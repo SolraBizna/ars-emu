@@ -191,35 +191,13 @@ void FX::scanline_bright(void* restrict _buf,
   uint32_t* restrict in_row2 = out + width;
   for(unsigned int y = 0; y < height; ++y) {
     for(unsigned int x = 0; x < width; ++x) {
-      uint32_t pix_above = *in_row1;
+      uint32_t pix_above = *in_row1++;
       uint32_t pix_below = *in_row2++;
-      uint32_t red_above = linearizer[pix_above >> 16];
-      uint32_t green_above = linearizer[pix_above >> 8];
-      uint32_t blue_above = linearizer[pix_above];
-      uint32_t red_bloom = (red_above + linearizer[pix_below >> 16]) / 8;
-      uint32_t green_bloom = (green_above + linearizer[pix_below >> 8]) / 8;
-      uint32_t blue_bloom = (blue_above + linearizer[pix_below]) / 8;
-      red_above += red_above >> 1;
-      green_above += green_above >> 1;
-      blue_above += blue_above >> 1;
-      if(red_above > 65535) {
-        red_bloom += (red_above - 65535) / 2;
-        red_above = 65535;
-      }
-      if(green_above > 65535) {
-        green_bloom += (green_above - 65535) / 2;
-        green_above = 65535;
-      }
-      if(blue_above > 65535) {
-        blue_bloom += (blue_above - 65535) / 2;
-        blue_above = 65535;
-      }
-      *in_row1++ = (delinearizer[red_above] << 16)
-        | (delinearizer[green_above] << 8)
-        | delinearizer[blue_above];
-      *out++ = (delinearizer[red_bloom] << 16)
-        | (delinearizer[green_bloom] << 8)
-        | delinearizer[blue_bloom];
+      uint32_t red = linearizer[pix_above >> 16] + linearizer[pix_below >> 16];
+      uint32_t green = linearizer[pix_above >> 8] + linearizer[pix_below >> 8];
+      uint32_t blue = linearizer[pix_above] + linearizer[pix_below];
+      *out++ = (delinearizer[red / 4] << 16) | (delinearizer[green / 4] << 8)
+        | delinearizer[blue / 4];
     }
     in_row1 += width;
     out += width;
