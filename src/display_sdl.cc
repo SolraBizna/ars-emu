@@ -39,7 +39,7 @@ namespace {
     }
     void Defaults() override {
       enable_overscan = true;
-      signal_type = SIGNAL_COMPOSITE;
+      signal_type = SIGNAL_RGB;
       upscale_mode = UPSCALE_SCANLINES_BRIGHT;
     }
   } displaySystemPrefsLogic;
@@ -103,7 +103,7 @@ namespace {
       window_height = visible_height * 2;
       output_width = visible_width;
       output_height = visible_height;
-      if(signal_type != SIGNAL_RGB || upscale_mode != UPSCALE_SMOOTH) {
+      if(signal_type != SIGNAL_RGB || upscale_mode != UPSCALE_NONE) {
         upscaled_width = active_width * 2;
         visible_left *= 2;
         visible_right *= 2;
