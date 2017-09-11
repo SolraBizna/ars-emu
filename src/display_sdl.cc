@@ -4,7 +4,7 @@
 #include "config.hh"
 
 #include <assert.h>
-#include "fx.hh"
+#include "upscale.hh"
 
 namespace {
   template<class T> constexpr T clamp(T value, T min, T max) {
@@ -12,17 +12,14 @@ namespace {
     else if(value > max) return max;
     else return value;
   }
-  enum { SIGNAL_RGB=0, SIGNAL_SVIDEO, SIGNAL_COMPOSITE,
-         NUM_SIGNAL_TYPES };
-  enum { UPSCALE_NONE=0, UPSCALE_SMOOTH=1, UPSCALE_SCANLINES_CRISP=2,
-         UPSCALE_SCANLINES_BRIGHT=3, NUM_UPSCALE_MODES };
   // don't forget to copy these into the instance so we don't completely go
   // crazy when configuration is a thing
   bool enable_overscan;
-  int signal_type, upscale_mode;
+  int signal_type;
+  int upscale_type;
   const Config::Element elements[] = {
-    {"signal_type", signal_type},
-    {"upscale_mode", upscale_mode},
+    {"signal_type", *reinterpret_cast<int*>(&signal_type)},
+    {"upscale_type", *reinterpret_cast<int*>(&upscale_type)},
     {"enable_overscan", enable_overscan},
   };
   class DisplaySystemPrefsLogic : public PrefsLogic {
@@ -30,8 +27,8 @@ namespace {
     void Load() override {
       Config::Read("SDL Display.utxt",
                    elements, elementcount(elements));
-      signal_type = clamp(signal_type, 0, NUM_SIGNAL_TYPES-1);
-      upscale_mode = clamp(upscale_mode, 0, NUM_UPSCALE_MODES-1);
+      signal_type = clamp(signal_type, 0, MAX_SIGNAL_TYPE);
+      upscale_type = clamp(upscale_type, 0, MAX_UPSCALE_TYPE);
     }
     void Save() override {
       Config::Write("SDL Display.utxt",
@@ -39,38 +36,23 @@ namespace {
     }
     void Defaults() override {
       enable_overscan = true;
-      signal_type = SIGNAL_RGB;
-      upscale_mode = UPSCALE_SCANLINES_BRIGHT;
+      signal_type = static_cast<int>(SignalType::RGB);
+      upscale_type = static_cast<int>(UpscaleType::SCANLINES_BRIGHT);
     }
   } displaySystemPrefsLogic;
   class SDLDisplay : public ARS::Display {
-    int signal_type = ::signal_type;
-    bool enable_overscan = ::enable_overscan;
-    int upscale_mode = ::upscale_mode;
+    Upscaler upscaler;
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* frametexture = nullptr;
-    uint8_t* pixbuf = nullptr; // TODO: alignment
-    unsigned int window_width, window_height;
-    // active region: size of the region we're working with, filter-wise
-    unsigned int active_width, active_height;
-    unsigned int active_left, active_top, active_right, active_bottom;
-    // upscaled region: size of the texture we get after applying the upscale
-    // filter of our choice
-    unsigned int upscaled_width, upscaled_height;
-    // visible region: size of the region we can SEE
-    // these are relative to the upscaled region
+    // size of the region we care about
     unsigned int visible_width, visible_height;
-    unsigned int visible_left, visible_top, visible_right, visible_bottom;
-    // output region: size of the visible region before upscaling
-    unsigned int output_width, output_height;
-    bool need_pixbuf() {
-      return signal_type != SIGNAL_RGB;
-    }
+    // upscaled region: size of the texture we get after applying the upscaler
+    unsigned int upscaled_width, upscaled_height;
+    // output region: area of the upscaled texture we want to see
+    unsigned int output_left, output_top, output_right, output_bottom;
   public:
     SDLDisplay(const std::string& window_title) {
-      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,
-                  upscale_mode == UPSCALE_NONE ? "nearest" : "linear");
       if(enable_overscan) {
         visible_width = ARS::PPU::CONVENIENT_OVERSCAN_WIDTH;
         visible_height = ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT;
@@ -79,58 +61,24 @@ namespace {
         visible_width = ARS::PPU::CONVENIENT_OVERSCAN_WIDTH * ARS::PPU::LIVE_SCREEN_HEIGHT / ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT;
         visible_height = ARS::PPU::LIVE_SCREEN_HEIGHT;
       }
+      unsigned int visible_left, visible_top, visible_right, visible_bottom;
       visible_left = (ARS::PPU::TOTAL_SCREEN_WIDTH-visible_width)/2;
       visible_right = visible_left + visible_width;
       visible_top = (ARS::PPU::TOTAL_SCREEN_HEIGHT-visible_height)/2;
       visible_bottom = visible_top + visible_height;
-      active_left = visible_left&~7;
-      active_right = (visible_right&7) ? (visible_right&~7)+8 : visible_right;
-      active_top = visible_top;
-      active_bottom = visible_bottom;
-      if(signal_type != SIGNAL_COMPOSITE) {
-        // we need to include about 8 more pixels on either side, to avoid
-        // artifacts when a background color is in effect
-        active_left -= 8;
-        active_right += 8;
-      }
-      active_width = active_right - active_left;
-      active_height = active_bottom - active_top;
-      visible_left -= active_left;
-      visible_right -= active_left;
-      visible_top -= active_top;
-      visible_bottom -= active_top;
-      window_width = visible_width * 2;
-      window_height = visible_height * 2;
-      output_width = visible_width;
-      output_height = visible_height;
-      if(signal_type != SIGNAL_RGB || upscale_mode != UPSCALE_NONE) {
-        upscaled_width = active_width * 2;
-        visible_left *= 2;
-        visible_right *= 2;
-        visible_width *= 2;
-      }
-      else
-        upscaled_width = active_width;
-      switch(upscale_mode) {
-      case UPSCALE_NONE:
-      case UPSCALE_SMOOTH:
-        upscaled_height = active_height;
-        break;
-      case UPSCALE_SCANLINES_CRISP:
-      case UPSCALE_SCANLINES_BRIGHT:
-        upscaled_height = active_height * 2;
-        visible_top *= 2;
-        visible_bottom *= 2;
-        visible_height *= 2;
-        break;
-      }
-      if(need_pixbuf()) {
-        pixbuf = new uint8_t[active_width * active_height * 4];
-      }
+      upscaler = Upscaler(static_cast<SignalType>(signal_type),
+                          static_cast<UpscaleType>(upscale_type),
+                          visible_left, visible_top,
+                          visible_right, visible_bottom,
+                          upscaled_width, upscaled_height,
+                          output_left, output_top,
+                          output_right, output_bottom);
+      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,
+                  upscaler.shouldSmoothResult() ? "linear" : "nearest");
       window = SDL_CreateWindow(window_title.c_str(),
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
-                                window_width, window_height,
+                                visible_width, visible_height,
                                 SDL_WINDOW_RESIZABLE);
       if(window == NULL) throw sn.Get("WINDOW_FAIL"_Key,
                                       {SDL_GetError()});
@@ -138,7 +86,7 @@ namespace {
       if(renderer == NULL) throw sn.Get("RENDERER_FAIL"_Key,
                                         {SDL_GetError()});
       // TODO: do aspect ratio handling ourselves so we can overscan properly
-      SDL_RenderSetLogicalSize(renderer, output_width, output_height);
+      SDL_RenderSetLogicalSize(renderer, visible_width, visible_height);
       frametexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
                                        SDL_TEXTUREACCESS_STREAMING,
                                        upscaled_width, upscaled_height);
@@ -146,10 +94,6 @@ namespace {
                                             {SDL_GetError()});
     }
     ~SDLDisplay() {
-      if(pixbuf != nullptr) {
-        delete[] pixbuf;
-        pixbuf = nullptr;
-      }
       if(frametexture != nullptr) {
         SDL_DestroyTexture(frametexture);
         frametexture = nullptr;
@@ -167,59 +111,24 @@ namespace {
       return window;
     }
     void update(const ARS::PPU::raw_screen& src) override {
-      bool do_scanlines = upscale_mode >= UPSCALE_SCANLINES_CRISP;
       uint8_t* pixels;
       int pitch;
       SDL_LockTexture(frametexture, nullptr,
                       reinterpret_cast<void**>(&pixels), &pitch);
       assert(static_cast<unsigned int>(pitch) == upscaled_width * 4);
-      if(signal_type == SIGNAL_RGB && upscale_mode >= UPSCALE_SMOOTH)
-        FX::raw_screen_to_bgra_2x(src, pixbuf == nullptr ? pixels : pixbuf,
-                                  active_left, active_top,
-                                  active_right, active_bottom,
-                                  do_scanlines && signal_type == SIGNAL_RGB);
-      else
-        FX::raw_screen_to_bgra(src, pixbuf == nullptr ? pixels : pixbuf,
-                               active_left, active_top,
-                               active_right, active_bottom,
-                               do_scanlines && signal_type == SIGNAL_RGB);
-      switch(signal_type) {
-      case SIGNAL_RGB:
-        break;
-      case SIGNAL_SVIDEO:
-        FX::svideo_bgra(pixbuf, pixels,
-                        active_width, active_height,
-                        do_scanlines);
-        break;
-      case SIGNAL_COMPOSITE:
-        FX::composite_bgra(pixbuf, pixels,
-                           active_width, active_height,
-                           do_scanlines);
-        break;
-      }
-      switch(upscale_mode) {
-      case UPSCALE_NONE:
-      case UPSCALE_SMOOTH:
-        break;
-      case UPSCALE_SCANLINES_CRISP:
-        FX::scanline_crisp(pixels, upscaled_width, active_height);
-        break;
-      case UPSCALE_SCANLINES_BRIGHT:
-        FX::scanline_bright(pixels, upscaled_width, active_height);
-        break;
-      }
+      upscaler.apply(src, pixels);
       SDL_UnlockTexture(frametexture);
       SDL_RenderClear(renderer);
       SDL_Rect srcrect;
-      srcrect.x = visible_left;
-      srcrect.y = visible_top;
-      srcrect.w = visible_width;
-      srcrect.h = visible_height;
+      srcrect.x = output_left;
+      srcrect.y = output_top;
+      srcrect.w = output_right - output_left;
+      srcrect.h = output_bottom - output_top;
       SDL_Rect dstrect;
       dstrect.x = 0;
       dstrect.y = 0;
-      dstrect.w = output_width;
-      dstrect.h = output_height;
+      dstrect.w = visible_width;
+      dstrect.h = visible_height;
       SDL_RenderCopy(renderer, frametexture, &srcrect, &dstrect);
       SDL_RenderPresent(renderer);
     }
