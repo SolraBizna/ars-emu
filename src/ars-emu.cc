@@ -32,8 +32,10 @@ std::unique_ptr<ARS::CPU> ARS::cpu;
 typedef std::chrono::duration<int64_t, std::ratio<1,60> > frame_duration;
 bool ARS::safe_mode = false, ARS::debugging_audio = false,
   ARS::debugging_video = false;
+std::string ARS::window_title;
 uint8_t ARS::dram[0x8000];
 SN::Context sn;
+std::unique_ptr<Display> ARS::display;
 
 namespace {
   uint8_t bankMap[8];
@@ -44,7 +46,6 @@ namespace {
   bool experiencing_temporal_anomaly = true;
   int64_t logic_frame;
   decltype(std::chrono::high_resolution_clock::now()) epoch;
-  std::unique_ptr<Display> display;
   bool window_visible = true, window_minimized = false, quit = false,
     allow_debug_port = false, always_allow_config_port = false,
     allow_secure_config_port = true, quit_on_stop = false,
@@ -435,9 +436,9 @@ extern "C" int teg_main(int argc, char** argv) {
   PrefsLogic::LoadAll();
   ARS::init_apu();
   FX::init();
-  std::string windowtitle = sn.Get("WINDOW_TITLE"_Key, {rom_path});
-  display = safe_mode ? Display::makeSafeModeDisplay(windowtitle)
-    : Display::makeConfiguredDisplay(windowtitle);
+  window_title = sn.Get("WINDOW_TITLE"_Key, {rom_path});
+  display = safe_mode ? Display::makeSafeModeDisplay()
+    : Display::makeConfiguredDisplay();
   Controller::initControllers();
   quit = false;
   cpu = makeCPU(rom_path);

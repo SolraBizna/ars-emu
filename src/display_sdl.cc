@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include "upscale.hh"
+#include "menu.hh"
 
 namespace {
   template<class T> constexpr T clamp(T value, T min, T max) {
@@ -12,8 +13,7 @@ namespace {
     else if(value > max) return max;
     else return value;
   }
-  // don't forget to copy these into the instance so we don't completely go
-  // crazy when configuration is a thing
+  bool we_are_active = false;
   bool enable_overscan;
   int signal_type;
   int upscale_type;
@@ -56,7 +56,7 @@ namespace {
     // top/botrect: black out
     SDL_Rect dstrect, leftrect, rightrect, toprect, botrect;
   public:
-    SDLDisplay(const std::string& window_title) {
+    SDLDisplay() {
       if(enable_overscan) {
         visible_width = ARS::PPU::CONVENIENT_OVERSCAN_WIDTH;
         visible_height = ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT;
@@ -100,7 +100,7 @@ namespace {
       display_width = visible_width * chosen_upsize_factor;
       display_height = visible_height * chosen_upsize_factor;
 #endif
-      window = SDL_CreateWindow(window_title.c_str(),
+      window = SDL_CreateWindow(ARS::window_title.c_str(),
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
                                 display_width, display_height,
@@ -117,8 +117,10 @@ namespace {
       if(frametexture == NULL) throw sn.Get("FRAMETEXTURE_FAIL"_Key,
                                             {SDL_GetError()});
       resize();
+      we_are_active = true;
     }
     ~SDLDisplay() {
+      we_are_active = false;
       if(frametexture != nullptr) {
         SDL_DestroyTexture(frametexture);
         frametexture = nullptr;
@@ -232,7 +234,54 @@ namespace {
   };
   ARS::DisplayDescriptor
   _("sdl", "DISPLAY_NAME_SDL"_Key, 100,
-    [](const std::string& window_title) {
-      return std::make_unique<SDLDisplay>(window_title);
-    }, nullptr);
+    []() {
+      return std::make_unique<SDLDisplay>();
+    },
+    []() {
+      std::vector<std::shared_ptr<Menu::Item> > items;
+      std::vector<std::string> signal_types;
+      signal_types.reserve(MAX_SIGNAL_TYPE+1);
+      for(auto& key : Upscaler::SIGNAL_TYPE_KEYS) {
+        signal_types.emplace_back(sn.Get(key));
+      }
+      items.emplace_back(new Menu::Selector(sn.Get(Upscaler::SIGNAL_TYPE_SELECTOR),
+                                            signal_types,
+                                            signal_type,
+                                            [](size_t nu) {
+                                              signal_type = nu;
+                                              if(we_are_active) {
+                                                ARS::display.reset();
+                                                ARS::display = _.constructor();
+                                              }
+                                            }));
+      std::vector<std::string> upscale_types;
+      upscale_types.reserve(MAX_UPSCALE_TYPE+1);
+      for(auto& key : Upscaler::UPSCALE_TYPE_KEYS) {
+        upscale_types.emplace_back(sn.Get(key));
+      }
+      items.emplace_back(new Menu::Selector(sn.Get(Upscaler::UPSCALE_TYPE_SELECTOR),
+                                            upscale_types,
+                                            upscale_type,
+                                            [](size_t nu) {
+                                              upscale_type = nu;
+                                              if(we_are_active) {
+                                                ARS::display.reset();
+                                                ARS::display = _.constructor();
+                                              }
+                                            }));
+      items.emplace_back(new Menu::Selector(sn.Get("OVERSCAN_TYPE"_Key),
+                                            {sn.Get("OVERSCAN_DISABLED"_Key),
+                                              sn.Get("OVERSCAN_ENABLED"_Key)},
+                                            enable_overscan,
+                                            [](size_t nu) {
+                                              enable_overscan = !!nu;
+                                              if(we_are_active) {
+                                                ARS::display.reset();
+                                                ARS::display = _.constructor();
+                                              }
+                                            }));
+      items.emplace_back(new Menu::Divider());
+      items.emplace_back(new Menu::BackButton(sn.Get("GENERIC_MENU_FINISHED_LABEL"_Key)));
+      return std::make_shared<Menu>(sn.Get("SDL_VIDEO_MENU_TITLE"_Key), items);
+    });
 }

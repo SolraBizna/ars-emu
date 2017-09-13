@@ -692,10 +692,93 @@ Samplerate:
 
 : Video menu
 ::::::::::::::::::::::::::::
+VIDEO_MENU_TITLE
+Video Options
+.
+
+VIDEO_DRIVER
+Video driver:
+.
+
 DISPLAY_NAME_SAFE
-Safe Mode
+Failsafe
 .
 
 DISPLAY_NAME_SDL
 SDL
+.
+
+SDL_VIDEO_MENU_TITLE
+SDL Display Options
+.
+
+: $1: A DISPLAY_NAME_* key
+CONFIGURE_VIDEO_DRIVER
+Configure $1 video…
+.
+
+: Which type of physical video signal to simulate
+VIDEO_SIGNAL_TYPE
+Signal:
+.
+
+: RGB or YIQ signals over separate cables. The "real" console doesn't have
+: these but would have been very easy to mod.
+VIDEO_SIGNAL_TYPE_COMPONENT
+Component (mod)
+.
+
+: Y/C signal with a mini-DIN connector. Quality nearly as good as Component.
+VIDEO_SIGNAL_TYPE_SVIDEO
+S-Video
+.
+
+: Brightness and color information over the same cable, i.e. a composite cable.
+: One quality step down from actual TV modulation over a coaxial cable, which
+: we will NOT emulate.
+VIDEO_SIGNAL_TYPE_COMPOSITE
+Composite
+.
+
+: Which method of upscaling the video should be used
+VIDEO_UPSCALE_TYPE
+Scaling:
+.
+
+: No filtering. Pixels are pixels.
+VIDEO_UPSCALE_TYPE_NONE
+Pixelated
+.
+
+: Smooth the boundaries between pixels a little bit.
+VIDEO_UPSCALE_TYPE_SMOOTH
+Smooth
+.
+
+: Simulate the scanlines that are visible when viewing a 240-line progressive
+: signal on a very high-quality CRT TV.
+VIDEO_UPSCALE_TYPE_SCANLINES_CRISP
+Scanlines (crisp)
+.
+
+: Simulate the scanlines that are visible when viewing a 240-line progressive
+: signal on a typical home CRT TV.
+VIDEO_UPSCALE_TYPE_SCANLINES_BRIGHT
+Scanlines (bright)
+.
+
+: Whether to cut off part of the display.
+OVERSCAN_TYPE
+Picture size:
+.
+
+: Cut off the top and bottom 8 pixels of the display, just like a real TV
+: typically would.
+OVERSCAN_ENABLED
+Overscan
+.
+
+: Show every row of the display, even though a real TV typically wouldn't.
+OVERSCAN_DISABLED
+Full scan
 .

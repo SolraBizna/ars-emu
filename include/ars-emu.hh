@@ -13,6 +13,8 @@ extern "C" void die(const char* format, ...) __attribute__((noreturn,
 extern SN::Context sn;
 
 namespace ARS {
+  class Display;
+  extern std::unique_ptr<Display> display;
   static constexpr int HARD_BLANK_CYCLES_PER_SCANLINE = 134;
   static constexpr int SAFE_BLANK_CYCLES_PER_SCANLINE = 74;
   static constexpr int UNSAFE_BLANK_CYCLES_PER_SCANLINE = 194;
@@ -37,6 +39,7 @@ namespace ARS {
                  + CYCLES_PER_VBLANK) * 60 == 12261600,
                 "wrong implied core clock");
   extern bool safe_mode, debugging_audio, debugging_video;
+  extern std::string window_title;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
   static struct Regs {

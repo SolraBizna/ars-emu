@@ -70,6 +70,10 @@ public:
     active_bottom = other.active_bottom;
     return *this;
   }
+  static const SN::ConstKey SIGNAL_TYPE_SELECTOR;
+  static const std::array<SN::ConstKey, MAX_SIGNAL_TYPE+1> SIGNAL_TYPE_KEYS;
+  static const SN::ConstKey UPSCALE_TYPE_SELECTOR;
+  static const std::array<SN::ConstKey, MAX_UPSCALE_TYPE+1> UPSCALE_TYPE_KEYS;
 };
 
 #endif

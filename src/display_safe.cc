@@ -19,9 +19,9 @@ namespace {
     static constexpr int VISIBLE_RIGHT = VISIBLE_LEFT + VISIBLE_WIDTH;
     static constexpr int VISIBLE_BOTTOM = VISIBLE_TOP + VISIBLE_HEIGHT;
   public:
-    SafeModeDisplay(const std::string& window_title) {
+    SafeModeDisplay() {
       SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
-      window = SDL_CreateWindow(window_title.c_str(),
+      window = SDL_CreateWindow(ARS::window_title.c_str(),
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
                                 WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -72,14 +72,14 @@ namespace {
   };
   ARS::DisplayDescriptor
   _("safe", "DISPLAY_NAME_SAFE"_Key, 0,
-    [](const std::string& window_title) {
-      return std::make_unique<SafeModeDisplay>(window_title);
+    []() {
+      return std::make_unique<SafeModeDisplay>();
     }, nullptr);
 }
 
-std::unique_ptr<ARS::Display> ARS::Display::makeSafeModeDisplay(const std::string& window_title) {
+std::unique_ptr<ARS::Display> ARS::Display::makeSafeModeDisplay() {
   try {
-    return std::make_unique<SafeModeDisplay>(window_title);
+    return std::make_unique<SafeModeDisplay>();
   }
   catch(std::string e) {
     std::cerr << e << "\n";

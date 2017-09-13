@@ -1,6 +1,7 @@
 #include "display.hh"
 #include "prefs.hh"
 #include "config.hh"
+#include "menu.hh"
 
 #include <assert.h>
 #include <algorithm>
@@ -50,7 +51,7 @@ Display::~Display() {}
 bool Display::filterEvent(SDL_Event&) { return false; }
 
 std::unique_ptr<Display>
-Display::makeConfiguredDisplay(const std::string& window_title) {
+Display::makeConfiguredDisplay() {
   if(!displays_sorted) sortDisplays();
   bool errors_were_made = false;
   std::unique_ptr<Display> ret;
@@ -66,7 +67,7 @@ Display::makeConfiguredDisplay(const std::string& window_title) {
     }
     if(preferred_dd != nullptr) {
       try {
-        ret = preferred_dd->constructor(window_title);
+        ret = preferred_dd->constructor();
         assert(ret);
         display_name = sn.Get(preferred_dd->pretty_name_key);
       }
@@ -87,7 +88,7 @@ Display::makeConfiguredDisplay(const std::string& window_title) {
       // so skip it
       if(preferred_display_id == dd->identifier) continue;
       try {
-        ret = dd->constructor(window_title);
+        ret = dd->constructor();
         assert(ret);
         display_name = sn.Get(dd->pretty_name_key);
         break;
@@ -111,7 +112,7 @@ DisplayDescriptor::DisplayDescriptor(const std::string& identifier,
                                      const SN::ConstKey& pretty_name_key,
                                      int priority,
                                      std::function<std::unique_ptr<Display>
-                                     (const std::string&)> constructor,
+                                     ()> constructor,
                                      std::function<std::shared_ptr<Menu>()>
                                      configurator)
   : identifier(identifier), pretty_name_key(pretty_name_key),
@@ -128,4 +129,55 @@ const std::vector<const DisplayDescriptor*>& Display::getAvailableDisplays() {
 void Display::setActiveDisplay(const DisplayDescriptor* nu) {
   if(nu == nullptr) preferred_display_id = "";
   else preferred_display_id = nu->identifier;
+}
+
+const DisplayDescriptor* Display::getActiveDisplay() {
+  auto& displays = getAvailableDisplays();
+  for(auto dd : displays) {
+      if(dd->identifier == preferred_display_id) {
+        return dd;
+      }
+  }
+  return displays[0];
+}
+
+std::shared_ptr<Menu> Menu::createVideoMenu() {
+  std::vector<std::shared_ptr<Menu::Item> > items;
+  std::vector<std::string> driver_names;
+  auto& displays = Display::getAvailableDisplays();
+  driver_names.reserve(displays.size());
+  std::shared_ptr<size_t> selected_driver = std::make_shared<size_t>(0);
+  for(size_t n = 0; n < displays.size(); ++n) {
+    auto dd = displays[n];
+    if(preferred_display_id == dd->identifier) {
+      *selected_driver = n;
+    }
+    driver_names.emplace_back(sn.Get(dd->pretty_name_key));
+  }
+  items.emplace_back(new Menu::Selector(sn.Get("VIDEO_DRIVER"_Key),
+                                        driver_names,
+                                        *selected_driver,
+                                        [selected_driver](size_t opt) {
+                                          *selected_driver = opt;
+                                          Display::setActiveDisplay(getAvailableDisplays()[*selected_driver]);
+                                          display.reset();
+                                          display = Display::makeConfiguredDisplay();
+                                        }));
+  bool have_had_divider = false;
+  for(auto dd : displays) {
+    if(dd->configurator) {
+      if(!have_had_divider) {
+        items.emplace_back(new Menu::Divider());
+        have_had_divider = true;
+      }
+      items.emplace_back(new Menu::Submenu(sn.Get("CONFIGURE_VIDEO_DRIVER"_Key,
+                                                  {sn.Get(dd->pretty_name_key)}
+                                                  ),
+                                           dd->configurator));
+
+    }
+  }
+  items.emplace_back(new Menu::Divider());
+  items.emplace_back(new Menu::BackButton(sn.Get("GENERIC_MENU_FINISHED_LABEL"_Key)));
+  return std::make_shared<Menu>(sn.Get("VIDEO_MENU_TITLE"_Key), items);
 }

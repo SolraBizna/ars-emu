@@ -133,6 +133,7 @@ public:
   static std::shared_ptr<Menu> createFightMenu();
   static std::shared_ptr<Menu> createKeyboardMenu();
   static std::shared_ptr<Menu> createAudioMenu();
+  static std::shared_ptr<Menu> createVideoMenu();
 };
 
 #endif

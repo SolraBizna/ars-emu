@@ -20,10 +20,11 @@ namespace ARS {
     virtual void update(const ARS::PPU::raw_screen& src) = 0;
     // return true if the event was fully handled
     virtual bool filterEvent(SDL_Event&);
-    static std::unique_ptr<Display> makeConfiguredDisplay(const std::string& window_title);
-    static std::unique_ptr<Display> makeSafeModeDisplay(const std::string& window_title);
+    static std::unique_ptr<Display> makeConfiguredDisplay();
+    static std::unique_ptr<Display> makeSafeModeDisplay();
     static const std::vector<const DisplayDescriptor*>& getAvailableDisplays();
     static void setActiveDisplay(const DisplayDescriptor*);
+    static const DisplayDescriptor* getActiveDisplay();
   };
   // Safe Mode has 0 priority. Highly hardware-accelerated modes should have
   // >100 priority. Dangerous modes should have negative priority.
@@ -36,14 +37,12 @@ namespace ARS {
     const std::string identifier;
     const SN::ConstKey pretty_name_key;
     const int priority;
-    const std::function<std::unique_ptr<Display>
-                        (const std::string&)> constructor;
+    const std::function<std::unique_ptr<Display>()> constructor;
     const std::function<std::shared_ptr<Menu>()> configurator;
     DisplayDescriptor(const std::string& identifier,
                       const SN::ConstKey& pretty_name_key,
                       int priority,
-                      std::function<std::unique_ptr<Display>
-                      (const std::string&)> constructor,
+                      std::function<std::unique_ptr<Display>()> constructor,
                       std::function<std::shared_ptr<Menu>()>
                       configurator = nullptr);
   };
