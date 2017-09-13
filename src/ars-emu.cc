@@ -124,6 +124,7 @@ namespace {
     while(SDL_PollEvent(&evt)) {
       if(Windower::HandleEvent(evt)) continue;
       if(Controller::filterEvent(evt)) continue;
+      if(display->filterEvent(evt)) continue;
       switch(evt.type) {
       case SDL_DROPFILE: SDL_free(evt.drop.file); break;
       case SDL_QUIT: quit = true; break;

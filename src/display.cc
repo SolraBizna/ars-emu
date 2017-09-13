@@ -47,6 +47,8 @@ namespace {
 
 Display::~Display() {}
 
+bool Display::filterEvent(SDL_Event&) { return false; }
+
 std::unique_ptr<Display>
 Display::makeConfiguredDisplay(const std::string& window_title) {
   if(!displays_sorted) sortDisplays();

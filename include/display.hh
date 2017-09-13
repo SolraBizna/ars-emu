@@ -18,6 +18,8 @@ namespace ARS {
     virtual ~Display();
     virtual SDL_Window* getWindow() const = 0;
     virtual void update(const ARS::PPU::raw_screen& src) = 0;
+    // return true if the event was fully handled
+    virtual bool filterEvent(SDL_Event&);
     static std::unique_ptr<Display> makeConfiguredDisplay(const std::string& window_title);
     static std::unique_ptr<Display> makeSafeModeDisplay(const std::string& window_title);
     static const std::vector<const DisplayDescriptor*>& getAvailableDisplays();
