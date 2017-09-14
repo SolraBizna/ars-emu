@@ -11,13 +11,13 @@ namespace {
   uint32_t pack_pixel(int32_t red, int32_t green, int32_t blue) {
     if(red > 16777215) red = 255;
     else if(red < 0) red = 0;
-    else red >>= 16;
+    else red = uint32_t(red)>>16;
     if(green > 16777215) green = 255;
     else if(green < 0) green = 0;
-    else green >>= 16;
+    else green = uint32_t(green)>>16;
     if(blue > 16777215) blue = 255;
     else if(blue < 0) blue = 0;
-    else blue >>= 16;
+    else blue = uint32_t(blue)>>16;
     return (red << 16) | (green << 8) | blue;
   }
 }
