@@ -1,3 +1,5 @@
+#include "optimize-this-file.hh"
+
 #include "fx.hh"
 
 #include <assert.h>
