@@ -43,6 +43,7 @@ $(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o 
 ifndef CROSS_COMPILE
 $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
 $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))
+$(call define_exe,fxbench,obj/sn_core.o obj/fx.o $(TEG_OBJECTS) $(EXTRA_OBJECTS))
 endif
 
 gen:
