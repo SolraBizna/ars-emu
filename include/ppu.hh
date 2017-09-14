@@ -67,13 +67,13 @@ namespace ARS {
       static constexpr uint8_t FOREGROUND_MASK = 4;
       uint8_t TileAddr, TilePage;
     } ssm[NUM_SPRITES];
-    uint8_t* const ssmBytes = reinterpret_cast<uint8_t*>(ssm);
+    constexpr uint8_t* ssmBytes() {return reinterpret_cast<uint8_t*>(ssm);}
     static_assert(sizeof(SpriteState) == 4, "Sprite size has slipped");
     // HHHHHPPP
     // H = tile height-1, range 1..32 (8..128)
     typedef uint8_t SpriteAttr;
     extern SpriteAttr sam[NUM_SPRITES];
-    uint8_t* const samBytes = sam;
+    constexpr uint8_t* samBytes() {return sam;}
     constexpr uint8_t SA_HEIGHT_SHIFT = 3;
     constexpr uint8_t SA_HEIGHT_MASK = 0x1F;
     constexpr uint8_t SA_PALETTE_SHIFT = 0;
@@ -82,23 +82,32 @@ namespace ARS {
     extern uint8_t cram[0x100];
     extern uint16_t vramAccessPtr;
     extern uint8_t cramAccessPtr, ssmAccessPtr, samAccessPtr;
-    static struct Background_Mode1 {
+    struct Background_Mode1 {
       uint8_t Tiles[MODE1_BACKGROUND_TILES_WIDE * MODE1_BACKGROUND_TILES_HIGH];
       uint8_t Attributes[MODE1_BACKGROUND_TILES_WIDE
                          * MODE1_BACKGROUND_TILES_HIGH / 16];
       uint8_t padding[4];
-    }*const backgrounds_mode1=reinterpret_cast<struct Background_Mode1*>(vram);
-    static struct Background_Mode2 {
+    };
+    constexpr struct Background_Mode1* backgrounds_mode1() {
+      return reinterpret_cast<struct Background_Mode1*>(vram);
+    }
+    struct Background_Mode2 {
       uint8_t Tiles[MODE2_BACKGROUND_TILES_WIDE * MODE2_BACKGROUND_TILES_HIGH];
-    }*const backgrounds_mode2=reinterpret_cast<struct Background_Mode2*>(vram);
+    };
+    constexpr struct Background_Mode2* backgrounds_mode2() {
+      return reinterpret_cast<struct Background_Mode2*>(vram);
+    }
     static_assert(sizeof(Background_Mode1)==0x400, "Background size slipped");
     static_assert(sizeof(Background_Mode2)==0x400, "Background size slipped");
-    static struct Overlay {
+    struct Overlay {
       uint8_t Tiles[OVERLAY_TILES_WIDE*OVERLAY_TILES_HIGH];
       uint8_t Attributes[OVERLAY_TILES_WIDE*OVERLAY_TILES_HIGH/8];
       uint8_t padding[16];
-    }& overlay = *reinterpret_cast<struct Overlay*>(ARS::dram+sizeof(ARS::dram)
-                                                    -sizeof(struct Overlay));
+    };
+    constexpr struct Overlay& overlay() {
+      return *reinterpret_cast<struct Overlay*>(ARS::dram+sizeof(ARS::dram)
+                                                -sizeof(struct Overlay));
+    }
     static_assert(sizeof(Overlay) == 0x400, "Overlay size has slipped");
     void updateScanline(int new_scanline);
     void renderFrame(raw_screen& screenbuf); // also calls renderMessages

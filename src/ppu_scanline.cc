@@ -52,13 +52,13 @@ namespace {
     int bg_ptr, bga_ptr;
     uint8_t bg_low_plane, bg_high_plane, bga_block;
     mode1_bg_engine(int scanline) {
-      bg_y_tile = (ARS::Regs.bgScrollY + scanline) >> 3;
-      bg_y_row = (ARS::Regs.bgScrollY + scanline) & 7;
-      bg_x_tile = ARS::Regs.bgScrollX >> 3;
-      bg_x_col = ARS::Regs.bgScrollX & 7;
-      bga_y_tile = (ARS::Regs.bgScrollY + scanline) >> 4;
-      bga_x_tile = ARS::Regs.bgScrollX >> 4;
-      cur_screen = ARS::Regs.multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
+      bg_y_tile = (ARS::Regs().bgScrollY + scanline) >> 3;
+      bg_y_row = (ARS::Regs().bgScrollY + scanline) & 7;
+      bg_x_tile = ARS::Regs().bgScrollX >> 3;
+      bg_x_col = ARS::Regs().bgScrollX & 7;
+      bga_y_tile = (ARS::Regs().bgScrollY + scanline) >> 4;
+      bga_x_tile = ARS::Regs().bgScrollX >> 4;
+      cur_screen = ARS::Regs().multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
       while(bg_y_tile >= MODE1_BACKGROUND_TILES_HIGH) {
         cur_screen ^= 2;
         bg_y_tile -= MODE1_BACKGROUND_TILES_HIGH;
@@ -67,27 +67,27 @@ namespace {
       bga_rowptr = bga_y_tile * MODE1_BACKGROUND_TILES_WIDE / 8;
       bg_ptr = bg_rowptr + bg_x_tile;
       bga_ptr = bga_rowptr + bga_x_tile / 4;
-      uint8_t bg_tile = backgrounds_mode1[cur_screen].Tiles[bg_ptr++];
+      uint8_t bg_tile = backgrounds_mode1()[cur_screen].Tiles[bg_ptr++];
       uint8_t bgBase;
       switch(cur_screen) {
       default:
-      case 0: bgBase = ARS::Regs.bgTileBaseTop & 15; break;
-      case 1: bgBase = ARS::Regs.bgTileBaseTop >> 4; break;
-      case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
-      case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
+      case 0: bgBase = ARS::Regs().bgTileBaseTop & 15; break;
+      case 1: bgBase = ARS::Regs().bgTileBaseTop >> 4; break;
+      case 2: bgBase = ARS::Regs().bgTileBaseBot & 15; break;
+      case 3: bgBase = ARS::Regs().bgTileBaseBot >> 4; break;
       }
       bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
       bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
-      bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
+      bga_block = backgrounds_mode1()[cur_screen].Attributes[bga_ptr++];
     }
     void getState(uint8_t& bg_color, bool& bg_priority) {
       uint8_t raw_color = ((bg_low_plane>>(~bg_x_col&7))&1)
         | (((bg_high_plane>>(~bg_x_col&7))&1)<<1);
       uint8_t palette = getPalette();
-      bg_color = (ARS::Regs.bgBasePalette[cur_screen]
+      bg_color = (ARS::Regs().bgBasePalette[cur_screen]
                   <<4)|(palette<<2)|raw_color;
       auto bg_num_background_colors =
-        4 - ((ARS::Regs.bgForegroundInfo[cur_screen]>>(palette<<1))&3);
+        4 - ((ARS::Regs().bgForegroundInfo[cur_screen]>>(palette<<1))&3);
       if(bg_num_background_colors != 4) --bg_num_background_colors;
       bg_priority = raw_color >= bg_num_background_colors;
     }
@@ -105,19 +105,19 @@ namespace {
           bg_ptr = bg_rowptr;
           bga_x_tile = 0;
           bga_ptr = bga_rowptr;
-          bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
+          bga_block = backgrounds_mode1()[cur_screen].Attributes[bga_ptr++];
         }
         else if((bg_x_tile&7)==0) {
-          bga_block = backgrounds_mode1[cur_screen].Attributes[bga_ptr++];
+          bga_block = backgrounds_mode1()[cur_screen].Attributes[bga_ptr++];
         }
-        uint8_t bg_tile = backgrounds_mode1[cur_screen].Tiles[bg_ptr++];
+        uint8_t bg_tile = backgrounds_mode1()[cur_screen].Tiles[bg_ptr++];
         uint8_t bgBase;
         switch(cur_screen) {
         default:
-        case 0: bgBase = ARS::Regs.bgTileBaseTop & 15; break;
-        case 1: bgBase = ARS::Regs.bgTileBaseTop >> 4; break;
-        case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
-        case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
+        case 0: bgBase = ARS::Regs().bgTileBaseTop & 15; break;
+        case 1: bgBase = ARS::Regs().bgTileBaseTop >> 4; break;
+        case 2: bgBase = ARS::Regs().bgTileBaseBot & 15; break;
+        case 3: bgBase = ARS::Regs().bgTileBaseBot >> 4; break;
         }
         bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
         bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
@@ -132,18 +132,18 @@ namespace {
     uint8_t bg_pal;
     uint8_t bg_low_plane, bg_high_plane;
     mode2_bg_engine(int scanline) {
-      bg_y_tile = (ARS::Regs.bgScrollY + scanline) >> 3;
-      bg_y_row = (ARS::Regs.bgScrollY + scanline) & 7;
-      bg_x_tile = ARS::Regs.bgScrollX >> 3;
-      bg_x_col = ARS::Regs.bgScrollX & 7;
-      cur_screen = ARS::Regs.multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
+      bg_y_tile = (ARS::Regs().bgScrollY + scanline) >> 3;
+      bg_y_row = (ARS::Regs().bgScrollY + scanline) & 7;
+      bg_x_tile = ARS::Regs().bgScrollX >> 3;
+      bg_x_col = ARS::Regs().bgScrollX & 7;
+      cur_screen = ARS::Regs().multi1 & ARS::Regs::M1_FLIP_MAGIC_MASK;
       if(bg_y_tile >= MODE2_BACKGROUND_TILES_HIGH) {
         cur_screen ^= 2;
         bg_y_tile -= MODE2_BACKGROUND_TILES_HIGH;
       }
       bg_rowptr = bg_y_tile * MODE2_BACKGROUND_TILES_WIDE;
       bg_ptr = bg_rowptr + bg_x_tile;
-      uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
+      uint8_t bg_byte = backgrounds_mode2()[cur_screen].Tiles[bg_ptr++];
       bg_pal = bg_byte&3;
       uint8_t bg_tile = bg_byte&0xFC;
       if(bg_x_tile&1) bg_tile |= 1;
@@ -151,10 +151,10 @@ namespace {
       uint8_t bgBase;
       switch(cur_screen) {
       default:
-      case 0: bgBase = ARS::Regs.bgTileBaseTop & 15; break;
-      case 1: bgBase = ARS::Regs.bgTileBaseTop >> 4; break;
-      case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
-      case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
+      case 0: bgBase = ARS::Regs().bgTileBaseTop & 15; break;
+      case 1: bgBase = ARS::Regs().bgTileBaseTop >> 4; break;
+      case 2: bgBase = ARS::Regs().bgTileBaseBot & 15; break;
+      case 3: bgBase = ARS::Regs().bgTileBaseBot >> 4; break;
       }
       bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
       bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
@@ -163,10 +163,10 @@ namespace {
       uint8_t raw_color = ((bg_low_plane>>(~bg_x_col&7))&1)
         | (((bg_high_plane>>(~bg_x_col&7))&1)<<1);
       uint8_t palette = getPalette();
-      bg_color = (ARS::Regs.bgBasePalette[cur_screen]
+      bg_color = (ARS::Regs().bgBasePalette[cur_screen]
                   <<4)|(palette<<2)|raw_color;
       auto bg_num_background_colors =
-        4 - ((ARS::Regs.bgForegroundInfo[cur_screen] >>(palette<<1))&3);
+        4 - ((ARS::Regs().bgForegroundInfo[cur_screen] >>(palette<<1))&3);
       if(bg_num_background_colors != 4) --bg_num_background_colors;
       bg_priority = raw_color >= bg_num_background_colors;
     }
@@ -183,7 +183,7 @@ namespace {
           bg_x_tile = 0;
           bg_ptr = bg_rowptr;
         }
-        uint8_t bg_byte = backgrounds_mode2[cur_screen].Tiles[bg_ptr++];
+        uint8_t bg_byte = backgrounds_mode2()[cur_screen].Tiles[bg_ptr++];
         bg_pal = bg_byte&3;
         uint8_t bg_tile = bg_byte&0xFC;
         if(bg_x_tile&1) bg_tile |= 1;
@@ -191,10 +191,10 @@ namespace {
         uint8_t bgBase;
         switch(cur_screen) {
         default:
-        case 0: bgBase = ARS::Regs.bgTileBaseTop & 15; break;
-        case 1: bgBase = ARS::Regs.bgTileBaseTop >> 4; break;
-        case 2: bgBase = ARS::Regs.bgTileBaseBot & 15; break;
-        case 3: bgBase = ARS::Regs.bgTileBaseBot >> 4; break;
+        case 0: bgBase = ARS::Regs().bgTileBaseTop & 15; break;
+        case 1: bgBase = ARS::Regs().bgTileBaseTop >> 4; break;
+        case 2: bgBase = ARS::Regs().bgTileBaseBot & 15; break;
+        case 3: bgBase = ARS::Regs().bgTileBaseBot >> 4; break;
         }
         bg_low_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row];
         bg_high_plane = vram[((bgBase<<12)|(bg_tile<<4))+bg_y_row+8];
@@ -252,22 +252,22 @@ namespace {
       uint8_t overlay_tile, overlay_attr = 0;
       uint8_t overlay_low_plane = 0, overlay_high_plane = 0;
       ARS::cpu->runCycles(ARS::UNSAFE_BLANK_CYCLES_PER_SCANLINE);
-      memset(out_row.data(), static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+      memset(out_row.data(), static_cast<uint8_t>(ARS::Regs().colorMod + 0xFF),
              LIVE_SCREEN_LEFT);
       /* Draw! */
       for(int column = 0; column < LIVE_SCREEN_WIDTH; ++column) {
         uint8_t out_color;
-        if((ARS::Regs.multi1>>ARS::Regs::M1_OLBASE_SHIFT)
+        if((ARS::Regs().multi1>>ARS::Regs::M1_OLBASE_SHIFT)
            &ARS::Regs::M1_OLBASE_MASK) {
           /* Find overlay color. */
           if((column & 7) == 0) {
-            overlay_tile = overlay.Tiles[overlay_ptr++];
-            overlay_low_plane = ARS::read((((ARS::Regs.multi1
+            overlay_tile = overlay().Tiles[overlay_ptr++];
+            overlay_low_plane = ARS::read((((ARS::Regs().multi1
                                              >>ARS::Regs::M1_OLBASE_SHIFT)
                                             &ARS::Regs::M1_OLBASE_MASK)<<12)
                                           +(overlay_tile << 4)
                                           +(scanline&7), true);
-            overlay_high_plane = ARS::read((((ARS::Regs.multi1
+            overlay_high_plane = ARS::read((((ARS::Regs().multi1
                                               >>ARS::Regs::M1_OLBASE_SHIFT)
                                              &ARS::Regs::M1_OLBASE_MASK)<<12)
                                            +(overlay_tile << 4)
@@ -275,7 +275,7 @@ namespace {
             ARS::cpu->eatCycles(3);
           }
           if((column & 63) == 0) {
-            overlay_attr = overlay.Attributes[overlay_attr_ptr++];
+            overlay_attr = overlay().Attributes[overlay_attr_ptr++];
           }
           out_color = ((overlay_low_plane>>(~column&7))&1)
             | (((overlay_high_plane>>(~column&7))&1)<<1);
@@ -290,9 +290,9 @@ namespace {
         if(out_color != 0 && show_overlay) {
           /* Non-zero overlay pixels always take priority */
           out_color = static_cast<uint8_t>
-            (cram[((ARS::Regs.olBasePalette << 3)
+            (cram[((ARS::Regs().olBasePalette << 3)
                    | (((overlay_attr>>((~column>>3)&7))&1)<<2)
-                   | out_color)] + ARS::Regs.colorMod);
+                   | out_color)] + ARS::Regs().colorMod);
         }
         else {
           uint8_t bg_color, sprite_color = 0;
@@ -307,12 +307,12 @@ namespace {
               | (((spriteFetch[sfi+2]>>(column-sprite.X))&1)<<2);
             if(me_color != 0) {
               sprite_color = static_cast<uint8_t>
-                (cram[((((ARS::Regs
+                (cram[((((ARS::Regs()
                           .spBasePalette>>(bg_engine.cur_screen<<1))&3)<<6)
                        |(((sam[active_sprites[i]]
                            >>SA_PALETTE_SHIFT)
                           &SA_PALETTE_MASK)<<3)
-                       |me_color)]+ARS::Regs.colorMod);
+                       |me_color)]+ARS::Regs().colorMod);
               sprite_exists = true;
               sprite_priority = !!(sprite.TileAddr
                                    & SpriteState::FOREGROUND_MASK);
@@ -325,16 +325,16 @@ namespace {
           }
           else if(show_background) {
             out_color = static_cast<uint8_t>
-              (cram[bg_color]+ARS::Regs.colorMod);
+              (cram[bg_color]+ARS::Regs().colorMod);
           }
-          else out_color = cram[ARS::Regs.colorMod];
+          else out_color = cram[ARS::Regs().colorMod];
         }
         out_row[column+LIVE_SCREEN_LEFT] = out_color;
         bg_engine.advance();
       }
       ARS::cpu->runCycles(ARS::LIVE_CYCLES_PER_SCANLINE);
       memset(out_row.data() + LIVE_SCREEN_RIGHT,
-             static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+             static_cast<uint8_t>(ARS::Regs().colorMod + 0xFF),
              TOTAL_SCREEN_WIDTH - LIVE_SCREEN_RIGHT);
       if((scanline&7) != 7 || (scanline < 8)
          || (scanline > LIVE_SCREEN_HEIGHT-8)) {
@@ -349,15 +349,15 @@ void ARS::PPU::renderFrame(raw_screen& out) {
   cpu->frameBoundary();
   cpu->runCycles(CYCLES_PER_VBLANK);
   ARS::cpu->setNMI(false);
-  if(!(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK)) {
+  if(!(ARS::Regs().multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK)) {
     ARS::cpu->runCycles((ARS::BLANK_CYCLES_PER_SCANLINE
                          + ARS::LIVE_CYCLES_PER_SCANLINE)
                         * LIVE_SCREEN_HEIGHT);
-    memset(out.data(), static_cast<uint8_t>(ARS::Regs.colorMod + 0xFF),
+    memset(out.data(), static_cast<uint8_t>(ARS::Regs().colorMod + 0xFF),
            sizeof(out));
   }
   else {
-    if(ARS::Regs.multi1 & ARS::Regs::M1_BACKGROUND_MODE_MASK)
+    if(ARS::Regs().multi1 & ARS::Regs::M1_BACKGROUND_MODE_MASK)
       renderBits<mode2_bg_engine>(out);
     else
       renderBits<mode1_bg_engine>(out);
@@ -371,10 +371,10 @@ void ARS::PPU::renderInvisible() {
   cpu->frameBoundary();
   cpu->runCycles(CYCLES_PER_VBLANK);
   ARS::cpu->setNMI(false);
-  if(ARS::Regs.multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK) {
+  if(ARS::Regs().multi1&ARS::Regs::M1_VIDEO_ENABLE_MASK) {
     for(int scanline = 0; scanline < LIVE_SCREEN_HEIGHT; ++scanline) {
       updateScanline(scanline);
-      if((ARS::Regs.multi1>>ARS::Regs::M1_OLBASE_SHIFT)
+      if((ARS::Regs().multi1>>ARS::Regs::M1_OLBASE_SHIFT)
          &ARS::Regs::M1_OLBASE_MASK)
         ARS::cpu->eatCycles(3*OVERLAY_TILES_WIDE);
       ARS::cpu->runCycles(ARS::BLANK_CYCLES_PER_SCANLINE

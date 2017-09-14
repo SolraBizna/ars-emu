@@ -96,8 +96,8 @@ void ARS::PPU::updateScanline(int new_scanline) {
     maybe_make_debug_window();
 #endif
   cur_scanline = new_scanline;
-  ARS::cpu->setIRQ(cur_scanline >= ARS::Regs.irqScanline
-                   && (cur_scanline & 0x80)==(ARS::Regs.irqScanline&0x80));
+  ARS::cpu->setIRQ(cur_scanline >= ARS::Regs().irqScanline
+                   && (cur_scanline & 0x80)==(ARS::Regs().irqScanline&0x80));
 }
 
 void ARS::PPU::complexWrite(uint16_t addr, uint8_t value) {
@@ -107,9 +107,9 @@ void ARS::PPU::complexWrite(uint16_t addr, uint8_t value) {
   case 0x0212: cramAccessPtr = value; break;
   case 0x0213: cram[cramAccessPtr++] = value; break;
   case 0x0214: ssmAccessPtr = value; break;
-  case 0x0215: ssmBytes[ssmAccessPtr++] = value; break;
+  case 0x0215: ssmBytes()[ssmAccessPtr++] = value; break;
   case 0x0216: samAccessPtr = value; break;
-  case 0x0217: samBytes[(samAccessPtr++)&63] = value; break;
+  case 0x0217: samBytes()[(samAccessPtr++)&63] = value; break;
   case 0x0218: vramAccessPtr = (vramAccessPtr&0xFF00)|value; break;
   case 0x0219: updateScanline(cur_scanline); break;
   case 0x021A: {
@@ -144,24 +144,24 @@ void ARS::PPU::complexWrite(uint16_t addr, uint8_t value) {
   case 0x021D: {
     uint16_t addr = value<<8;
     for(int n = 0; n < 256; ++n) {
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr++);
+      ssmBytes()[ssmAccessPtr++] = ARS::read(addr++);
     }
     ARS::cpu->eatCycles(257);
   } break;
   case 0x021E: {
     uint16_t addr = value<<8;
     for(int n = 0; n < 64; ++n) {
-      samBytes[(samAccessPtr++)&63] = ARS::read(addr++);
+      samBytes()[(samAccessPtr++)&63] = ARS::read(addr++);
     }
     ARS::cpu->eatCycles(65);
   } break;
   case 0x021F: {
     uint16_t addr = value<<8;
     for(int n = 0; n < 64; ++n) {
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0x40);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0x80);
-      ssmBytes[ssmAccessPtr++] = ARS::read(addr+0xC0);
+      ssmBytes()[ssmAccessPtr++] = ARS::read(addr);
+      ssmBytes()[ssmAccessPtr++] = ARS::read(addr+0x40);
+      ssmBytes()[ssmAccessPtr++] = ARS::read(addr+0x80);
+      ssmBytes()[ssmAccessPtr++] = ARS::read(addr+0xC0);
       ++addr;
     }
     ARS::cpu->eatCycles(257);
@@ -176,8 +176,8 @@ uint8_t ARS::PPU::complexRead(uint16_t addr) {
   switch(addr) {
   case 0x0211: return vram[vramAccessPtr];
   case 0x0213: return cram[cramAccessPtr];
-  case 0x0215: return ssmBytes[ssmAccessPtr];
-  case 0x0217: return samBytes[samAccessPtr];
+  case 0x0215: return ssmBytes()[ssmAccessPtr];
+  case 0x0217: return samBytes()[samAccessPtr];
   default:
     SDL_assert("ARS::Regs::complexRead called with an inappropriate address"
                && false); // "interesting" idiom there...
@@ -189,13 +189,13 @@ uint8_t ARS::PPU::complexRead(uint16_t addr) {
 void ARS::PPU::fillWithGarbage() {
   fillDramWithGarbage(vram, sizeof(vram));
   fillDramWithGarbage(cram, sizeof(cram));
-  fillDramWithGarbage(ssmBytes, sizeof(ssm));
-  fillDramWithGarbage(samBytes, sizeof(sam));
+  fillDramWithGarbage(ssmBytes(), sizeof(ssm));
+  fillDramWithGarbage(samBytes(), sizeof(sam));
 }
 
 void ARS::PPU::handleReset() {
-  ARS::Regs.multi1 = 0;
-  ARS::Regs.irqScanline = 255;
+  ARS::Regs().multi1 = 0;
+  ARS::Regs().irqScanline = 255;
   cur_scanline = 255;
   cpu->setIRQ(false);
 }

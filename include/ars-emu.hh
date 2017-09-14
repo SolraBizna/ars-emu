@@ -42,7 +42,7 @@ namespace ARS {
   extern std::string window_title;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
-  static struct Regs {
+  struct Regs {
     // ars-emu.cc makes some assumptions about the layout, check there if you
     // change anything
     uint8_t bgScrollX, bgScrollY; // $0200,$0201
@@ -75,7 +75,8 @@ namespace ARS {
     uint8_t ioPorts[8];
     // $0228-$022F are complex on write
     uint8_t bankMap[8];
-  }& Regs = *reinterpret_cast<struct Regs*>(dram+0x0200);
+  };
+  constexpr Regs& Regs() { return *reinterpret_cast<struct Regs*>(dram+0x0200); }
   extern class MessageImp {
     std::ostringstream stream;
     void outputLine(std::string line, int lifespan_value);
