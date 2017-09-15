@@ -16,7 +16,8 @@ namespace {
     Worker(Worker&&) = delete;
     Worker& operator=(const Worker&) = delete;
     Worker& operator=(Worker&&) = delete;
-    std::function<void()> task = nullptr;
+    std::function<void(unsigned int, unsigned int)> task = nullptr;
+    unsigned int start, stop;
     static Worker* worker_threads;
     static unsigned int thread_count;
     static SDL_threadID main_thread;
@@ -28,7 +29,7 @@ namespace {
         while(task == nullptr) {
           SDL_CondWait(go_cond, lock);
         }
-        task();
+        task(start, stop);
         task = nullptr;
       }
       SDL_UnlockMutex(lock);
@@ -71,9 +72,12 @@ namespace {
         for(unsigned int i = 0; i < thread_count-1; ++i) {
           unsigned int stop = (i+1) * big_size / thread_count;
           if(stop != start) {
-            worker_threads[i].task = [&task, start, stop]() {
-              task(start, stop);
-            };
+            // the mutex may provide a memory barrier
+            SDL_LockMutex(worker_threads[i].lock);
+            worker_threads[i].task = task;
+            worker_threads[i].start = start;
+            worker_threads[i].stop = stop;
+            SDL_UnlockMutex(worker_threads[i].lock);
             start = stop;
           }
         }
@@ -143,26 +147,44 @@ void FX::composite_bgra(const void* in, void* out,
                         unsigned int width, unsigned int height,
                         bool output_skips_rows) {
   static auto best_imp = FX::Imp::composite_bgra().best([&](FX::Proto::composite_bgra candidate) { candidate(in, out, width, height, output_skips_rows); });
-  best_imp(in, out, width, height, output_skips_rows);
+  Worker::performTask([=](unsigned int start, unsigned int stop) {
+      const void* local_in = reinterpret_cast<const uint8_t*>(in)
+        +start*width*4;
+      void* local_out = reinterpret_cast<uint8_t*>(out)
+        +start*width*8*(output_skips_rows?2:1);
+      best_imp(local_in, local_out, width, stop-start, output_skips_rows);
+    }, 0, height);
 }
 
 void FX::svideo_bgra(const void* in, void* out,
                      unsigned int width, unsigned int height,
                      bool output_skips_rows) {
   static auto best_imp = FX::Imp::svideo_bgra().best([&](FX::Proto::svideo_bgra candidate) { candidate(in, out, width, height, output_skips_rows); });
-  best_imp(in, out, width, height, output_skips_rows);
+  Worker::performTask([=](unsigned int start, unsigned int stop) {
+      const void* local_in = reinterpret_cast<const uint8_t*>(in)
+        +start*width*4;
+      void* local_out = reinterpret_cast<uint8_t*>(out)
+        +start*width*8*(output_skips_rows?2:1);
+      best_imp(local_in, local_out, width, stop-start, output_skips_rows);
+    }, 0, height);
 }
 
 void FX::scanline_crisp_bgra(void* buf,
                              unsigned int width, unsigned int height) {
   static auto best_imp = FX::Imp::scanline_crisp_bgra().best([&](FX::Proto::scanline_crisp_bgra candidate) { candidate(buf, width, height); });
-  best_imp(buf, width, height);
+  Worker::performTask([=](unsigned int start, unsigned int stop) {
+      void* local_buf = reinterpret_cast<uint8_t*>(buf)+start*width*8;
+      best_imp(local_buf, width, stop-start);
+    }, 0, height);
 }
 
 void FX::scanline_bright_bgra(void* buf,
                               unsigned int width, unsigned int height) {
   static auto best_imp = FX::Imp::scanline_bright_bgra().best([&](FX::Proto::scanline_bright_bgra candidate) { candidate(buf, width, height); });
-  best_imp(buf, width, height);
+  Worker::performTask([=](unsigned int start, unsigned int stop) {
+      void* local_buf = reinterpret_cast<uint8_t*>(buf)+start*width*8;
+      best_imp(local_buf, width, stop-start);
+    }, 0, height);
 }
 
 #define MAKE_IMPS(x) Imp::imps<Proto::x>& Imp::x() { static Imp::imps<Proto::x> nugget; return nugget; }
