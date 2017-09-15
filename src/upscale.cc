@@ -53,12 +53,12 @@ Upscaler::Upscaler(SignalType signal_type, UpscaleType upscale_type,
   output_right = (visible_right - active_left) * upscale_factor_x;
   output_bottom = (visible_bottom - active_top) * upscale_factor_y;
   if(signal_type != SignalType::RGB) {
-    interbuf = reinterpret_cast<uint8_t*>(
-      safe_malloc(active_width*active_height*sizeof(uint32_t)
+    interbuf = reinterpret_cast<uint8_t*>
+      (safe_calloc(active_width,(active_height+(upscale_type>=UpscaleType::SCANLINES_CRISP?1:0))*sizeof(uint32_t)
 #ifndef SIMD_NOT_REAL
-                  +15
+                   +15
 #endif
-                  ));
+                   ));
 #ifndef SIMD_NOT_REAL
     interstart = align_to(interbuf, 16);
 #endif

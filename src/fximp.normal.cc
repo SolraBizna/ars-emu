@@ -156,8 +156,7 @@ namespace {
       }
       in_row1 += width;
       out += width;
-      if(y < height-2)
-        in_row2 += width;
+      in_row2 += width;
     }
   }
   IMPLEMENT(scanline_crisp_bgra);
@@ -181,8 +180,7 @@ namespace {
       }
       in_row1 += width;
       out += width;
-      if(y < height-2)
-        in_row2 += width;
+      in_row2 += width;
     }
   }
   IMPLEMENT(scanline_bright_bgra);
