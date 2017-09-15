@@ -13,7 +13,6 @@ namespace {
                *4*4];
   uint8_t buf2[ARS::PPU::TOTAL_SCREEN_WIDTH*ARS::PPU::TOTAL_SCREEN_HEIGHT
                *4*4];
-  void smash_cache();
   struct test {
     const std::string name;
     const std::function<void()> func;
@@ -74,29 +73,12 @@ namespace {
                                  ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT);
       }},
   };
-  bool should_smash_cache = true;
   constexpr unsigned int DEFAULT_ITERATION_COUNT = 10;
   unsigned int iteration_count = DEFAULT_ITERATION_COUNT;
-  // This function's purpose isn't to completely empty all caches, it's to
-  // simulate the kind of cache load that the parts of the program other than
-  // FX are likely to cause between FX calls.
-  void smash_cache() {
-    static constexpr int SMASH_SIZE = 1048576;
-    if(!should_smash_cache) return;
-    static uint8_t* smashie = nullptr;
-    if(smashie == nullptr) {
-      smashie = reinterpret_cast<uint8_t*>(safe_malloc(SMASH_SIZE));
-      for(size_t n = 0; n < SMASH_SIZE; ++n) {
-        smashie[n] = rand();
-      }
-    }
-    memcpy(smashie + SMASH_SIZE/2, smashie, SMASH_SIZE/2);
-  }
   void print_usage() {
     std::cout << "Usage: fxbench [options] [testnames]\n"
       "Options:\n"
       "-L: List all known tests\n"
-      "-C: Do not smash cache between tests\n"
       "-i: Number of iterations for each test, default is "<<DEFAULT_ITERATION_COUNT<<"\n";
   }
   void print_tests() {
@@ -118,7 +100,6 @@ namespace {
           switch(*arg++) {
           case '?': print_usage(); return false;
           case 'L': print_tests(); return false;
-          case 'C': should_smash_cache = false; break;
           case 'i':
             if(n >= argc) {
               sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-i"});
@@ -181,7 +162,6 @@ extern "C" int teg_main(int argc, char** argv) {
     // dry run to heat up instruction caches and branch predictor
     test.func();
     for(unsigned int i = 0; i < iteration_count; ++i) {
-      smash_cache();
       auto begin_time = std::chrono::high_resolution_clock::now();
       test.func();
       auto end_time = std::chrono::high_resolution_clock::now();
