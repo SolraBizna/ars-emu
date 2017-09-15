@@ -63,15 +63,15 @@ namespace {
                         ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT,
                         true);
       }},
-    {"scanline_crisp", []() {
-        FX::scanline_crisp(buf2,
-                           ARS::PPU::CONVENIENT_OVERSCAN_WIDTH,
-                           ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT);
+    {"scanline_crisp_bgra", []() {
+        FX::scanline_crisp_bgra(buf2,
+                                ARS::PPU::CONVENIENT_OVERSCAN_WIDTH,
+                                ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT);
       }},
-    {"scanline_bright", []() {
-        FX::scanline_bright(buf2,
-                            ARS::PPU::CONVENIENT_OVERSCAN_WIDTH,
-                            ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT);
+    {"scanline_bright_bgra", []() {
+        FX::scanline_bright_bgra(buf2,
+                                 ARS::PPU::CONVENIENT_OVERSCAN_WIDTH,
+                                 ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT);
       }},
   };
   bool should_smash_cache = true;

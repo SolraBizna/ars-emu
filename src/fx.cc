@@ -1,209 +1,174 @@
 #include "optimize-this-file.hh"
 
-#include "fx.hh"
+#include "fxinternal.hh"
 
 #include <assert.h>
 
 #include <cmath>
 
-namespace {
 #include "fxtables.hh"
-  uint32_t pack_pixel(int32_t red, int32_t green, int32_t blue) {
-    if(red > 16777215) red = 255;
-    else if(red < 0) red = 0;
-    else red = uint32_t(red)>>16;
-    if(green > 16777215) green = 255;
-    else if(green < 0) green = 0;
-    else green = uint32_t(green)>>16;
-    if(blue > 16777215) blue = 255;
-    else if(blue < 0) blue = 0;
-    else blue = uint32_t(blue)>>16;
-    return (red << 16) | (green << 8) | blue;
-  }
+
+using namespace FX;
+
+namespace {
+  class Worker {
+    Worker(const Worker&) = delete;
+    Worker(Worker&&) = delete;
+    Worker& operator=(const Worker&) = delete;
+    Worker& operator=(Worker&&) = delete;
+    std::function<void()> task = nullptr;
+    static Worker* worker_threads;
+    static unsigned int thread_count;
+    static SDL_threadID main_thread;
+    static SDL_cond* go_cond;
+    SDL_mutex* lock;
+    int body() {
+      SDL_LockMutex(lock);
+      while(true) {
+        while(task == nullptr) {
+          SDL_CondWait(go_cond, lock);
+        }
+        task();
+        task = nullptr;
+      }
+      SDL_UnlockMutex(lock);
+      // NOTREACHED
+      std::cerr <<"INTERNAL ERROR: FX worker thread terminated prematurely!\n";
+      return 0;
+    }
+    static int outer_body(void*p){return reinterpret_cast<Worker*>(p)->body();}
+  public:
+    Worker() {
+      static unsigned int num_workers_so_far = 0;
+      if(go_cond == nullptr) go_cond = SDL_CreateCond();
+      assert(go_cond);
+      lock = SDL_CreateMutex();
+      assert(lock);
+      std::ostringstream str;
+      str << "" << (++num_workers_so_far);
+      std::string name = str.str();
+      SDL_Thread* thread = SDL_CreateThread(outer_body, name.c_str(), this);
+      if(thread == nullptr) {
+        std::string why = sn.Get("THREAD_CREATION_ERROR"_Key,
+                                 {SDL_GetError()});
+        die("%s", why.c_str());
+      }
+      SDL_DetachThread(thread);
+    }
+    ~Worker() {
+      std::cerr << "BUG: Worker destructor called!\n";
+    }
+    static void performTask(std::function<void(unsigned int,
+                                               unsigned int)> task,
+                            unsigned int big_start, unsigned int big_stop) {
+      if(thread_count == 1 || SDL_ThreadID() != main_thread) {
+        task(big_start, big_stop);
+        return;
+      }
+      else {
+        unsigned int big_size = big_stop - big_start;
+        unsigned int start = 0;
+        for(unsigned int i = 0; i < thread_count-1; ++i) {
+          unsigned int stop = (i+1) * big_size / thread_count;
+          if(stop != start) {
+            worker_threads[i].task = [&task, start, stop]() {
+              task(start, stop);
+            };
+            start = stop;
+          }
+        }
+        SDL_CondBroadcast(go_cond);
+        if(start != big_stop) task(start, big_stop);
+        for(unsigned int i = 0; i < thread_count-1; ++i) {
+          SDL_LockMutex(worker_threads[i].lock);
+          SDL_UnlockMutex(worker_threads[i].lock);
+        }
+      }
+    }
+    static void init(unsigned int thread_count) {
+      if(Worker::thread_count != 0) {
+        die("INTERNAL ERROR: init called more than once");
+      }
+      Worker::thread_count = thread_count;
+      main_thread = SDL_ThreadID();
+      worker_threads = new Worker[thread_count-1];
+    }
+  };
+  Worker* Worker::worker_threads;
+  unsigned int Worker::thread_count = 0;
+  SDL_threadID Worker::main_thread;
+  SDL_cond* Worker::go_cond;
 }
 
-#define restrict __restrict__
+void FX::init(unsigned int init_thread_count) {
+  unsigned int thread_count;
+  if(init_thread_count == 0) {
+    int threads = SDL_GetCPUCount();
+    if(threads < 1) thread_count = 1;
+    else thread_count = threads;
+  }
+  else thread_count = init_thread_count;
+  Worker::init(thread_count);
+}
 
-void FX::init() {
-  // TODO: threads, SIMD, WITH BENCHMARKS.
+const Linearize& FX::linearizer() {
+  static const Linearize linearize;
+  return linearize;
+}
+
+const Delinearize& FX::delinearizer() {
+  static const Delinearize delinearize;
+  return delinearize;
 }
 
 void FX::raw_screen_to_bgra(const ARS::PPU::raw_screen& in,
-                            void* _out,
+                            void* out,
                             unsigned int left, unsigned int top,
-                            unsigned int right, unsigned int bot,
+                            unsigned int right, unsigned int bottom,
                             bool output_skips_rows) {
-  assert(left%8 == 0);
-  assert(right%8 == 0);
-  uint32_t* out = reinterpret_cast<uint32_t*>(_out);
-  for(unsigned int y = top; y < bot; ++y) {
-    auto& in_row = in[y];
-    for(unsigned int x = left; x < right; x += 8) {
-      for(unsigned int i = 0; i < 8; ++i)
-        out[i] = hardwarePalette[in_row[x+i]];
-      out += 8;
-    }
-    if(output_skips_rows) out += (right-left);
-  }
+  static auto best_imp = FX::Imp::raw_screen_to_bgra().best([&](FX::Proto::raw_screen_to_bgra candidate) { candidate(in, out, left, top, right, bottom, output_skips_rows); });
+  best_imp(in, out, left, top, right, bottom, output_skips_rows);
 }
 
 void FX::raw_screen_to_bgra_2x(const ARS::PPU::raw_screen& in,
-                               void* _out,
+                               void* out,
                                unsigned int left, unsigned int top,
-                               unsigned int right, unsigned int bot,
+                               unsigned int right, unsigned int bottom,
                                bool output_skips_rows) {
-  assert(left%8 == 0);
-  assert(right%8 == 0);
-  uint32_t* out = reinterpret_cast<uint32_t*>(_out);
-  for(unsigned int y = top; y < bot; ++y) {
-    auto& in_row = in[y];
-    for(unsigned int x = left; x < right; x += 8) {
-      for(unsigned int i = 0; i < 8; ++i)
-        out[i*2+1] = out[i*2] = hardwarePalette[in_row[x+i]];
-      out += 16;
-    }
-    if(output_skips_rows) out += (right-left)*2;
-  }
+  static auto best_imp = FX::Imp::raw_screen_to_bgra_2x().best([&](FX::Proto::raw_screen_to_bgra_2x candidate) { candidate(in, out, left, top, right, bottom, output_skips_rows); });
+  best_imp(in, out, left, top, right, bottom, output_skips_rows);
 }
 
-void FX::composite_bgra(const void* restrict _in, void* restrict _out,
+void FX::composite_bgra(const void* in, void* out,
                         unsigned int width, unsigned int height,
                         bool output_skips_rows) {
-  assert(width%8 == 0);
-  const uint32_t* restrict in_row = reinterpret_cast<const uint32_t*>(_in);
-  uint32_t* restrict out = reinterpret_cast<uint32_t*>(_out);
-  for(unsigned int y = 0; y < height; ++y) {
-    unsigned int start_phase = (ARS::HARD_BLANK_CYCLES_PER_SCANLINE / 2);
-    if(y & 1) start_phase += NUM_CHROMA_PHASES/2;
-    start_phase %= NUM_CHROMA_PHASES;
-    int start_x = -COMPOSITE_FILTER_RADIUS;
-    int end_x = COMPOSITE_FILTER_RADIUS;
-    for(int center_x = 0; center_x < static_cast<int>(width); ++center_x) {
-      for(unsigned int subpixel = 0; subpixel < 2; ++subpixel) {
-        unsigned int phase = start_phase;
-        const int32_t* restrict filter_ptr = COMPOSITE_FIR[phase][subpixel];
-        if(start_x < 0)
-          filter_ptr += start_x * -9;
-        int32_t summed_red = 0, summed_green = 0, summed_blue = 0;
-        for(int sub_x = start_x < 0 ? 0 : start_x; sub_x <= end_x; ++sub_x) {
-          uint32_t pix = in_row[sub_x];
-          auto in_r = (pix >> 16) & 255;
-          auto in_g = (pix >> 8) & 255;
-          auto in_b = pix & 255;
-          summed_red += in_r * filter_ptr[0];
-          summed_green += in_r * filter_ptr[1];
-          summed_blue += in_r * filter_ptr[2];
-          summed_red += in_g * filter_ptr[3];
-          summed_green += in_g * filter_ptr[4];
-          summed_blue += in_g * filter_ptr[5];
-          summed_red += in_b * filter_ptr[6];
-          summed_green += in_b * filter_ptr[7];
-          summed_blue += in_b * filter_ptr[8];
-          filter_ptr += 9;
-        }
-        *out++ = pack_pixel(summed_red, summed_green, summed_blue);
-      }
-      start_phase = (start_phase + 1) % NUM_CHROMA_PHASES;
-      ++start_x;
-      ++end_x;
-    }
-    if(output_skips_rows) out += width * 2;
-    in_row += width;
-  }
+  static auto best_imp = FX::Imp::composite_bgra().best([&](FX::Proto::composite_bgra candidate) { candidate(in, out, width, height, output_skips_rows); });
+  best_imp(in, out, width, height, output_skips_rows);
 }
 
-void FX::svideo_bgra(const void* restrict _in, void* restrict _out,
-                        unsigned int width, unsigned int height,
-                        bool output_skips_rows) {
-  assert(width%8 == 0);
-  const uint32_t* restrict in_row = reinterpret_cast<const uint32_t*>(_in);
-  uint32_t* restrict out = reinterpret_cast<uint32_t*>(_out);
-  for(unsigned int y = 0; y < height; ++y) {
-    unsigned int start_phase = (ARS::HARD_BLANK_CYCLES_PER_SCANLINE / 2);
-    if(y & 1) start_phase += NUM_CHROMA_PHASES/2;
-    start_phase %= NUM_CHROMA_PHASES;
-    int start_x = -SVIDEO_FILTER_RADIUS;
-    int end_x = SVIDEO_FILTER_RADIUS;
-    for(int center_x = 0; center_x < static_cast<int>(width); ++center_x) {
-      for(unsigned int subpixel = 0; subpixel < 2; ++subpixel) {
-        unsigned int phase = start_phase;
-        const int32_t* restrict filter_ptr = SVIDEO_FIR[phase][subpixel];
-        if(start_x < 0)
-          filter_ptr += start_x * -9;
-        int32_t summed_red = 0, summed_green = 0, summed_blue = 0;
-        for(int sub_x = start_x < 0 ? 0 : start_x; sub_x <= end_x; ++sub_x) {
-          uint32_t pix = in_row[sub_x];
-          auto in_r = (pix >> 16) & 255;
-          auto in_g = (pix >> 8) & 255;
-          auto in_b = pix & 255;
-          summed_red += in_r * filter_ptr[0];
-          summed_green += in_r * filter_ptr[1];
-          summed_blue += in_r * filter_ptr[2];
-          summed_red += in_g * filter_ptr[3];
-          summed_green += in_g * filter_ptr[4];
-          summed_blue += in_g * filter_ptr[5];
-          summed_red += in_b * filter_ptr[6];
-          summed_green += in_b * filter_ptr[7];
-          summed_blue += in_b * filter_ptr[8];
-          filter_ptr += 9;
-        }
-        *out++ = pack_pixel(summed_red, summed_green, summed_blue);
-      }
-      start_phase = (start_phase + 1) % NUM_CHROMA_PHASES;
-      ++start_x;
-      ++end_x;
-    }
-    if(output_skips_rows) out += width * 2;
-    in_row += width;
-  }
+void FX::svideo_bgra(const void* in, void* out,
+                     unsigned int width, unsigned int height,
+                     bool output_skips_rows) {
+  static auto best_imp = FX::Imp::svideo_bgra().best([&](FX::Proto::svideo_bgra candidate) { candidate(in, out, width, height, output_skips_rows); });
+  best_imp(in, out, width, height, output_skips_rows);
 }
 
-void FX::scanline_crisp(void* restrict _buf,
-                        unsigned int width, unsigned int height) {
-  auto& linearizer = ::linearizer();
-  auto& delinearizer = ::delinearizer();
-  assert(width%8 == 0);
-  uint32_t* restrict in_row1 = reinterpret_cast<uint32_t*>(_buf);
-  uint32_t* restrict out = in_row1 + width;
-  uint32_t* restrict in_row2 = out + width;
-  for(unsigned int y = 0; y < height; ++y) {
-    for(unsigned int x = 0; x < width; ++x) {
-      uint32_t pix_above = *in_row1++;
-      uint32_t pix_below = *in_row2++;
-      uint32_t red = linearizer[pix_above >> 16] + linearizer[pix_below >> 16];
-      uint32_t green = linearizer[pix_above >> 8] + linearizer[pix_below >> 8];
-      uint32_t blue = linearizer[pix_above] + linearizer[pix_below];
-      *out++ = (delinearizer[red / 8] << 16) | (delinearizer[green / 8] << 8)
-        | delinearizer[blue / 8];
-    }
-    in_row1 += width;
-    out += width;
-    if(y < height-2)
-      in_row2 += width;
-  }
+void FX::scanline_crisp_bgra(void* buf,
+                             unsigned int width, unsigned int height) {
+  static auto best_imp = FX::Imp::scanline_crisp_bgra().best([&](FX::Proto::scanline_crisp_bgra candidate) { candidate(buf, width, height); });
+  best_imp(buf, width, height);
 }
 
-void FX::scanline_bright(void* restrict _buf,
-                         unsigned int width, unsigned int height) {
-  auto& linearizer = ::linearizer();
-  auto& delinearizer = ::delinearizer();
-  assert(width%8 == 0);
-  uint32_t* restrict in_row1 = reinterpret_cast<uint32_t*>(_buf);
-  uint32_t* restrict out = in_row1 + width;
-  uint32_t* restrict in_row2 = out + width;
-  for(unsigned int y = 0; y < height; ++y) {
-    for(unsigned int x = 0; x < width; ++x) {
-      uint32_t pix_above = *in_row1++;
-      uint32_t pix_below = *in_row2++;
-      uint32_t red = linearizer[pix_above >> 16] + linearizer[pix_below >> 16];
-      uint32_t green = linearizer[pix_above >> 8] + linearizer[pix_below >> 8];
-      uint32_t blue = linearizer[pix_above] + linearizer[pix_below];
-      *out++ = (delinearizer[red / 4] << 16) | (delinearizer[green / 4] << 8)
-        | delinearizer[blue / 4];
-    }
-    in_row1 += width;
-    out += width;
-    if(y < height-2)
-      in_row2 += width;
-  }
+void FX::scanline_bright_bgra(void* buf,
+                              unsigned int width, unsigned int height) {
+  static auto best_imp = FX::Imp::scanline_bright_bgra().best([&](FX::Proto::scanline_bright_bgra candidate) { candidate(buf, width, height); });
+  best_imp(buf, width, height);
 }
+
+#define MAKE_IMPS(x) Imp::imps<Proto::x>& Imp::x() { static Imp::imps<Proto::x> nugget; return nugget; }
+MAKE_IMPS(raw_screen_to_bgra);
+MAKE_IMPS(raw_screen_to_bgra_2x);
+MAKE_IMPS(composite_bgra);
+MAKE_IMPS(svideo_bgra);
+MAKE_IMPS(scanline_crisp_bgra);
+MAKE_IMPS(scanline_bright_bgra);

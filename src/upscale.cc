@@ -96,12 +96,12 @@ void Upscaler::apply(const ARS::PPU::raw_screen& in, void* out) {
   case UpscaleType::SMOOTH:
     break;
   case UpscaleType::SCANLINES_CRISP:
-    FX::scanline_crisp(out, (active_right-active_left)*2,
-                       active_bottom-active_top);
+    FX::scanline_crisp_bgra(out, (active_right-active_left)*2,
+                            active_bottom-active_top);
     break;
   case UpscaleType::SCANLINES_BRIGHT:
-    FX::scanline_bright(out, (active_right-active_left)*2,
-                        active_bottom-active_top);
+    FX::scanline_bright_bgra(out, (active_right-active_left)*2,
+                             active_bottom-active_top);
     break;
   }
 }

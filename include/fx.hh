@@ -4,7 +4,11 @@
 #include "ppu.hh"
 
 namespace FX {
-  void init();
+  // thread_count = 0 -> use SDL_GetCPUCount()
+  // thread_count = 1 -> never multithread
+  // thread_count = N -> use N threads
+  // multithreading will only be used if initiated in the main core
+  void init(unsigned int thread_count = 0);
   // lefts, rights, and widths must be multiples of 8
   // output_skips_rows should be true if you plan to scanline-filter the result
   void raw_screen_to_bgra(const ARS::PPU::raw_screen& in,
@@ -28,10 +32,10 @@ namespace FX {
                    unsigned int width, unsigned int height,
                    bool output_skips_rows);
   // assumes the input skipped rows
-  void scanline_crisp(void* buf,
-                      unsigned int width, unsigned int height);
-  void scanline_bright(void* buf,
-                       unsigned int width, unsigned int height);
+  void scanline_crisp_bgra(void* buf,
+                           unsigned int width, unsigned int height);
+  void scanline_bright_bgra(void* buf,
+                            unsigned int width, unsigned int height);
 }
 
 #endif
