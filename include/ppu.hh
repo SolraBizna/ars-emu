@@ -12,7 +12,7 @@ namespace ARS {
     // this way rows are not only 16-byte aligned, but also cache line aligned
     constexpr int TOTAL_SCREEN_WIDTH = 320;
     constexpr int TOTAL_SCREEN_HEIGHT = LIVE_SCREEN_HEIGHT;
-    constexpr int LIVE_SCREEN_LEFT = 31;
+    constexpr int LIVE_SCREEN_LEFT = 32;
     constexpr int LIVE_SCREEN_RIGHT = LIVE_SCREEN_LEFT+LIVE_SCREEN_WIDTH;
     constexpr int LIVE_SCREEN_TOP = 0;
     constexpr int LIVE_SCREEN_BOTTOM = TOTAL_SCREEN_HEIGHT;
