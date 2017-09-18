@@ -194,6 +194,26 @@ namespace {
         break;
       }
     }
+    void output_moment(std::ostream& out) {
+      output_time(out);
+      out << ":\n  P=";
+      uint8_t p = core.read_p();
+      out
+        << (char)((p&0x80)?'N':'n')
+        << (char)((p&0x40)?'V':'v')
+        << (char)((p&0x20)?'1':'0')
+        << (char)((p&0x10)?'B':'b')
+        << (char)((p&0x08)?'D':'d')
+        << (char)((p&0x04)?'I':'i')
+        << (char)((p&0x02)?'Z':'z')
+        << (char)((p&0x01)?'C':'c')
+        << std::hex
+        << ", A=$" << std::setfill('0') << std::setw(2) << (int)core.read_a()
+        << ", X=$" << std::setfill('0') << std::setw(2) << (int)core.read_x()
+        << ", Y=$" << std::setfill('0') << std::setw(2) << (int)core.read_y()
+        << ", S=$" << std::setfill('0') << std::setw(2) << (int)core.read_s()
+        << std::dec << "\n";
+    }
     void output_addr(std::ostream& out, uint16_t addr,
                      bool OL = false, bool VPB = false, bool SYNC = false) {
       output_mapped_addr(out, map_addr(addr, OL, VPB, SYNC));
@@ -472,24 +492,8 @@ namespace {
         read_break_value = ret;
       }
       if(trace_execs) {
-        output_time(std::cout);
-        std::cout << ":\n  P=";
-        uint8_t p = core.read_p();
-        std::cout
-          << (char)((p&0x80)?'N':'n')
-          << (char)((p&0x40)?'V':'v')
-          << (char)((p&0x20)?'1':'0')
-          << (char)((p&0x10)?'B':'b')
-          << (char)((p&0x08)?'D':'d')
-          << (char)((p&0x04)?'I':'i')
-          << (char)((p&0x02)?'Z':'z')
-          << (char)((p&0x01)?'C':'c')
-          << std::hex
-          << ", A=$" << std::setfill('0') << std::setw(2) << (int)core.read_a()
-          << ", X=$" << std::setfill('0') << std::setw(2) << (int)core.read_x()
-          << ", Y=$" << std::setfill('0') << std::setw(2) << (int)core.read_y()
-          << ", S=$" << std::setfill('0') << std::setw(2) << (int)core.read_s()
-          << std::dec << "\n  ";
+        output_moment(std::cout);
+        std::cout << "  ";
         if(rt == W65C02::ReadType::PREEMPTED)
           std::cout << "would have executed ";
         else
@@ -1068,6 +1072,7 @@ namespace {
       stopped = false;
     }
     void cmd_here(std::vector<std::string>&) {
+      output_moment(std::cout);
       uint16_t pc = core.read_pc();
       output_addr(std::cout, pc, false, false, true);
       std::cout << ":\n\t";
