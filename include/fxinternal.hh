@@ -4,6 +4,7 @@
 #include "fx.hh"
 
 #include <ctime>
+#include <cmath>
 
 #define restrict __restrict__
 

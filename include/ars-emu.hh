@@ -76,7 +76,7 @@ namespace ARS {
     // $0228-$022F are complex on write
     uint8_t bankMap[8];
   };
-  constexpr Regs& Regs() { return *reinterpret_cast<struct Regs*>(dram+0x0200); }
+  static inline Regs& Regs() { return *reinterpret_cast<struct Regs*>(dram+0x0200); }
   extern class MessageImp {
     std::ostringstream stream;
     void outputLine(std::string line, int lifespan_value);

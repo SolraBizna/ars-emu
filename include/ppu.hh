@@ -67,13 +67,13 @@ namespace ARS {
       static constexpr uint8_t FOREGROUND_MASK = 4;
       uint8_t TileAddr, TilePage;
     } ssm[NUM_SPRITES];
-    constexpr uint8_t* ssmBytes() {return reinterpret_cast<uint8_t*>(ssm);}
+    static inline uint8_t* ssmBytes() {return reinterpret_cast<uint8_t*>(ssm);}
     static_assert(sizeof(SpriteState) == 4, "Sprite size has slipped");
     // HHHHHPPP
     // H = tile height-1, range 1..32 (8..128)
     typedef uint8_t SpriteAttr;
     extern SpriteAttr sam[NUM_SPRITES];
-    constexpr uint8_t* samBytes() {return sam;}
+    static inline uint8_t* samBytes() {return sam;}
     constexpr uint8_t SA_HEIGHT_SHIFT = 3;
     constexpr uint8_t SA_HEIGHT_MASK = 0x1F;
     constexpr uint8_t SA_PALETTE_SHIFT = 0;
@@ -88,13 +88,13 @@ namespace ARS {
                          * MODE1_BACKGROUND_TILES_HIGH / 16];
       uint8_t padding[4];
     };
-    constexpr struct Background_Mode1* backgrounds_mode1() {
+    static inline struct Background_Mode1* backgrounds_mode1() {
       return reinterpret_cast<struct Background_Mode1*>(vram);
     }
     struct Background_Mode2 {
       uint8_t Tiles[MODE2_BACKGROUND_TILES_WIDE * MODE2_BACKGROUND_TILES_HIGH];
     };
-    constexpr struct Background_Mode2* backgrounds_mode2() {
+    static inline struct Background_Mode2* backgrounds_mode2() {
       return reinterpret_cast<struct Background_Mode2*>(vram);
     }
     static_assert(sizeof(Background_Mode1)==0x400, "Background size slipped");
@@ -104,7 +104,7 @@ namespace ARS {
       uint8_t Attributes[OVERLAY_TILES_WIDE*OVERLAY_TILES_HIGH/8];
       uint8_t padding[16];
     };
-    constexpr struct Overlay& overlay() {
+    static inline struct Overlay& overlay() {
       return *reinterpret_cast<struct Overlay*>(ARS::dram+sizeof(ARS::dram)
                                                 -sizeof(struct Overlay));
     }

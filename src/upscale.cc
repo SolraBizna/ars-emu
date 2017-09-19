@@ -113,16 +113,16 @@ Upscaler::~Upscaler() {
 }
 
 const SN::ConstKey Upscaler::SIGNAL_TYPE_SELECTOR = "VIDEO_SIGNAL_TYPE"_Key;
-const std::array<SN::ConstKey, MAX_SIGNAL_TYPE+1> Upscaler::SIGNAL_TYPE_KEYS{
+const std::array<SN::ConstKey, MAX_SIGNAL_TYPE+1> Upscaler::SIGNAL_TYPE_KEYS{{
   "VIDEO_SIGNAL_TYPE_COMPONENT"_Key,
   "VIDEO_SIGNAL_TYPE_SVIDEO"_Key,
   "VIDEO_SIGNAL_TYPE_COMPOSITE"_Key,
-};
+}};
 
 const SN::ConstKey Upscaler::UPSCALE_TYPE_SELECTOR = "VIDEO_UPSCALE_TYPE"_Key;
-const std::array<SN::ConstKey, MAX_UPSCALE_TYPE+1> Upscaler::UPSCALE_TYPE_KEYS{
+const std::array<SN::ConstKey, MAX_UPSCALE_TYPE+1>Upscaler::UPSCALE_TYPE_KEYS{{
   "VIDEO_UPSCALE_TYPE_NONE"_Key,
   "VIDEO_UPSCALE_TYPE_SMOOTH"_Key,
   "VIDEO_UPSCALE_TYPE_SCANLINES_CRISP"_Key,
   "VIDEO_UPSCALE_TYPE_SCANLINES_BRIGHT"_Key,
-};
+}};

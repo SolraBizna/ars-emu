@@ -3,6 +3,6 @@
   debugging. This is only really necessary in FX implementations.
 */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC optimize("3","fast-math")
 #endif
