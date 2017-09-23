@@ -118,16 +118,11 @@ The included version of GNU Unifont is 9.0.06, and is copyright (C) 2016 Roman C
 
 ## Video
 
-- Configuration, at all
-- Window resizeable by user
 - Selectable window size based on desired scaling (2x, 3x, 4x, etc.)
-- Option to reduce or disable overscan
 - Fullscreen mode
 - CRT effects
-    - NTSC modulation
-    - Scanlines
     - Pixel layouts
-    - Bloom
+    - Bloom (both kinds)
     - Ghosting
     - Barrel distortion
     - CRT housing
