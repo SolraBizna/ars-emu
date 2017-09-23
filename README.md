@@ -82,16 +82,31 @@ A brief history of Eiling Technologies and the Artificial Reality System console
 
 # License
 
-ARS-emu is distributed under the GNU General Public License version 3 or later.
+ARS-emu is licensed under the GNU General Public License version 3 or later. The main consequence of this is that if you distribute modified binaries of ARS-emu, you must also distribute the source code behind those modifications. That is, you must allow everyone else the same freedom to examine and improve the emulator as you yourself had.
 
-This means:
+## Cartridge Licensing
 
-- If you distribute a modified binary of ARS-emu, you *must* provide the source code to your modifications.
-- Bundling a closed-source or otherwise GPL-incompatible game with a copy of ARS-emu is permitted, even encouraged. Doing so *does not* "infect" the game with the GPL. The only requirement for GPL compliance is that the user must be free to subsitute their own build of ARS-emu, or a different emulator entirely, for the one you bundled.
+ARS-emu is designed to be used in combination with ARS cartridge images, and, until another ARS emulator is written, cartridge images cannot be used *except* in combination with ARS-emu. Some reasonable interpretations of the GPL would "contaminate" ARS cartridge images with the GPL. This is not my intention.
+
+To be explicit: Even though many users will not perceive the boundary between game and emulator, I consider bundling a non-Free cartridge with a copy of ARS-emu to constitute an aggregate according to the text of the GPL, **as long as the user is free to substitute their own modified build of ARS-emu (or other ARS emulator) with no loss of features.**
+
+Some justifications:
+
+The Free Software Movement and its flagship license originally grew out of frustration with buggy and feature-starved proprietary software that could not be fixed by its users. An 8-bit game will often have very little headroom for fixing bugs or adding features, simply because the system on which it runs is so very limited. The emulator, on the other hand, is a fairly complex piece of software running on a modern computer. Even if only the emulator is Free Software, this still allows lots of room for bug-fixes, feature additions, and general improvements—and for people to benefit from sharing them.
+
+Portability has always been a problem for software, especially games. The popularity of Digital Rights Management has only made this problem worse. Making the emulator Free Software, and keeping the hardware specification free of DRM features, means that any ARS game can be made to run on any sufficiently powerful hardware platform simply by porting the emulator. No user will be stuck in the situation of being unable to ever play an ARS game because of their choice of hardware or software platform, or because of a refusal to accept unethical DRM.
+
+Gaming can be a gray area for Free Software advocates. I have never heard a strong reason other than greed (or, if we're being generous, hunger) for an operating system, core utility, or "productivity" application to be closed source. But concealing some or all of a game's logic from players can be considered "part of the fun". Games often contain easter eggs, and unlike backdoors and unintentional flaws in "productivity" software, these easter eggs are *designed* to be found and enjoyed by any sufficiently lucky or observant player. A similar argument applies to "requiring" a player to discover a game's plot twists, or unlock other parts of the game, by playing it. It's possible to argue that even these forms of control are unethical, but the argument is less clear cut than with "productivity" applications. (And in any case, this is the Internet age; a user is free to log on to the good old Information Superhighway and read spoilers that others have written.)
+
+8-bit software is comparatively easy to reverse engineer. Many existing games for 8- and 16-bit systems have been analyzed, modified, and improved without the cooperation of their creators. Some, including myself, even consider such reverse engineering a fun and challenging hobby. Nothing about the ARS architecture makes it any more resistant to such efforts... and, if anything, the accurate documentation and machine-level debugger provided with ARS-emu makes that job easier.
+
+In summary, I believe that making the emulator Free Software without requiring cartridge authors to do the same still affords, in practice, nearly all of the benefits of Free Software.
 
 ## SimpleConfig
 
 The files in the `asm/` directory belong to the SimpleConfig ROM. SimpleConfig is in the public domain. It is designed to be directly embeddable in other ROMs, allowing games to provide a built-in way to configure the emulator. Detailed documentation on how to do so is at the end of `HARDWARE.md`.
+
+ARS-emu contains an internal whitelist of SimpleConfig images, and its *default* policy is to permit configuration access only to exact copies of known safe SimpleConfig binaries. **This is not a DRM measure.** This is a convenience feature. The *user* need merely pass the `-C` option and the policy becomes "always permit". This feature exists to allow cartridge authors to conveniently provide emulator configuration from within their games, while protecting users from malicious cartridge authors who may have found a security flaw in the (comparatively powerful) configuration interface.
 
 ## GNU Unifont
 
