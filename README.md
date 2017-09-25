@@ -56,7 +56,7 @@ Ways in which the ARS's limitations are typical of 8-bit systems:
 - One scrollable background layer, with a limited palette
 - 64 sprites on screen, 8 pixels wide
 - 8-bit CPU (a 65C02)
-- Theoretical upper limit of 4MiB on cartridge size
+- Theoretical upper limit of 8MiB on cartridge size
 
 Ways in which the ARS's limitations are somewhat laxer than a typical 8-bit system:
 
