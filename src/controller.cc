@@ -151,8 +151,6 @@ namespace {
   }
 }
 
-std::unique_ptr<Controller> ARS::controller1, ARS::controller2;
-
 void Controller::output(uint8_t d) {
   dOut = d;
   strobeIsHigh = true;
@@ -332,8 +330,8 @@ bool Controller::filterEvent(SDL_Event& evt) {
 }
 
 void Controller::initControllers() {
-  controller1 = std::make_unique<StandardController>(P1);
-  controller2 = std::make_unique<StandardController>(P2);
+  map_expansion(0x240, std::make_unique<StandardController>(P1));
+  map_expansion(0x241, std::make_unique<StandardController>(P2));
   for(int jid = 0; jid < SDL_NumJoysticks(); ++jid) {
     if(SDL_IsGameController(jid)) {
       SDL_Event evt;

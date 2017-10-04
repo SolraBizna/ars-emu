@@ -8,7 +8,7 @@ CXX=g++
 LD=g++
 
 # Flags passed to all calls that involve a C preprocessor.
-CPPFLAGS=-MP -MMD -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -I/usr/include/lua5.3
+CPPFLAGS=-MP -MMD -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -Isrc/byuuML/ -I/usr/include/lua5.3 -DMMAP_AVAILABLE
 CPPFLAGS_DEBUG=-DDEBUG=1
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.

@@ -40,6 +40,7 @@ namespace ARS {
                 "wrong implied core clock");
   extern bool safe_mode, debugging_audio, debugging_video;
   extern std::string window_title;
+  extern uint16_t last_known_pc;
   // $0000-7FFF
   extern uint8_t dram[0x8000];
   struct Regs {

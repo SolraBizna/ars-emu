@@ -259,13 +259,13 @@ When the ARS is running, the port is mapped to `$0247`. Reading it returns the n
 
 ## IPL
 
-Image files can contain initialization data for DRAM and SRAM chips, and this is as close as the emulator comes to supporting the IPL.
+Game Folders may specify arbitrary ROM/RAM mappings, including those supported by the Developer Cartridge and its IPL. That is as close as ARS-emu comes to supporting the Dev Cartridge IPL.
 
 (If you are implementing an emulator or a homebrew program, you probably do not need the rest of this section.)
 
 The cartridge includes a built-in microcontroller that is active whenever the console is in reset or powered off. It allows rewriting and inspection of the program RAM, battery-backed RAM, and other glue logic. It communicates with a host system over the serial port. It seems to be a compact binary protocol of some kind. I didn't get far in reverse engineering it.
 
-Bizarrely, the IPL includes its own 32KiB chip that maintains a shadow copy of the WRAM. I guess this was useful for debugging?
+Bizarrely, the IPL includes its own 32KiB RAM chip that maintains a shadow copy of the WRAM. I guess this was useful for debugging?
 
 Glue logic state that can be affected by the IPL includes the BSx pins.
 
@@ -282,7 +282,7 @@ The cartridge contains four 30-pin SIMM slots. The four slots are identical, and
 
 SIMMs must be capable of single-cycle operation at 12.273MHz. If there's a way to communicate to the IPL or the glue logic how large the modules are, I wasn't able to find it.
 
-The cartridge also contains a bank of eight DIP switches that control how the B6/B7 pins select between the slots. Not coincidentally, the switches work in exactly the same way as mapping type `$00` in the ROM file format, and can describe the mappings of every official cartridge.
+The cartridge also contains a bank of eight DIP switches that control how the B6/B7 pins select between the slots. The switches are grouped in pairs, and each pair controls which chip is selected by a given B6/B7 combination. These switches can be used to describe the mappings of every official cartridge. (Coincidence?!)
 
 # APU
 
@@ -439,92 +439,6 @@ Mix block cycle timings:
 16. Write adder Qs to DAC latches, and 0 to sample accumulators
 
 On any cycle where a particular meaningful read or write does not take place, the last address accessed is generally read.
-
-# ROM file format
-
-- `$0-$2`: ASCII bytes "ARS"
-- `$3`: `$1A` (control-Z = DOS end-of-file)
-- `$4`: Mapping type (must be `$00`)
-- `$5`: Expansion hardware flags
-  - `$01`: Developer debug port
-  - `$40`: homebrew achievements module
-  - `$80`: emulator configuration module
-- (remaining bytes describe mapping type 0)
-- `$6`: ROM1 size
-- `$7`: ROM2 size
-- `$8`: SRAM size
-- `$9`: DRAM size
-- `$A`: Pin mapping
-- `$B`: Bank mapping
-- `$C`: Power On Bank
-- `$D`: If not `$FF`, the hardwired bank number for overlay tile accesses
-- `$E`: Best controller setup for this cartridge (soft constraint). Low nybble is controller port 1, high nybble is port 2.
-    - `$0`: Standard controller
-    - `$1`: Light gun
-    - `$2`: Keyboard
-    - `$3`: Light pen
-    - `$4-$E`: Reserved
-    - `$F`: No controller required
-- `$F`: Reserved for expansion. A non-zero value is an error.
-
-## Chips
-
-- ROM1: The main ROM chip. Nearly every cartridge has one.
-- ROM2: A secondary ROM chip. I'm not aware of any official cartridge that has one, but the developer cartridge has support for one. Supposedly it was intended for localization data, which would allow the same ROM1 to be used on all international versions with different ROM2s for different languages.
-- DRAM: Non-persistent memory. On a real cartridge, this would almost certainly be an SRAM chip in practice... the difference being the lack of a battery. (Isn't 32KiB enough for you?!)
-- SRAM: Persistent memory, i.e. battery-backed SRAM.
-
-## Sizes
-
-A size value of 0 means no chip of this type is present. The high bit is a flag indicating that initialization data for that chip is present in the ROM file. It is an error to have a non-zero size for a ROM chip without also having this flag set, or a zero size for any chip with this flag set.
-
-Useful examples:
-
-- `$0C`: 2KiB
-- `$0D`: 4KiB
-- `$0E`: 8KiB
-- `$0F`: 16KiB
-- `$10`: 32KiB
-- `$11`: 64KiB
-- `$12`: 128KiB
-- `$13`: 256KiB
-- `$14`: 512KiB
-- `$15`: 1MiB
-- `$16`: 2MiB
-- `$17`: 4MiB
-- `$18`: 8MiB
-
-No larger value is useful under mapping type `$00`, as 8MiB is the size of the entire address space.
-
-If initialization data is specified for the SRAM chip, it is only used if the emulator does not already have an SRAM image for this cartridge, or to fill in the end if the existing SRAM image is too small.
-
-## Pin Mapping
-
-- `$01`: A14-A0 are connected. BSx is `00` (1 slot, 32KiB banks, 23-bit space)
-- `$42`: A13-A0 are connected. BSx is `01` (2 slots, 16KiB banks, 22-bit space)
-- `$83`: A12-A0 are connected. BSx is `10` (4 slots, 8KiB banks, 21-bit space)
-- `$C4`: A11-A0 are connected. BSx is `11` (8 slots, 4KiB banks, 20-bit space)
-
-Technically, the low nybble gives the number of address pins that are not connected, and the high two bits give the hardwired BSx values. *All* known official cartridges can be described using these four example values. Values `$10-$3F`, `$50-$7F`, `$90-$BF`, and `$D0-$FF` (i.e values whose bitwise AND with `$30` is non-zero) are reserved, and should be considered invalid.
-
-Layout types with "too few" disconnected Ax pins would effectively create separate bankspaces for each bank slot. There are situations where this would be useful, but as mentioned, no official cartridge does this.
-
-## Bank Mapping
-
-The same as the DIP switches on the developer cartridge. Low 2 bits control the mapping of the low 64 banks, next 2 bits control the next 64 banks, etc. Each 2 bits controls 1/4 of the total banks.
-
-- `00`: ROM1
-- `01`: ROM2
-- `10`: DRAM
-- `11`: SRAM
-
-Examples:
-
-- `$00`: ROM1 is mapped in all banks.
-- `$A0`: ROM1 is mapped in low 128 banks. DRAM is mapped in high 128 banks.
-- `$F0`: ROM1 is mapped in low 128 banks. SRAM is mapped in high 128 banks.
-- `$F8`: ROM1 is mapped in low 64 banks. DRAM is mapped in next 64 banks. SRAM is mapped in high 128 banks.
-- `$AC`: ROM is mapped in low 64 banks. SRAM is mapped in next 64 banks. DRAM is mapped in high 128 banks.
 
 # Cartridge Memory Map
 

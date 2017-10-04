@@ -12,7 +12,7 @@ NEED_WINDOWS_ICON=1
 WINDRES=i686-w64-mingw32-windres
 
 # Flags passed to all calls that involve a C preprocessor.
-CPPFLAGS=-MP -MMD -I/opt/releng/w32/include -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -D_UNICODE -DUNICODE -DMINGW -D_WIN32_WINNT=0x0501 -DDROPPY_OS
+CPPFLAGS=-MP -MMD -I/opt/releng/w32/include -Iinclude/ -Isrc/teg/ -Isrc/libsn/ -Isrc/lsx/include/ -Isrc/byuuML/ -D_UNICODE -DUNICODE -DMINGW -D_WIN32_WINNT=0x0501 -DDROPPY_OS
 CPPFLAGS_DEBUG=-DDEBUG=1
 CPPFLAGS_RELEASE=-DRELEASE=1 -DNDEBUG=1
 # Flags passed to the C compiler.

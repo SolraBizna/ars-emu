@@ -14,6 +14,7 @@
 #include "ppu.hh"
 #include "fx.hh"
 #include "display.hh"
+#include "expansions.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -36,10 +37,10 @@ std::string ARS::window_title;
 uint8_t ARS::dram[0x8000];
 SN::Context sn;
 std::unique_ptr<Display> ARS::display;
+uint16_t ARS::last_known_pc;
 
 namespace {
   uint8_t bankMap[8];
-  uint16_t last_known_pc;
   std::string rom_path;
   bool rom_path_specified = false;
   std::unique_ptr<CPU>(*makeCPU)(const std::string&) = makeScanlineCPU;
@@ -47,13 +48,10 @@ namespace {
   int64_t logic_frame;
   decltype(std::chrono::high_resolution_clock::now()) epoch;
   bool window_visible = true, window_minimized = false, quit = false,
-    allow_debug_port = false, always_allow_config_port = false,
-    allow_secure_config_port = true, quit_on_stop = false,
-    stop_has_been_detected = false, need_reset = true,
-    secure_config_port_checked = false, secure_config_port_available;
+    quit_on_stop = false, stop_has_been_detected = false, need_reset = true;
   PPU::raw_screen screenbuf;
   void cleanup() {
-    if(cartridge != nullptr) cartridge->flushSRAM();
+    cartridge.reset();
     display.reset();
     SDL_Quit();
   }
@@ -64,11 +62,8 @@ namespace {
   void badwrite(uint16_t addr) {
     ui << sn.Get("BAD_WRITE"_Key, {TEG::format("%04X",addr)}) << ui;
   }
-  void busconflict(uint16_t addr) {
-    ui << sn.Get("BUS_CONFLICT"_Key, {TEG::format("%04X",addr)}) << ui;
-  }
-  bool config_port_access_is_secure(uint16_t pc) {
-    return pc >= 0xF000 || pc <= 0xF7FF;
+  void busconflict(uint16_t addr, std::string bus) {
+    ui << sn.Get("BUS_CONFLICT"_Key, {TEG::format("%04X",addr), std::move(bus)}) << ui;
   }
   void mainLoop() {
     if(need_reset) {
@@ -264,17 +259,18 @@ namespace {
       printUsage();
       return false;
     }
-    auto f = IO::OpenRawPathForRead(rom_path);
-    if(!f || !*f) return false;
+    bool mapped_debug_port = false;
     try {
-      Cartridge::loadRom(rom_path, *f);
+      std::unique_ptr<GameFolder> gamefolder = GameFolder::open(rom_path);
+      if(!gamefolder)
+        throw sn.Get("CARTRIDGE_COULD_NOT_BE_LOADED"_Key);
+      ARS::cartridge = ARS::Cartridge::load(*gamefolder);
     }
     catch(std::string& reason) {
       std::string death = sn.Get("CARTRIDGE_LOADING_FAIL"_Key, {reason});
       die("%s", death.c_str());
     }
-    if(allow_debug_port
-       && !cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT))
+    if(allow_debug_port && !mapped_debug_port)
       ui << sn.Get("UNUSED_DEBUG"_Key) << ui;
     return true;
   }
@@ -302,36 +298,9 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
     if((addr & 0xFFF9) == 0x0211)
       return PPU::complexRead(addr);
     else if((addr & 0xFFF8) == 0x0240) {
-      switch(addr&7) {
-      case 0: return controller1->input();
-      case 1: return controller2->input();
-      case 5: return 0; break; // TODO: HAM
-      case 6:
-        if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
-          if(always_allow_config_port)
-            return Configurator::read();
-          else if(allow_secure_config_port) {
-            if(!secure_config_port_checked) {
-              secure_config_port_checked = true;
-              secure_config_port_available
-                = Configurator::is_secure_configurator_present();
-            }
-            if(secure_config_port_available) {
-              if(config_port_access_is_secure(last_known_pc))
-                return Configurator::read();
-              else
-                return 0xEC;
-            }
-          }
-        }
-        return 0xBB;
-      case 7:
-        if(allow_debug_port
-           && cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)) {
-          cpu->setSO(true);
-          cpu->setSO(false);
-          return 0xFF;
-        }
+      if(expansions[addr&7]) return expansions[addr&7]->input();
+      else {
+        badread(addr);
         return 0xBB;
       }
     }
@@ -368,42 +337,8 @@ void ARS::write(uint16_t addr, uint8_t value) {
           }
         }
         else {
-          switch(addr&7) {
-          case 0:
-            controller1->output(value);
-            break;
-          case 1:
-            controller2->output(value);
-            break;
-          case 5:
-            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_HAM)) {
-              // TODO: HAM
-            }
-            break;
-          case 6:
-            if(cartridge->hasHardware(ARS::Cartridge::EXPANSION_CONFIG)) {
-              if(always_allow_config_port)
-                return Configurator::write(value);
-              else if(allow_secure_config_port) {
-                if(!secure_config_port_checked) {
-                  secure_config_port_checked = true;
-                  secure_config_port_available
-                    = Configurator::is_secure_configurator_present();
-                }
-                if(secure_config_port_available) {
-                  if(config_port_access_is_secure(last_known_pc))
-                    return Configurator::write(value);
-                }
-              }
-            }
-            return;
-          case 7:
-            if(allow_debug_port
-               &&cartridge->hasHardware(ARS::Cartridge::EXPANSION_DEBUG_PORT)){
-              std::cerr << value;
-            }
-            return;
-          }
+          if(expansions[addr&7]) expansions[addr&7]->output(value);
+          else badwrite(addr);
         }
       }
     }
@@ -422,41 +357,51 @@ uint8_t ARS::getBankForAddr(uint16_t addr) {
 }
 
 extern "C" int teg_main(int argc, char** argv) {
-  sn.AddCatSource(IO::GetSNCatSource());
-  if(!sn.SetLanguage(sn.GetSystemLanguage()))
-    die("Unable to load language files. Please ensure a Lang directory exists in the Data directory next to the emulator.");
-  if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
-  Font::Load();
-  srand(time(NULL)); // rand() is only used for trashing memory on reset
-  if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_GAMECONTROLLER))
-    die("%s", sn.Get("SDL_FAIL"_Key).c_str());
-  SDL_EventState(SDL_DROPFILE, SDL_DISABLE);
-  atexit(cleanup);
-  PrefsLogic::DefaultsAll();
-  PrefsLogic::LoadAll();
-  ARS::init_apu();
-  FX::init();
-  window_title = sn.Get("WINDOW_TITLE"_Key, {rom_path});
-  display = safe_mode ? Display::makeSafeModeDisplay()
-    : Display::makeConfiguredDisplay();
-  Controller::initControllers();
-  quit = false;
-  cpu = makeCPU(rom_path);
-  fillDramWithGarbage(dram, sizeof(dram));
-  PPU::fillWithGarbage();
+  try {
+    sn.AddCatSource(IO::GetSNCatSource());
+    if(!sn.SetLanguage(sn.GetSystemLanguage()))
+      die("Unable to load language files. Please ensure a Lang directory exists in the Data directory next to the emulator.");
+    if(!parseCommandLine(argc, const_cast<const char**>(argv))) return 1;
+    Font::Load();
+    srand(time(NULL)); // rand() is only used for trashing memory on reset
+    if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_GAMECONTROLLER))
+      die("%s", sn.Get("SDL_FAIL"_Key).c_str());
+    SDL_EventState(SDL_DROPFILE, SDL_DISABLE);
+    atexit(cleanup);
+    PrefsLogic::DefaultsAll();
+    PrefsLogic::LoadAll();
+    ARS::init_apu();
+    FX::init();
+    window_title = sn.Get("WINDOW_TITLE"_Key, {rom_path});
+    display = safe_mode ? Display::makeSafeModeDisplay()
+      : Display::makeConfiguredDisplay();
+    Controller::initControllers();
+    quit = false;
+    cpu = makeCPU(rom_path);
+    fillDramWithGarbage(dram, sizeof(dram));
+    PPU::fillWithGarbage();
 #ifdef EMSCRIPTEN
-  emscripten_set_main_loop(mainLoop, 0, 1);
+    emscripten_set_main_loop(mainLoop, 0, 1);
 #else
-  while(!quit) {
-    try {
-      while(!quit) mainLoop();
+    while(!quit) {
+      try {
+        while(!quit) mainLoop();
+      }
+      catch(const EscapeException& e) {
+      }
+      if(need_reset) {
+        ui << sn.Get("RESET"_Key) << ui;
+      }
     }
-    catch(const EscapeException& e) {
-    }
-    if(need_reset) {
-      ui << sn.Get("RESET"_Key) << ui;
-    }
-  }
 #endif
+  }
+  catch(std::string str) {
+    std::string why = sn.Get("UNCAUGHT_FATAL_ERROR"_Key, {str});
+    die("%s", why.c_str());
+  }
+  catch(const char* str) {
+    std::string why = sn.Get("UNCAUGHT_FATAL_ERROR"_Key, {str});
+    die("%s", why.c_str());
+  }
   return 0;
 }

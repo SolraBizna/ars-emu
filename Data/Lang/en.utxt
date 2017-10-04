@@ -148,13 +148,6 @@ FRAMETEXTURE_FAIL
 Couldn't create emulator rendering surface: $1
 .
 
-: Displayed when SDL_CreateTexture fails, while trying to create the
-: SDL_Texture that UI messages are rendered to.
-: $1: SDL's error message
-MESSAGETEXTURE_FAIL
-Couldn't create UI message surface: $1
-.
-
 : The title of the emulator window.
 : $1: The path to the ROM that is currently being executed.
 WINDOW_TITLE
@@ -165,6 +158,16 @@ ARS Emulator: $1
 : $1: One of the "Cartridge loading messages" below.
 CARTRIDGE_LOADING_FAIL
 Couldn't load the cartridge.
+
+The full error was:
+$1
+.
+
+: Displayed when an error is not caught.
+: $1: Some human-readable error, hopefully in the right language.
+UNCAUGHT_FATAL_ERROR
+An error occurred and was not handled gracefully elsewhere. THIS IS A BUG IN
+ARS-emu, PLEASE REPORT IT!
 
 The full error was:
 $1
@@ -181,11 +184,6 @@ FONT_CORRUPT
 The Font file is corrupted. Please redownload ARS-emu.
 .
 
-: Displayed when the Font file does not contain a glyph for U+FFFD.
-FONT_MISSING_FFFD
-The Font file doesn't contain a glyph for U+FFFD. We need one.
-.
-
 : Displayed when attempting to use multithreaded FX, and creation of one of the
 : worker threads failed.
 : $1: The return value from SDL_GetError()
@@ -200,29 +198,33 @@ $1
 : Character order: PRESENTATION, LEFT-TO-RIGHT
 : Combining characters: FORBIDDEN
 
+: UI messages must fit within this bar:
+::::::::::::::::::::::::::::::
+
 : Printed to stderr whenever a UI message appears.
 : $1: The UI message.
 UI_MESSAGE_STDERR
 (UI) $1
 .
 
-: UI messages must fit within this bar
-::::::::::::::::::::::::::::::
-
 : Displayed when the program reads from open bus.
+: $1: Four capital hex digits, the address read from
 BAD_READ
 bad memory read: \$$1
 .
 
 : Displayed when the program writes to open bus.
+: $1: Four capital hex digits, the address written to
 BAD_WRITE
 bad memory write: \$$1
 .
 
-: Displayed when the program accesses a secondary bus, at the same time as that
-: secondary hardware does. (Currently unsed)
+: Displayed when multiple chips try to use the same bus at the same time.
+: (Currently unused.)
+: $1: Up to four capital hex digits, the address written to
+: $2: The bus (SAM, SSM, VRAM, or CRAM)
 BUS_CONFLICT
-bus conflict: \$$1
+bus conflict: \$$2:\$$1
 .
 
 : Displayed when time does not behave correctly, e.g. after a "hiccup".
@@ -265,55 +267,32 @@ UNUSED_DEBUG
 Unused debug port
 .
 
-: Displayed on cartridge load for the following:
-: ROM: If the cartridge only contains one ROM chip
-: SRAM/DRAM: If the cartridge contains SRAM/DRAM
-: $1: The chip type (ROM, SRAM, or DRAM)
-: $2: The size, in kibibytes
-SINGLE_CHIP_SIZE
-$2KiB $1
-.
-
-: Displayed on cartridge load if the cartridge contains both ROM1 and ROM2
-: chips
-: $1: The cihp type (ROM)
-: $2: The size of ROM1, in kibibytes
-: $3: The size of ROM2, in kibibytes
-DUAL_CHIP_SIZE
-$2+$3KiB $1
-.
-
 : Displayed if writing the SRAM to disk failed
 SRAM_WRITE_FAILURE
 SRAM write failure
 .
 
-: Displayed if the program reads from an area of memory that is reserved for a
-: chip that isn't present
-: $1: The chip type (ROM1, ROM2, SRAM, or DRAM)
-: $2: Four capital hex digits, the address written to
+: Displayed if the program reads from an area of cartridge space to which there
+: is no chip connected
+: $1: Four to eight capital hex digits, the address read from
 MISSING_CHIP_READ
-bad read from \$$2
-(maps to missing $1 chip)
+bad read from \$$1
+(not connected to any chip)
+.
+
+: Displayed if the program writes to an area of cartridge space to which there
+: is no chip connected
+: $1: Four to eight capital hex digits, the address written to
+MISSING_CHIP_WRITE
+bad write to \$$1
+(not connected to any chip)
 .
 
 : Displayed if the program writes to cartridge ROM
-: $1: The chip type (ROM1 or ROM2)
-: $2: Four capital hex digits, the address written to
-: $3: Two capital hex digits, the value written
+: $1: Four to eight capital hex digits, the address written to
 ROM_CHIP_WRITE
-bad write of \$$3 to \$$2
-(maps to $1 chip)
-.
-
-: Displayed if the program writes to an area of memory that is reserved for a
-: chip that isn't present
-: $1: The chip type (ROM1, ROM2, SRAM, or DRAM)
-: $2: Four capital hex digits, the address written to
-: $3: Two capital hex digits, the value written
-MISSING_CHIP_WRITE
-bad write of \$$3 to \$$2
-(maps to missing $1 chip)
+bad write to \$$1
+(connected to ROM chip)
 .
 
 : Displayed if the STP instruction is executed, and quit-on-STP mode is not
@@ -323,7 +302,6 @@ CPU halted
 .
 
 : Displayed if an unrecognized gamepad is connected
-::::::::::::::::::::::::::::::
 GAMEPAD_INVALID
 unknown gamepad ignored
 .
@@ -348,7 +326,6 @@ extra gamepad ignored
 : Displayed if the audio system couldn't initialize with a given channel count.
 : $1: SOUND_TYPE_* value for the setup that is being used instead of the one
 : the user asked for.
-::::::::::::::::::::::::::::::
 AUDIO_TYPE_DOWNGRADED_TO
 Unsupported output type.
 Downgraded to $1.
@@ -357,7 +334,6 @@ Downgraded to $1.
 : Displayed if the display system encountered at least one failure while
 : setting up the preferred display.
 : $1: The pretty name of the display type currently in use.
-::::::::::::::::::::::::::::::
 DISPLAY_SETUP_ERRORS
 Unable to set up the preferred
 display type. Error details
@@ -400,123 +376,140 @@ $1 encountered a fatal error.
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-: Cartridge loading messages
+: Game Folder loading messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Character order: Logical
 : Combining characters: Allowed
 
-: End-of-file reached while still reading the header of a gzipped image
-GZIP_HEADER_EOF
-EOF while reading gzip header
+: Displayed when the manifest of a game folder refers to a vital file, but that
+: file could not be opened.
+: $1: The path of the missing file, relative to manifest.bml.
+GAMEFOLDER_FILE_MISSING
+File not found within game folder: $1
 .
 
-: End-of-stream reached while still reading the header of a gzipped image
-: This should be impossible
-GZIP_HEADER_EOS
-EOS while reading gzip header, possible bug in ARS-emu
+: Displayed when all attempts to load a cartridge have failed.
+CARTRIDGE_COULD_NOT_BE_LOADED
+Could not load the selected game.
 .
 
-: A zlib error occurred while reading the header of a gzipped image
-GZIP_HEADER_ERROR
-zlib error while reading gzip header
+GAME_ARCHIVE_MULTIPLE_MANIFESTS
+The selected file contains more than one manifest.bml, and cannot be loaded.
 .
 
-: A zlib error occurred while reading a gzipped image
-ZLIB_ERROR
-zlib error while reading compressed ROM
+GAME_ARCHIVE_NO_MANIFEST
+The selected file contains no manifest.bml, and cannot be loaded.
 .
 
-: An image claimed to contain initialization data for a memory chip, but also
-: claimed that memory area was 0 bytes long
-BLANK_INIT
-ROM file explicitly contains a zero-byte initialization image
+GAME_ARCHIVE_ZIP_CORRUPTED
+The selected file is a corrupted zip archive.
 .
 
-: An image claimed that a memory area was larger than the entire cartridge
-: address space
-HUGE_SIZE
-ROM file contains an excessively large memory chip
+GAME_ARCHIVE_ZIP_TOO_ADVANCED
+The selected file is a zip archive which uses advanced features ARS-emu does
+not know how to support.
 .
 
-: Self-explanatory
-FILE_TOO_SMALL
-The specified file is too small to be a valid ARS ROM file
+: Displayed if an IO error prevents the loading of a vital piece of game
+: content
+: $1: The path of the content whose loading failed
+: $2: An error message indicating the reason for failure
+GAME_CONTENT_READ_ERROR
+An IO error occurred while loading $1. The error was: $2.
 .
 
-: Self-explanatory
-HEADER_READ_ERROR
-An IO error occurred while attempting to read the ETARS header
+: Displayed if manifest.bml is present, but couldn't be parsed.
+: $1: The (currently English-only) reason for failure.
+MANIFEST_PARSE_ERROR
+Unable to parse the manifest of the selected game.
+
+($1)
 .
 
-: Self-explanatory
-COMPRESSED_HEADER_READ_ERROR
-An IO error occurred while attempting to read a compressed ETARS header
+: Displayed if manifest.bml is present, but does not contain a usable board tag
+NO_ETARS_BOARD_FOUND_IN_MANIFEST
+The selected game does not appear to contain an ET ARS cartridge.
 .
 
-: Self-explanatory
-FILE_NOT_ETARS
-The specified file is not a valid ARS ROM file
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Board loading messages
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
+
+: Displayed if a board using the "bare chip" mapper has more than one memory
+: chip.
+MAPPER_BARE_WRONG_MEMORY_COUNT
+Games using the "bare chip" mapper must have exactly one memory chip, but this
+board has a different number.
 .
 
-: Self-explanatory
-EXTENDED_HEADER
-The specified file is an extended ETARS image, and this version of ARS-emu does
-not know how to handle it.
+BOARD_MEMORY_SIZE_MISSING
+A memory tag without a size was found in the manifest.
+
+The size attribute for memory tags is required.
 .
 
-: A ROM file requested a bus mapping that is not defined in the current ETARS
-: specification.
-EXOTIC_BUS_MAPPING
-ROM file explicitly requests an exotic bus mapping not supported by this
-version of ARS-emu.
+BOARD_MEMORY_SIZE_INVALID
+A memory tag with an invalid size was found in the manifest.
+
+The size attribute for memory tags must be greater than zero, less than 1GiB,
+and a power of two.
 .
 
-: Self-explanatory
-: $1: ROM1/ROM2/SRAM/DRAM
-ROM_UNINITIALIZED
-ROM file explicitly requests a $1 chip, but does not provide initialization
-data for it.
+BOARD_MEMORY_PATH_INVALID
+A memory tag with an invalid path was found in the manifest.
+
+The path attribute for memory tags must be "safe". No leading, trailing, or
+double slashes. No path components beginning with a period.
 .
 
-: ETARS images are allowed to contain initialization data for a "DRAM" chip,
-: even though normally the only way this would be possible is by performing an
-: Initial Program Load on a dev cartridge. This message is written to stderr
-: if such an ETARS image is loaded.
-DRAM_INITIALIZED
-Warning: This ROM file contains initialized DRAM. This is impossible on a real,
-commercial cartridge.
+BOARD_MAPPER_TYPE_INVALID
+This game uses a mapper type not supported by the current version of ARS-emu.
+
+The only mapper types supported by this version of ARS-emu are empty
+(bare chip) and devcart.
 .
 
-: If an ETARS image does not provide any initialization data, there is no
-: possible way for it to contain a runnable program. This message is displayed
-: if that is the case.
-EMPTY_ROM
-ROM file does not provide any initialization data, so we have nothing to run.
+BOARD_CONTAINS_DUPLICATE_MEMORY
+More than one memory tag with the same ID was found in the manifest.
 .
 
-: Self-explanatory
-: $1: ROM1/ROM2/SRAM/DRAM
-ROM_INIT_DATA_FAIL
-Error while reading initialization data for the $1 chip.
+BOARD_DEVCART_MEMORY_ID_UNKNOWN
+This game's mapper specification is missing one of the required memory ID tags.
 .
 
-: Self-explanatory
-UNSUPPORTED_EXPANSION_HARDWARE
-ROM file requests expansion hardware that is not known to this version of
-ARS-emu.
+BOARD_DEVCART_MEMORY_ID_MISSING
+This game's mapper specification specifies the ID of a memory chip that does
+not exist.
 .
 
-: Self-explanatory
-UNSUPPORTED_PIN_MAPPING
-ROM file requests pin mapping that is not comprehensible to this version of
-ARS-emu.
+BOARD_DEVCART_MEMORY_UNSHIFT_GREATER_THAN_BS
+This game's manifest specifies an unshift value greater than the BS value.
+There is no reason to do this.
 .
+
+BOARD_EXPANSION_ADDRESS_CONFLICT
+This game's manifest requests that more than one expansion chip be mapped to
+the same address. There is no reason to do this.
+.
+
+BOARD_EXPANSION_ADDRESS_INVALID
+This game's manifest requests that an expansion chip be mapped outside the
+range for IO devices. ARS-emu does not support this.
+.
+
+
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Configuration interface messages
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 : Character order: PRESENTATION, LEFT-TO-RIGHT
 : Combining characters: FORBIDDEN
+
+: Every configuration interface message must fit within this bar
+: (which is not the same width as the one for UI messages)
+::::::::::::::::::::::::::::
 
 : This key MUST contain the value LTR (for languages like English) or RTL (for
 : languages like Hebrew). This only affects the configuration menu, and it does
@@ -525,16 +518,11 @@ CONFIG_MENU_DIRECTION
 LTR
 .
 
-: Every configuration interface message must fit within this bar
-: (which is not the same width as the one for UI messages)
-::::::::::::::::::::::::::::
-
 GENERIC_MENU_FINISHED_LABEL
 Finished
 .
 
 : Main menu
-::::::::::::::::::::::::::::
 MAIN_MENU_TITLE
 ARS-Emu Configuration
 .
@@ -559,7 +547,6 @@ Exit Without Saving
 .
 
 : Keyboard menu
-::::::::::::::::::::::::::::
 KEYBOARD_MENU_TITLE
 Keyboard Options
 .
@@ -582,7 +569,6 @@ NO_KEY_BINDING
 CONTROLLER_INPUT_NAME
 $1 $2
 .
-::::::::::::::::::::::::::::
 : $1 = CONTROLLER_INPUT_NAME
 : May be up to 12 lines long, but please manually break lines.
 CONTROLLER_KEY_BINDING_INSTRUCTIONS
@@ -630,8 +616,13 @@ CONTROLLER_PAUSE_BUTTON
 Pause
 .
 
+: The name used for a scancodewith no known key mapping or name
+: $1: Four-digit hex code of scan code
+UNKNOWN_SCANCODE
+unknown key $1
+.
+
 : Audio menu
-::::::::::::::::::::::::::::
 AUDIO_MENU_TITLE
 Audio Options
 .
@@ -699,7 +690,6 @@ Samplerate:
 .
 
 : Video menu
-::::::::::::::::::::::::::::
 VIDEO_MENU_TITLE
 Video Options
 .

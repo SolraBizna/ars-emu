@@ -3,8 +3,10 @@
 
 #include "ars-emu.hh"
 
+#include "expansions.hh"
+
 namespace ARS {
-  class Controller {
+  class Controller : public Expansion {
     uint8_t dOut, dIn;
     bool dataIsFresh, strobeIsHigh;
   protected:
@@ -12,8 +14,8 @@ namespace ARS {
     virtual uint8_t onStrobeFall(uint8_t curData) = 0;
   public:
     virtual ~Controller() {}
-    void output(uint8_t d);
-    uint8_t input();
+    virtual void output(uint8_t d);
+    virtual uint8_t input();
     static void initControllers();
     /* returns true if the event was fully handled, false if the event needs
        further handling (it may have been modified in the mean time) */
@@ -24,7 +26,6 @@ namespace ARS {
     static bool keyIsBeingBound();
     static std::string getKeyBindingInstructions(int player, int button);
   };
-  extern std::unique_ptr<Controller> controller1, controller2;
 }
 
 #endif

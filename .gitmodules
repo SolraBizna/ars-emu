@@ -7,3 +7,6 @@
 [submodule "src/lsx"]
 	path = src/lsx
 	url = http://github.com/SolraBizna/lsx.git
+[submodule "src/byuuML"]
+	path = src/byuuML
+	url = git@github.com:SolraBizna/byuuML

@@ -42,7 +42,7 @@ FX_IMPLEMENTATIONS+=obj/fximp.normal.o
 # We include obj/lsx/lsx_bzero.o while making no attempt to prevent it from
 # being optimized out, because there is no sensitive data to "leak". The only
 # SimpleConfig image currently considered "secure" is publicly available.
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o obj/audiocvt.o obj/windower.o obj/lsx/lsx_sha256.o obj/lsx/lsx_bzero.o obj/ppu_common.o obj/fx.o obj/messages.o obj/display.o obj/display_safe.o obj/display_sdl.o obj/upscale.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS))
+$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o obj/audiocvt.o obj/windower.o obj/lsx/lsx_sha256.o obj/lsx/lsx_bzero.o obj/ppu_common.o obj/fx.o obj/messages.o obj/display.o obj/display_safe.o obj/display_sdl.o obj/upscale.o obj/gamefolder.o obj/gamearchive.o obj/byuuML/byuuML.o obj/barechip.o obj/devcart.o obj/expansions.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS))
 ifndef CROSS_COMPILE
 $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
 $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))
@@ -126,20 +126,20 @@ obj/lsx/%.debug.o: src/lsx/src/%.c
 	@$(CC) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) -o "$@" "$<"
 
 obj/%.o: src/%.cc
-	@mkdir -p obj/teg
+	@mkdir -p obj/teg obj/byuuML
 	@echo Compiling "$<" "(release)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_RELEASE) $(CFLAGS) $(CFLAGS_RELEASE) $(CXXFLAGS) $(CXXFLAGS_RELEASE) -o "$@" "$<"
 obj/%.debug.o: src/%.cc
-	@mkdir -p obj/teg
+	@mkdir -p obj/teg obj/byuuML
 	@echo Compiling "$<" "(debug)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) $(CXXFLAGS) $(CXXFLAGS_DEBUG) -o "$@" "$<"
 
 obj/%.o: src/libsn/%.cc
-	@mkdir -p obj/teg
+	@mkdir -p obj
 	@echo Compiling "$<" "(release)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_RELEASE) $(CFLAGS) $(CFLAGS_RELEASE) $(CXXFLAGS) $(CXXFLAGS_RELEASE) -o "$@" "$<"
 obj/%.debug.o: src/libsn/%.cc
-	@mkdir -p obj/teg
+	@mkdir -p obj
 	@echo Compiling "$<" "(debug)"...
 	@$(CXX) $(CPPFLAGS) $(CPPFLAGS_DEBUG) $(CFLAGS) $(CFLAGS_DEBUG) $(CXXFLAGS) $(CXXFLAGS_DEBUG) -o "$@" "$<"
 
