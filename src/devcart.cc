@@ -39,6 +39,7 @@ namespace {
       }
       else overlay_override = false;
       std::array<std::string, NUM_DIP_CONFIGURATIONS> chips;
+      for(auto& c : chips) c = "open";
       for(unsigned int i = 0; i < NUM_DIP_GROUPS; ++i) {
         std::string q;
         q.push_back('0' + i);
@@ -61,7 +62,7 @@ namespace {
               dips_and_shifts[i] = j | (shift << UNSHIFT_SHIFT);
               break;
             }
-            else if(chips[j].empty()) {
+            else if(chips[j] == "open") {
               auto p = memories.find(id);
               if(p == memories.end())
                 throw sn.Get("BOARD_DEVCART_MEMORY_ID_UNKNOWN"_Key, {q});
