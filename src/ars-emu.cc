@@ -357,6 +357,9 @@ uint8_t ARS::getBankForAddr(uint16_t addr) {
 }
 
 extern "C" int teg_main(int argc, char** argv) {
+#if __WIN32__
+  IO::DoRedirectOutput();
+#endif
   try {
     sn.AddCatSource(IO::GetSNCatSource());
     if(!sn.SetLanguage(sn.GetSystemLanguage()))
