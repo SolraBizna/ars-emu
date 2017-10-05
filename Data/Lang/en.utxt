@@ -390,7 +390,7 @@ File not found within game folder: $1
 
 : Displayed when all attempts to load a cartridge have failed.
 CARTRIDGE_COULD_NOT_BE_LOADED
-Could not load the selected game.
+The selected file was not a valid ETARS Game Folder or Game Archive.
 .
 
 GAME_ARCHIVE_MULTIPLE_MANIFESTS

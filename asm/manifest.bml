@@ -1,0 +1,3 @@
+board id:ETARS
+  rom name=config.rom size=2048
+  expansion=config

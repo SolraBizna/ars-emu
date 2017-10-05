@@ -240,7 +240,8 @@ std::unique_ptr<ARS::GameFolder> ARS::openGameArchive(std::string path) {
            && buf[2] == 0x05 && buf[3] == 0x06) break; // found!
         ++comment_length;
         if(comment_length > 65536
-           || comment_length + END_OF_CENTRAL_DIRECTORY_LENGTH > told) break;
+           || comment_length + END_OF_CENTRAL_DIRECTORY_LENGTH > told)
+          return nullptr; // not a zipfile
         else {
           in->seekg(told - END_OF_CENTRAL_DIRECTORY_LENGTH - comment_length);
           memmove(buf+1, buf, END_OF_CENTRAL_DIRECTORY_LENGTH-1);

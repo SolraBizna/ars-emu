@@ -263,7 +263,7 @@ namespace {
     try {
       std::unique_ptr<GameFolder> gamefolder = GameFolder::open(rom_path);
       if(!gamefolder)
-        throw sn.Get("CARTRIDGE_COULD_NOT_BE_LOADED"_Key);
+        die("%s", sn.Get("CARTRIDGE_COULD_NOT_BE_LOADED"_Key).c_str());
       ARS::cartridge = ARS::Cartridge::load(*gamefolder);
     }
     catch(std::string& reason) {

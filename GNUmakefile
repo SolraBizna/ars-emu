@@ -65,20 +65,23 @@ Data/Font: bin/compile-font-release$(EXE) dist/unifont-$(UNIFONT_VERSION)/font/p
 	@mkdir -p Data
 	@$^ > $@
 
-Data/SimpleConfig.etarz: obj/SimpleConfig.etars
-	@echo "Compressing simple configuration ROM image..."
+Data/SimpleConfig.etarz: obj/SimpleConfig.etars/config.rom obj/SimpleConfig.etars/manifest.bml
+	@echo "Compressing simple configuration ROM \"cartridge\"..."
 	@mkdir -p Data
-	@gzip -cfk9 "$<" > "$@"
+	@rm -f Data/SimpleConfig.etarz
+	@(cd obj; zip --quiet -r ../Data/SimpleConfig.etarz SimpleConfig.etars)
 
-obj/SimpleConfig.etars: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
-	@mkdir -p obj
-	@echo "Generating simple configuration ROM image..."
+obj/SimpleConfig.etars/config.rom: $(addprefix obj/,$(addsuffix .o,$(notdir $(wildcard asm/*.65c))))
+	@mkdir -p obj/SimpleConfig.etars
+	@echo "Linking simple configuration ROM image..."
 	@echo [objects] > obj/SimpleConfig.link
 	@for f in $^; do echo $$f >> obj/SimpleConfig.link; done
-	@echo >> obj/SimpleConfig.link
-	@echo [header] >> obj/SimpleConfig.link
-	@echo src/header.dat >> obj/SimpleConfig.link
-	@wlalink -S obj/SimpleConfig.link obj/SimpleConfig.etars
+	@wlalink -S obj/SimpleConfig.link obj/SimpleConfig.etars/config.rom
+
+obj/SimpleConfig.etars/manifest.bml: asm/manifest.bml
+	@mkdir -p obj/SimpleConfig.etars
+	@echo "Copying simple configuration ROM manifest..."
+	@cp $< $@
 endif
 
 make/cur_target.mk:

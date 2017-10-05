@@ -587,10 +587,10 @@ Unless requested otherwise on the command line, the emulator *will* trust Simple
     .ORGA $F000
     .SECTION "!SimpleConfig" FORCE
     SimpleConfigEntryPoint:
-    .INCBIN "path/to/SimpleConfig.etars" SKIP 16
+    .INCBIN "path/to/SimpleConfig.etars/config.rom"
     .ENDS
 
-(`SimpleConfig.etars` is what you get if you un-gzip `SimpleConfig.etarz`.)
+(`SimpleConfig.etars` is what you get if you unzip `SimpleConfig.etarz`.)
 
 With a proper `.BANK` directive, this will put SimpleConfig into your ROM. SimpleConfig expects to be mapped to `$F000` through `$F7FF`.
 
