@@ -68,7 +68,7 @@ namespace {
 }
 
 void ARS::map_expansion(uint16_t addr, const std::string& type) {
-  if(addr < 0x240 || addr > 0x247)
+  if(addr != 0 && (addr < 0x240 || addr > 0x247))
     die("INTERNAL ERROR: Expansion IO address out of range");
   if(type == "debug") {
     if(addr == 0) addr = 0x247;

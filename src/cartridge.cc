@@ -3,6 +3,7 @@
 #include "cartridge.hh"
 #include "mappers.hh"
 #include "localquery.hh"
+#include "expansions.hh"
 
 using namespace ARS;
 
@@ -127,6 +128,7 @@ std::unique_ptr<Cartridge> Cartridge::load(GameFolder& gamefolder,
         throw sn.Get("BOARD_EXPANSION_ADDRESS_INVALID"_Key);
     }
     else addr = 0; // will be interpreted as "use default address"
+    ARS::map_expansion(addr, expansion.data());
   }
   // Mapper
   auto mapper_tag = *LocalizedQuery(board->query("mapper"));
