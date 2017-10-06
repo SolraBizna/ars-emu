@@ -9,7 +9,7 @@ while true; do
     for f in make/target/*.mk; do
         base=`basename $f .mk`
         echo -n "$base: "
-        head -n 1 "$f" | cut --bytes 3-
+        head -n 1 "$f" | cut -b 3-
     done
     echo "Please type one of the above target names (e.g. Linux) and press enter."
     read choice
