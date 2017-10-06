@@ -21,13 +21,13 @@ namespace {
     static Worker* worker_threads;
     static unsigned int thread_count;
     static SDL_threadID main_thread;
-    static SDL_cond* go_cond;
     SDL_mutex* lock;
+    SDL_cond* cond;
     int body() {
       SDL_LockMutex(lock);
       while(true) {
         while(task == nullptr) {
-          SDL_CondWait(go_cond, lock);
+          SDL_CondWait(cond, lock);
         }
         task(start, stop);
         task = nullptr;
@@ -41,8 +41,8 @@ namespace {
   public:
     Worker() {
       static unsigned int num_workers_so_far = 0;
-      if(go_cond == nullptr) go_cond = SDL_CreateCond();
-      assert(go_cond);
+      cond = SDL_CreateCond();
+      assert(cond);
       lock = SDL_CreateMutex();
       assert(lock);
       std::ostringstream str;
@@ -78,11 +78,12 @@ namespace {
             worker_threads[i].start = start;
             worker_threads[i].stop = stop;
             SDL_UnlockMutex(worker_threads[i].lock);
+            SDL_CondBroadcast(worker_threads[i].cond);
             start = stop;
           }
         }
-        SDL_CondBroadcast(go_cond);
         if(start != big_stop) task(start, big_stop);
+        // wait for each worker to complete before continuing
         for(unsigned int i = 0; i < thread_count-1; ++i) {
           SDL_LockMutex(worker_threads[i].lock);
           SDL_UnlockMutex(worker_threads[i].lock);
@@ -101,7 +102,6 @@ namespace {
   Worker* Worker::worker_threads;
   unsigned int Worker::thread_count = 0;
   SDL_threadID Worker::main_thread;
-  SDL_cond* Worker::go_cond;
 }
 
 void FX::init(unsigned int init_thread_count) {
