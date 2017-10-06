@@ -29,6 +29,10 @@ Known options:
       fast_debug: Scanline-based renderer, built-in (English only) debugger.
       fast_intprof: Scanline-based renderer. Does some simple performance
         profiling of the emulated code and outputs it on stdout.
+-j: Specify the number of hardware threads to use for graphical effects. A
+    value of 1 disables multithreaded effects processing, and a value of 0 (the
+    default) tries to automatically detect the number of hardware threads
+    available.
 -C: Always allow access to emulator configuration features (implies -q)
 -z: Never allow access to emulator configuration features, even for embedded
     copies of SimpleConfig

@@ -40,6 +40,7 @@ std::unique_ptr<Display> ARS::display;
 uint16_t ARS::last_known_pc;
 
 namespace {
+  unsigned int thread_count = 0;
   uint8_t bankMap[8];
   std::string rom_path;
   bool rom_path_specified = false;
@@ -191,6 +192,18 @@ namespace {
                 sn.Out(std::cout, "UNKNOWN_CORE"_Key, {nextarg});
                 valid = false;
               }
+            }
+            break;
+          case 'j':
+            if(n >= argc) {
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-j"});
+              valid = false;
+            }
+            else {
+              std::string nextarg = argv[n++];
+              unsigned long l = std::stoul(nextarg);
+              if(l > 128) l = 128; // we can't make much use of more cores
+              thread_count = l;
             }
             break;
           case 'd':
@@ -374,7 +387,7 @@ extern "C" int teg_main(int argc, char** argv) {
     PrefsLogic::DefaultsAll();
     PrefsLogic::LoadAll();
     ARS::init_apu();
-    FX::init();
+    FX::init(thread_count);
     window_title = sn.Get("WINDOW_TITLE"_Key, {rom_path});
     display = safe_mode ? Display::makeSafeModeDisplay()
       : Display::makeConfiguredDisplay();
