@@ -313,7 +313,8 @@ uint8_t ARS::read(uint16_t addr, bool OL, bool VPB, bool SYNC) {
     else if((addr & 0xFFF8) == 0x0240) {
       if(expansions[addr&7]) return expansions[addr&7]->input();
       else {
-        badread(addr);
+        // let spurious debug port reads/writes slide
+        if(addr != 0x247) badread(addr);
         return 0xBB;
       }
     }
@@ -351,7 +352,8 @@ void ARS::write(uint16_t addr, uint8_t value) {
         }
         else {
           if(expansions[addr&7]) expansions[addr&7]->output(value);
-          else badwrite(addr);
+          // let spurious debug port reads/writes slide
+          else if(addr != 0x247) badwrite(addr);
         }
       }
     }
