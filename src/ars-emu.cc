@@ -274,9 +274,41 @@ namespace {
     }
     bool mapped_debug_port = false;
     try {
-      std::unique_ptr<GameFolder> gamefolder = GameFolder::open(rom_path);
+      std::unique_ptr<GameFolder> gamefolder;
+      std::string true_path = rom_path;
+      std::string::size_type found_dirsep;
+      gamefolder = GameFolder::open(true_path);
+      /*
+        as long as:
+         - We haven't succeeded in opening the game folder yet
+         AND
+         - There is a directory separator in the path
+      */
+      while(!gamefolder
+            && (found_dirsep = true_path.rfind(DIR_SEP)) != std::string::npos){
+        // Delete everything after the last separator, but leave it intact
+        true_path.resize(found_dirsep + sizeof(DIR_SEP) - 1);
+        // Try to open this new path as a game folder
+        // (It contains a trailing directory separator, so it will only be
+        // opened as a Game Folder)
+        gamefolder = GameFolder::open(true_path);
+        // If that open didn't succeed, delete the trailing directory separator
+        // (so that it won't get in the way next time)
+        if(!gamefolder)
+          true_path.resize(found_dirsep);
+      }
       if(!gamefolder)
         die("%s", sn.Get("CARTRIDGE_COULD_NOT_BE_LOADED"_Key).c_str());
+      /*
+        We don't want to try a synthesized path with no directory separator,
+        because that would lead to some funky (though, usually harmless)
+        behavior.
+       */
+      if(rom_path != true_path) {
+        sn.Out(std::cerr, "GAME_FOLDER_WAS_PARENT_OF_REQUESTED_FILE"_Key,
+               {rom_path, true_path});
+        rom_path = true_path;
+      }
       ARS::cartridge = ARS::Cartridge::load(*gamefolder);
     }
     catch(std::string& reason) {

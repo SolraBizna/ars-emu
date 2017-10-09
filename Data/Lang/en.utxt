@@ -167,6 +167,27 @@ The full error was:
 $1
 .
 
+: Written to stderr when loading the requested file failed, but one of its
+: parent directories turned out to be a valid Game Folder. This will generally
+: only happen when someone drags/passes one of the ROM files, or the manifest
+: file, within a valid Game Folder.
+: $1: The path the user attempted to load.
+: $2: The path that turned out to be a valid Game Folder.
+GAME_FOLDER_WAS_PARENT_OF_REQUESTED_FILE
+You requested to load a particular file as an ARS game. That file was not a
+valid Game Archive. However, one of its parent directories turned out to be a
+perfectly valid Game Folder. You should load that Game Folder directly instead.
+
+What you passed in:
+$1
+
+What we ended up loading:
+$2
+
+This message is harmless. Feel free to ignore it if you like.
+
+.
+
 : Displayed when an error is not caught.
 : $1: Some human-readable error, hopefully in the right language.
 UNCAUGHT_FATAL_ERROR
