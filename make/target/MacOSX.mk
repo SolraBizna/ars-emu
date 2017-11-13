@@ -1,6 +1,5 @@
 # macOS (10.6 and later)
 
-# TODO: fat binary (need x86_64 version of libstdc++)
 # Compiler used to compile C code.
 CC=i386-apple-darwin10-gcc
 # Compiler used to compile C++ code.
