@@ -100,44 +100,50 @@ const Font::Glyph& Font::GetGlyph(uint32_t codepoint) {
         std::cerr << "zlib error: " << z.msg << "\n";
         throw std::iostream::failure("zlib error");
       }
-      z.next_in = loadbuf.ptr;
-      z.avail_in = page.size;
-      z.next_out = widths;
-      z.avail_out = 256;
-      if(inflate(&z, Z_SYNC_FLUSH) != Z_OK) {
-        std::cerr << "zlib error: " << z.msg << "\n";
-        throw std::iostream::failure("zlib error");
-      }
-      if(z.avail_out != 0)
-        throw std::iostream::failure("short stream");
-      uint32_t bufsize = 0;
-      int glyphcount = 0;
-      for(uint8_t width : widths) {
-        if(width > 2)
-          throw std::iostream::failure("invalid char width");
-        bufsize += 16 * width;
-        if(width != 0) ++glyphcount;
-      }
-      page.loaded_data = new uint8_t[bufsize];
-      Font::Glyph* glyphp = new Font::Glyph[glyphcount];
-      z.next_out = page.loaded_data;
-      z.avail_out = bufsize;
-      if(inflate(&z, Z_SYNC_FLUSH) != Z_OK) {
-        std::cerr << "zlib error: " << z.msg << "\n";
-        throw std::iostream::failure("zlib error");
-      }
-      if(z.avail_out != 0 || z.avail_in != 0)
-        throw std::iostream::failure("overlong zlib stream");
-      uint8_t* bufp = page.loaded_data;
-      for(int c = 0; c < 256; ++c) {
-        if(widths[c] == 0)
-          page.glyphs[c] = &nullglyph;
-        else {
-          glyphp->wide = widths[c] > 1;
-          glyphp->tiles = bufp;
-          bufp += glyphp->wide ? 32 : 16;
-          page.glyphs[c] = glyphp++;
+      try {
+        z.next_in = loadbuf.ptr;
+        z.avail_in = page.size;
+        z.next_out = widths;
+        z.avail_out = 256;
+        if(inflate(&z, Z_SYNC_FLUSH) != Z_OK) {
+          std::cerr << "zlib error: " << z.msg << "\n";
+          throw std::iostream::failure("zlib error");
         }
+        if(z.avail_out != 0)
+          throw std::iostream::failure("short stream");
+        uint32_t bufsize = 0;
+        int glyphcount = 0;
+        for(uint8_t width : widths) {
+          if(width > 2)
+            throw std::iostream::failure("invalid char width");
+          bufsize += 16 * width;
+          if(width != 0) ++glyphcount;
+        }
+        page.loaded_data = new uint8_t[bufsize];
+        Font::Glyph* glyphp = new Font::Glyph[glyphcount];
+        z.next_out = page.loaded_data;
+        z.avail_out = bufsize;
+        if(inflate(&z, Z_SYNC_FLUSH) != Z_OK) {
+          std::cerr << "zlib error: " << z.msg << "\n";
+          throw std::iostream::failure("zlib error");
+        }
+        if(z.avail_out != 0 || z.avail_in != 0)
+          throw std::iostream::failure("overlong zlib stream");
+        uint8_t* bufp = page.loaded_data;
+        for(int c = 0; c < 256; ++c) {
+          if(widths[c] == 0)
+            page.glyphs[c] = &nullglyph;
+          else {
+            glyphp->wide = widths[c] > 1;
+            glyphp->tiles = bufp;
+            bufp += glyphp->wide ? 32 : 16;
+            page.glyphs[c] = glyphp++;
+          }
+        }
+        inflateEnd(&z);
+      }
+      catch(...) {
+        inflateEnd(&z);
       }
     }
     return *page.glyphs[codepoint & 255];
