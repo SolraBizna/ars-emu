@@ -249,7 +249,7 @@ If anybody manages to find actual documentation for the developer cartridges, pl
 
 The serial port is the only "developer cartridge" feature specifically implemented by the emulator. It only emulates the write end of the port, and it emulates it at infinite speed; write a byte to `$0247` and that byte will be written to stderr, read a byte and the V bit will be set.
 
-Emulation of the debug port must be enabled with a command line option *and* specified in the ROM file header in order to function.
+Emulation of the debug port must be enabled with a command line option *and* specified in the game's manifest in order to function.
 
 (If you are implementing an emulator or a homebrew program, you probably do not need the rest of this section.)
 
@@ -596,7 +596,7 @@ With a proper `.BANK` directive, this will put SimpleConfig into your ROM. Simpl
 
 **Make sure SimpleConfig's bank is mapped**, then use the standard handshake to determine if the Emulator Configuration port is present. If it is, you could (for example) present a menu option within your game's menu system to enter the configuration screen, confident that jumping into SimpleConfig will work as desired. (However, this does not necessarily mean that custom code accessing the Emulator Configuration port will work.)
 
-Don't forget to set bit 7 of byte `$5` of the header!
+Don't forget to add the appropriate `expansion` tag to your manifest!
 
 Then, use code like the following (assuming the standard ET license block is present and active):
 
