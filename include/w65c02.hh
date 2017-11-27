@@ -403,16 +403,16 @@ namespace W65C02 {
       uint8_t mem = am.read();
       am.perform_spurious_rmw_read();
       am.write(mem & ~a);
-      if(mem & a) p |= P_Z;
-      else p &= ~P_Z;
+      if(mem & a) p &= ~P_Z;
+      else p |= P_Z;
     }
     template<class AM> void TSB() {
       AM am(*this);
       uint8_t mem = am.read();
       am.perform_spurious_rmw_read();
       am.write(mem | a);
-      if(mem & a) p |= P_Z;
-      else p &= ~P_Z;
+      if(mem & a) p &= ~P_Z;
+      else p |= P_Z;
     }
     template<class AM> void ASL() {
       AM am(*this);
@@ -1010,7 +1010,7 @@ namespace W65C02 {
       default:
       case State::INVALID_STATE: return false;
       case State::AWAITING_INTERRUPT: return irq || nmi_edge;
-      case State::RECOVERING_FROM_RESET: return true; 
+      case State::RECOVERING_FROM_RESET: return true;
       case State::RUNNING: return true;
       case State::STOPPED: return false;
       }
