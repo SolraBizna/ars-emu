@@ -223,8 +223,8 @@ In theory, this interface can be used to provide ~1.5MB/s transfers under CPU co
 
 ## Standard controller
 
-`port := $00`: Read button state  
-`port := $80`: Read controller ID (`$01`; will read as `$81` on first read)
+`write $00`: Subsequent reads return button state as of the time `$00` was written  
+`write $80`: Subsequent reads return controller ID (`$01` for the standard controller; will read as `$81` on first read, `$01` on subsequent reads)
 
 Button state:
 
