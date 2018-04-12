@@ -392,7 +392,7 @@ Volume bits:
 
 ## PCM
 
-If you have nothing better for the main CPU to do, you can perform bit-banged PCM. Write the magnitude to the volume register, and write a waveform of `$00` for negative polarity and `$08` for positive polarity. Wait until 256 MPU cycles have passed, then repeat. Pray for phase-lock. This won't work with some emulators.
+If you have nothing better for the main CPU to do, you can perform bit-banged PCM. Write the magnitude to the volume register, and write a waveform of `$00` for negative polarity and `$08` for positive polarity. Wait until 256 MPU cycles have passed, then repeat. Pray for phase-lock. This won't work with most emulators.
 
 ## Timing
 
