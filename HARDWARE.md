@@ -141,6 +141,47 @@ then it is as if we are working with 16x16 tiles instead of 8x8 tiles, and we ha
 
 The "splat" DMA mode simulates this, though if you don't use it then you can freely specify different palettes on a per-tile basis.
 
+## Palette
+
+The ARS palette is based on HSV. `$00`, `$10`, ..., `$50` is a ramp of increasingly bright grays. With `x` in the range `$1`-`$d`, `$1x`, `$3x`, and `$5x` are dark, medium, and bright fully-saturated versions of hue `x`, and `$0x`, `$2x`, and `$4x` are dark, medium, and bright half-saturated versions of hue `x`. All color values `$60`-`$FF` are black.
+
+This layout may seem odd, but it means that subtracting `$20` from a color value gives you a darker version of the color. Therefore, assuming valid color inputs, writing `$E0` or `$C0` to the color mod register is like reducing the brightness. A simple way to do a fade out is to write `$E0`, then `$C0`, then disable video output entirely; and for a fade in, write `$C0`, then `$E0`, then `$00`.
+
+<figure>
+<figcaption>Hues</figcaption>
+<table>
+<thead>
+<tr><th>Index</th><th>Hue</th><th>Colors</th></tr>
+</tr>
+</thead>
+<tbody>
+<tr><td>$0</td><td>White</td><td><img src="img/hue0.png"></img></tr>
+<tr><td>$1</td><td>Red</td><td><img src="img/hue1.png"></img></tr>
+<tr><td>$2</td><td>Orange</td><td><img src="img/hue2.png"></img></tr>
+<tr><td>$3</td><td>Pale Orange</td><td><img src="img/hue3.png"></img></tr>
+<tr><td>$4</td><td>Yellow</td><td><img src="img/hue4.png"></img></tr>
+<tr><td>$5</td><td>Yellow-Green</td><td><img src="img/hue5.png"></img></tr>
+<tr><td>$6</td><td>Green</td><td><img src="img/hue6.png"></img></tr>
+<tr><td>$7</td><td>Cyan</td><td><img src="img/hue7.png"></img></tr>
+<tr><td>$8</td><td>Turquoise</td><td><img src="img/hue8.png"></img></tr>
+<tr><td>$9</td><td>Aqua</td><td><img src="img/hue9.png"></img></tr>
+<tr><td>$a</td><td>Blue</td><td><img src="img/hueA.png"></img></tr>
+<tr><td>$b</td><td>Deep Purple</td><td><img src="img/hueB.png"></img></tr>
+<tr><td>$c</td><td>Purple</td><td><img src="img/hueC.png"></img></tr>
+<tr><td>$d</td><td>Magenta</td><td><img src="img/hueD.png"></img></tr>
+</tbody>
+</table>
+</figure>
+
+<figure>
+<figcaption>Whole palette</figcaption>
+<img src="img/full_palette.png">
+</figure>
+
+**Note that `$00` is not completely black!**
+
+The ARS PPU outputs one of these colors for each pixel. Its output is hooked directly to a ROM that contains these color values in RGB. Normally that ROM controls an NTSC signal generator, but the board also has an unsoldered header (perfect for adding a DB-25 plug) that allows direct access to the digital RGB signal. It exposes 18 color pins, an HSYNC pin, a VSYNC pin, two ground pins, two +5V pins, and leaves one pin floating. There are circuit diagrams floating around out there for converting this signal into various analog signal formats.
+
 ## Sprites
 
 ### SSM
