@@ -42,6 +42,7 @@ Upscaler::Upscaler(SignalType signal_type, UpscaleType upscale_type,
   case UpscaleType::SCANLINES_CRISP:
   case UpscaleType::SCANLINES_BRIGHT:
     upscale_factor_y = std::max(upscale_factor_y, 2U);
+    // fall through
   case UpscaleType::SMOOTH:
     upscale_factor_x = std::max(upscale_factor_x, 2U);
     break;

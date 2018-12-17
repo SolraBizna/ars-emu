@@ -92,6 +92,7 @@ namespace {
               calculated_crc32.update(buf, in->gcount());
             }
           }
+          break;
         }
         case 8: {
           z_stream z;
