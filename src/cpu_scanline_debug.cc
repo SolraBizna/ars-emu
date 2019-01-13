@@ -35,8 +35,10 @@ namespace std {
       case W65C02::ReadType::OPERAND: return "OPERAND";
       case W65C02::ReadType::POINTER: return "POINTER";
       case W65C02::ReadType::DATA: return "DATA";
+      case W65C02::ReadType::DATA_LOCKED: return "DATA_LOCKED";
       case W65C02::ReadType::POP: return "POP";
       case W65C02::ReadType::IOP: return "IOP";
+      case W65C02::ReadType::IOP_LOCKED: return "IOP_LOCKED";
       case W65C02::ReadType::WAI: return "WAI";
       case W65C02::ReadType::STP: return "STP";
     }
@@ -46,6 +48,7 @@ namespace std {
   static string to_string(W65C02::WriteType rt) {
     switch(rt) {
       case W65C02::WriteType::DATA: return "DATA";
+      case W65C02::WriteType::DATA_LOCKED: return "DATA_LOCKED";
       case W65C02::WriteType::PUSH: return "PUSH";
     }
     /* NOTREACHED */
