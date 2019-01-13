@@ -99,7 +99,7 @@ namespace W65C02 {
       switch(opcode) {
       case 0x00: outImmediate(out, addr, "BRK"); break;
       case 0x01: outZeroPageXIndirect(out, addr, "ORA"); break;
-      case 0x02: outZeroPage(out, addr, "NOP"); break;
+      case 0x02: outImmediate(out, addr, "NOP"); break;
       case 0x03: outImplied(out, addr, "NOP"); break;
       case 0x04: outZeroPage(out, addr, "TSB"); break;
       case 0x05: outZeroPage(out, addr, "ORA"); break;
@@ -131,7 +131,7 @@ namespace W65C02 {
       case 0x1F: outRelativeBitBranch(out, addr, "BBR1"); break;
       case 0x20: outAbsolute(out, addr, "JSR"); break;
       case 0x21: outZeroPageXIndirect(out, addr, "AND"); break;
-      case 0x22: outZeroPage(out, addr, "NOP"); break;
+      case 0x22: outImmediate(out, addr, "NOP"); break;
       case 0x23: outImplied(out, addr, "NOP"); break;
       case 0x24: outZeroPage(out, addr, "BIT"); break;
       case 0x25: outZeroPage(out, addr, "AND"); break;
@@ -163,7 +163,7 @@ namespace W65C02 {
       case 0x3F: outRelativeBitBranch(out, addr, "BBR3"); break;
       case 0x40: outImplied(out, addr, "RTI"); break;
       case 0x41: outZeroPageXIndirect(out, addr, "EOR"); break;
-      case 0x42: outZeroPage(out, addr, "NOP"); break;
+      case 0x42: outImmediate(out, addr, "NOP"); break;
       case 0x43: outImplied(out, addr, "NOP"); break;
       case 0x44: outZeroPage(out, addr, "NOP"); break;
       case 0x45: outZeroPage(out, addr, "EOR"); break;
@@ -195,7 +195,7 @@ namespace W65C02 {
       case 0x5F: outRelativeBitBranch(out, addr, "BBR5"); break;
       case 0x60: outImplied(out, addr, "RTS"); break;
       case 0x61: outZeroPageXIndirect(out, addr, "ADC"); break;
-      case 0x62: outZeroPage(out, addr, "NOP"); break;
+      case 0x62: outImmediate(out, addr, "NOP"); break;
       case 0x63: outImplied(out, addr, "NOP"); break;
       case 0x64: outZeroPage(out, addr, "STZ"); break;
       case 0x65: outZeroPage(out, addr, "ADC"); break;
@@ -227,7 +227,7 @@ namespace W65C02 {
       case 0x7F: outRelativeBitBranch(out, addr, "BBR7"); break;
       case 0x80: outRelative(out, addr, "BRA"); break;
       case 0x81: outZeroPageXIndirect(out, addr, "STA"); break;
-      case 0x82: outZeroPage(out, addr, "NOP"); break;
+      case 0x82: outImmediate(out, addr, "NOP"); break;
       case 0x83: outImplied(out, addr, "NOP"); break;
       case 0x84: outZeroPage(out, addr, "STY"); break;
       case 0x85: outZeroPage(out, addr, "STA"); break;
@@ -317,7 +317,7 @@ namespace W65C02 {
       case 0xD9: outAbsoluteY(out, addr, "CMP"); break;
       case 0xDA: outImplied(out, addr, "PHX"); break;
       case 0xDB: outImplied(out, addr, "STP"); break;
-      case 0xDC: outAbsoluteX(out, addr, "NOP"); break;
+      case 0xDC: outAbsolute(out, addr, "NOP"); break;
       case 0xDD: outAbsoluteX(out, addr, "CMP"); break;
       case 0xDE: outAbsoluteX(out, addr, "DEC"); break;
       case 0xDF: outRelativeBitBranch(out, addr, "BBS5"); break;
@@ -349,7 +349,7 @@ namespace W65C02 {
       case 0xF9: outAbsoluteY(out, addr, "SBC"); break;
       case 0xFA: outImplied(out, addr, "PLX"); break;
       case 0xFB: outImplied(out, addr, "NOP"); break;
-      case 0xFC: outAbsoluteX(out, addr, "NOP"); break;
+      case 0xFC: outAbsolute(out, addr, "NOP"); break;
       case 0xFD: outAbsoluteX(out, addr, "SBC"); break;
       case 0xFE: outAbsoluteX(out, addr, "INC"); break;
       case 0xFF: outRelativeBitBranch(out, addr, "BBS7"); break;
