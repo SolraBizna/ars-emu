@@ -23,6 +23,7 @@ namespace {
     "EMULATOR_TOGGLE_BG"_Key,
     "EMULATOR_TOGGLE_SP"_Key,
     "EMULATOR_TOGGLE_OL"_Key,
+    "EMULATOR_SCREENSHOT"_Key,
   };
   std::shared_ptr<Menu> createPlayerKeyboardMenu(size_t player) {
     std::vector<std::shared_ptr<Menu::Item> > items;

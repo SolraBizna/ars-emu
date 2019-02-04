@@ -11,6 +11,7 @@ namespace ARS {
     EMUBUTTON_TOGGLE_BG,
     EMUBUTTON_TOGGLE_SP,
     EMUBUTTON_TOGGLE_OL,
+    EMUBUTTON_SCREENSHOT,
     NUM_EMULATOR_BUTTONS
   };
   void handleEmulatorButtonPress(EmulatorButton button);

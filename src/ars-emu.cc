@@ -26,6 +26,10 @@
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 #endif
+#ifndef DISALLOW_SCREENSHOTS
+#include <png.h>
+#include "fxinternal.hh"
+#endif
 
 using namespace ARS;
 
@@ -300,6 +304,91 @@ namespace {
       ui << sn.Get("UNUSED_DEBUG"_Key) << ui;
     return true;
   }
+#ifndef DISALLOW_SCREENSHOTS
+  void write_to_ostream(png_structp libpng, png_bytep data, png_size_t len) {
+    std::ostream* out= reinterpret_cast<std::ostream*>(png_get_io_ptr(libpng));
+    out->write(reinterpret_cast<char*>(data), len);
+    if(!out) {
+      png_longjmp(libpng, 1);
+    }
+  }
+  void flush_ostream(png_structp libpng) {
+    std::ostream* out= reinterpret_cast<std::ostream*>(png_get_io_ptr(libpng));
+    out->flush();
+  }
+#endif
+  void takeScreenshot() {
+#ifndef DISALLOW_SCREENSHOTS
+    // TODO: make these work in Emscripten
+    png_structp libpng = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+                                                 nullptr, nullptr, nullptr);
+    if(libpng == nullptr) return;
+    png_infop info = png_create_info_struct(libpng);
+    if(info == nullptr) {
+      png_destroy_write_struct(&libpng, nullptr);
+      return;
+    }
+    std::string filename;
+    std::unique_ptr<std::ostream> out;
+    for(int n = 1; !out && n < 10000; ++n) {
+      std::ostringstream str;
+      str << std::setw(4) << std::setfill('0') << n;
+      filename = sn.Get("SCREENSHOT_FILENAME"_Key, {str.str()});
+      out = IO::OpenDesktopFileForWrite(filename);
+    }
+    if(!out) {
+      png_destroy_write_struct(&libpng, &info);
+      return;
+    }
+    const int MAX_COLORS_ON_SCREEN = 85;
+    uint8_t colormap[0x60];
+    memset(colormap, 0xFF, sizeof(colormap));
+    png_color colors[MAX_COLORS_ON_SCREEN] = {};
+    int num_colors = 0;
+    PPU::raw_screen remapped;
+    const int width = 256;
+    const int height = 224;
+    const int left = (ARS::PPU::TOTAL_SCREEN_WIDTH-width)/2;
+    const int right = left + width;
+    const int top = (ARS::PPU::TOTAL_SCREEN_HEIGHT-height)/2;
+    const int bottom = top + height;
+    for(int y = top; y < bottom; ++y) {
+      auto& inrow = screenbuf[y];
+      auto& outrow = remapped[y];
+      for(int x = left; x < right; ++x) {
+        auto pixel = inrow[x];
+        if(pixel >= 0x60 || (pixel & 0xF) >= 0xE) pixel = 0xE;
+        if(colormap[pixel] == 0xFF) {
+          colormap[pixel] = num_colors;
+          colors[num_colors].red = (FX::hardwarePalette[pixel] >> 16) & 255;
+          colors[num_colors].green = (FX::hardwarePalette[pixel] >> 8) & 255;
+          colors[num_colors].blue = FX::hardwarePalette[pixel] & 255;
+          ++num_colors;
+        }
+        outrow[x] = colormap[pixel];
+      }
+    }
+    if(setjmp(png_jmpbuf(libpng))) {
+      ui << sn.Get("SCREENSHOT_SAVE_ERROR"_Key) << ui;
+      png_destroy_write_struct(&libpng, &info);
+      return;
+    }
+    png_set_write_fn(libpng, out.get(), write_to_ostream, flush_ostream);
+    png_set_IHDR(libpng, info, width, height, 8, PNG_COLOR_TYPE_PALETTE,
+                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
+    png_set_filter(libpng, 0, PNG_FILTER_NONE);
+    png_set_PLTE(libpng, info, colors, num_colors);
+    png_bytep rows[height];
+    for(int y = 0; y < height; ++y) {
+      rows[y] = remapped[y+top].data() + left;
+    }
+    png_set_rows(libpng, info, rows);
+    png_write_png(libpng, info, 0, nullptr);
+    png_destroy_write_struct(&libpng, &info);
+    ui << sn.Get("SCREENSHOT_SAVE_SUCCESS"_Key, {filename}) << ui;
+#endif
+  }
 }
 
 void ARS::handleEmulatorButtonPress(EmulatorButton button) {
@@ -321,6 +410,9 @@ void ARS::handleEmulatorButtonPress(EmulatorButton button) {
     PPU::show_overlay = !PPU::show_overlay;
     ui << sn.Get(PPU::show_overlay?"OVERLAY_SHOWN"_Key
                  :"OVERLAY_HIDDEN"_Key) << ui;
+    break;
+  case EMUBUTTON_SCREENSHOT:
+    takeScreenshot();
     break;
   default:
     break;

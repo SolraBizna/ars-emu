@@ -26,7 +26,7 @@ LDFLAGS=-F/opt/releng/mac/Frameworks -Wl,-rpath -Wl,@executable_path/../Framewor
 LDFLAGS_DEBUG=-g
 LDFLAGS_RELEASE=-Ofast -ffast-math -flto
 # Libraries.
-LIBS=-framework SDL2 -L/opt/releng/mac/lib -lz -llua5.3
+LIBS=-framework SDL2 -L/opt/releng/mac/lib -lpng -lz -llua5.3
 
 # Extension for executables.
 EXE=

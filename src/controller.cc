@@ -69,6 +69,8 @@ namespace {
     {SDL_SCANCODE_F2, NO_SCANCODE},
     /* Toggle Overlay */
     {SDL_SCANCODE_F3, NO_SCANCODE},
+    /* Take Screenshot */
+    {SDL_SCANCODE_F12, SDL_SCANCODE_PRINTSCREEN},
   };
   int keybindings[NUM_PLAYERS][NUM_BUTTONS][MAX_KEYS_PER_BUTTON];
   int emukeybindings[NUM_EMULATOR_BUTTONS][MAX_KEYS_PER_BUTTON];
@@ -105,14 +107,16 @@ namespace {
     {"P2_down_alt",  keybindings[1][6][1]},
     {"P2_pause",     keybindings[1][7][0]},
     {"P2_pause_alt", keybindings[1][7][1]},
-    {"EMU_reset",         emukeybindings[0][0]},
-    {"EMU_reset_alt",     emukeybindings[0][1]},
-    {"EMU_toggle_bg",     emukeybindings[1][0]},
-    {"EMU_toggle_bg_alt", emukeybindings[1][1]},
-    {"EMU_toggle_sp",     emukeybindings[2][0]},
-    {"EMU_toggle_sp_alt", emukeybindings[2][1]},
-    {"EMU_toggle_ol",     emukeybindings[3][0]},
-    {"EMU_toggle_ol_alt", emukeybindings[3][1]},
+    {"EMU_reset",          emukeybindings[0][0]},
+    {"EMU_reset_alt",      emukeybindings[0][1]},
+    {"EMU_toggle_bg",      emukeybindings[1][0]},
+    {"EMU_toggle_bg_alt",  emukeybindings[1][1]},
+    {"EMU_toggle_sp",      emukeybindings[2][0]},
+    {"EMU_toggle_sp_alt",  emukeybindings[2][1]},
+    {"EMU_toggle_ol",      emukeybindings[3][0]},
+    {"EMU_toggle_ol_alt",  emukeybindings[3][1]},
+    {"EMU_screenshot",     emukeybindings[4][0]},
+    {"EMU_screenshot_alt", emukeybindings[4][1]},
   };
   class KBPrefsLogic : public PrefsLogic {
   protected:

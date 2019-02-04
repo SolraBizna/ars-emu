@@ -28,7 +28,7 @@ LDFLAGS=-mwindows -municode -static-libgcc -static-libstdc++
 LDFLAGS_DEBUG=-ggdb
 LDFLAGS_RELEASE=-Ofast -ffast-math -flto
 # Libraries.
-LIBS=-L/opt/releng/w32/lib -static -lmingw32 -lz -llua5.3 /opt/releng/w32/bin/SDL2.dll
+LIBS=-L/opt/releng/w32/lib -static -lmingw32 -lpng -lz -llua5.3 /opt/releng/w32/bin/SDL2.dll
 
 # Extension for executables.
 EXE=.exe

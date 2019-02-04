@@ -286,6 +286,16 @@ RESET
 Reset!
 .
 
+: Displayed when the user takes a screenshot successfully.
+SCREENSHOT_SAVE_SUCCESS
+Screenshot taken.
+.
+
+: Displayed when something stops a screenshot from being saved.
+SCREENSHOT_SAVE_ERROR
+Saving screenshot failed.
+.
+
 : Displayed when the user uses -d to allow the use of the Debug Serial Port,
 : but loads a cartridge that does not request it.
 UNUSED_DEBUG
@@ -659,6 +669,9 @@ Toggle Sprites
 EMULATOR_TOGGLE_OL
 Toggle Overlay
 .
+EMULATOR_SCREENSHOT
+Screenshot
+.
 
 : The name used for a scancode with no known key mapping or name
 : $1: Four-digit hex code of scan code
@@ -823,4 +836,16 @@ Overscan
 : Show every row of the display, even though a real TV typically wouldn't.
 OVERSCAN_DISABLED
 Full scan
+.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Filenames
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+: Character order: Logical
+: Combining characters: Allowed
+
+: The pattern of the filename for screenshots.
+: $1: four-digit number from 0001 to 9999
+SCREENSHOT_FILENAME
+ARS Screenshot $1.png
 .
