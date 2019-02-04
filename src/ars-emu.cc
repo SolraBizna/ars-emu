@@ -125,25 +125,6 @@ namespace {
       switch(evt.type) {
       case SDL_DROPFILE: SDL_free(evt.drop.file); break;
       case SDL_QUIT: quit = true; break;
-      case SDL_KEYDOWN:
-        switch(evt.key.keysym.sym) {
-        case SDLK_F3:
-          PPU::show_overlay = !PPU::show_overlay;
-          ui << sn.Get(PPU::show_overlay?"OVERLAY_SHOWN"_Key
-                       :"OVERLAY_HIDDEN"_Key) << ui;
-          break;
-        case SDLK_F2:
-          PPU::show_sprites = !PPU::show_sprites;
-          ui << sn.Get(PPU::show_sprites?"SPRITES_SHOWN"_Key
-                       :"SPRITES_HIDDEN"_Key) << ui;
-          break;
-        case SDLK_F1:
-          PPU::show_background = !PPU::show_background;
-          ui << sn.Get(PPU::show_background?"BACKGROUND_SHOWN"_Key
-                       :"BACKGROUND_HIDDEN"_Key) << ui;
-          break;
-        }
-        break;
       case SDL_WINDOWEVENT:
         switch(evt.window.event) {
         case SDL_WINDOWEVENT_SHOWN: window_visible = true; break;
@@ -318,6 +299,31 @@ namespace {
     if(allow_debug_port && !mapped_debug_port)
       ui << sn.Get("UNUSED_DEBUG"_Key) << ui;
     return true;
+  }
+}
+
+void ARS::handleEmulatorButtonPress(EmulatorButton button) {
+  switch(button) {
+  case EMUBUTTON_RESET:
+    triggerReset();
+    break;
+  case EMUBUTTON_TOGGLE_BG:
+    PPU::show_background = !PPU::show_background;
+    ui << sn.Get(PPU::show_background?"BACKGROUND_SHOWN"_Key
+                 :"BACKGROUND_HIDDEN"_Key) << ui;
+    break;
+  case EMUBUTTON_TOGGLE_SP:
+    PPU::show_sprites = !PPU::show_sprites;
+    ui << sn.Get(PPU::show_sprites?"SPRITES_SHOWN"_Key
+                 :"SPRITES_HIDDEN"_Key) << ui;
+    break;
+  case EMUBUTTON_TOGGLE_OL:
+    PPU::show_overlay = !PPU::show_overlay;
+    ui << sn.Get(PPU::show_overlay?"OVERLAY_SHOWN"_Key
+                 :"OVERLAY_HIDDEN"_Key) << ui;
+    break;
+  default:
+    break;
   }
 }
 

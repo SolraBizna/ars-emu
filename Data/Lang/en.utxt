@@ -583,8 +583,15 @@ $1 Controller
 KEYBOARD_PLAYER_CONTROLLER_SUBMENU_BUTTON_LABEL
 $1 Controller…
 .
+: Used to separate multiple keys that are bound to the same button
 MULTI_KEY_BINDING_SEP
 ,
+.
+KEYBOARD_NONPLAYER_MENU_TITLE
+Emulator Keys
+.
+KEYBOARD_NONPLAYER_SUBMENU_BUTTON_LABEL
+Emulator Keys…
 .
 NO_KEY_BINDING
 (unbound)
@@ -640,8 +647,20 @@ Hat Right
 CONTROLLER_PAUSE_BUTTON
 Pause
 .
+EMULATOR_RESET
+Reset
+.
+EMULATOR_TOGGLE_BG
+Toggle Background
+.
+EMULATOR_TOGGLE_SP
+Toggle Sprites
+.
+EMULATOR_TOGGLE_OL
+Toggle Overlay
+.
 
-: The name used for a scancodewith no known key mapping or name
+: The name used for a scancode with no known key mapping or name
 : $1: Four-digit hex code of scan code
 UNKNOWN_SCANCODE
 unknown key $1

@@ -6,6 +6,14 @@
 #include "expansions.hh"
 
 namespace ARS {
+  enum EmulatorButton {
+    EMUBUTTON_RESET=0,
+    EMUBUTTON_TOGGLE_BG,
+    EMUBUTTON_TOGGLE_SP,
+    EMUBUTTON_TOGGLE_OL,
+    NUM_EMULATOR_BUTTONS
+  };
+  void handleEmulatorButtonPress(EmulatorButton button);
   class Controller : public Expansion {
     uint8_t dOut, dIn;
     bool dataIsFresh, strobeIsHigh;

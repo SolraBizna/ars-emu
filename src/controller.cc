@@ -60,7 +60,18 @@ namespace {
       {SDL_SCANCODE_KP_5, SDL_SCANCODE_NUMLOCKCLEAR},
     },
   };
+  const int DEFAULT_EMUKEYBINDINGS[NUM_EMULATOR_BUTTONS][MAX_KEYS_PER_BUTTON]={
+    /* Reset */
+    {SDL_SCANCODE_F8, NO_SCANCODE},
+    /* Toggle Background */
+    {SDL_SCANCODE_F1, NO_SCANCODE},
+    /* Toggle Sprites */
+    {SDL_SCANCODE_F2, NO_SCANCODE},
+    /* Toggle Overlay */
+    {SDL_SCANCODE_F3, NO_SCANCODE},
+  };
   int keybindings[NUM_PLAYERS][NUM_BUTTONS][MAX_KEYS_PER_BUTTON];
+  int emukeybindings[NUM_EMULATOR_BUTTONS][MAX_KEYS_PER_BUTTON];
   const Config::Element keybinding_elements[] = {
     {"P1_A",         keybindings[0][0][0]},
     {"P1_A_alt",     keybindings[0][0][1]},
@@ -94,6 +105,14 @@ namespace {
     {"P2_down_alt",  keybindings[1][6][1]},
     {"P2_pause",     keybindings[1][7][0]},
     {"P2_pause_alt", keybindings[1][7][1]},
+    {"EMU_reset",         emukeybindings[0][0]},
+    {"EMU_reset_alt",     emukeybindings[0][1]},
+    {"EMU_toggle_bg",     emukeybindings[1][0]},
+    {"EMU_toggle_bg_alt", emukeybindings[1][1]},
+    {"EMU_toggle_sp",     emukeybindings[2][0]},
+    {"EMU_toggle_sp_alt", emukeybindings[2][1]},
+    {"EMU_toggle_ol",     emukeybindings[3][0]},
+    {"EMU_toggle_ol_alt", emukeybindings[3][1]},
   };
   class KBPrefsLogic : public PrefsLogic {
   protected:
@@ -107,6 +126,8 @@ namespace {
     }
     void Defaults() override {
       memcpy(keybindings, DEFAULT_KEYBINDINGS, sizeof(DEFAULT_KEYBINDINGS));
+      memcpy(emukeybindings, DEFAULT_EMUKEYBINDINGS,
+             sizeof(DEFAULT_EMUKEYBINDINGS));
     }
   } kbPrefsLogic;
   bool buttonsPressed[NUM_PLAYERS][NUM_BUTTONS] = {};
@@ -246,6 +267,9 @@ bool Controller::filterEvent(SDL_Event& evt) {
   case SDL_KEYDOWN:
   case SDL_KEYUP:
     if(keyIsBeingBound()) {
+      int* binding = binding_player < NUM_PLAYERS
+        ? keybindings[binding_player][binding_button]
+        : emukeybindings[binding_button];
       switch(evt.key.keysym.scancode) {
       case SDL_SCANCODE_RETURN:
       case SDL_SCANCODE_LEFT:
@@ -260,33 +284,31 @@ bool Controller::filterEvent(SDL_Event& evt) {
       case SDL_SCANCODE_DELETE:
       case SDL_SCANCODE_BACKSPACE:
         for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
-          keybindings[binding_player][binding_button][k] = NO_SCANCODE;
+          binding[k] = NO_SCANCODE;
         }
         binding_player = -1;
         return true;
       default:
         for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
-          if(evt.key.keysym.scancode == keybindings[binding_player][binding_button][k]) {
-            keybindings[binding_player][binding_button][0] = evt.key.keysym.scancode;
+          if(evt.key.keysym.scancode == binding[k]) {
+            binding[0] = evt.key.keysym.scancode;
             for(k = 1; k < MAX_KEYS_PER_BUTTON; ++k)
-              keybindings[binding_player][binding_button][k] = NO_SCANCODE;
+              binding[k] = NO_SCANCODE;
             binding_player = -1;
             return true;
           }
         }
         for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
-          if(keybindings[binding_player][binding_button][k] == NO_SCANCODE) {
-            keybindings[binding_player][binding_button][k] = evt.key.keysym.scancode;
+          if(binding[k] == NO_SCANCODE) {
+            binding[k] = evt.key.keysym.scancode;
             binding_player = -1;
             return true;
           }
         }
         for(int k = 0; k < MAX_KEYS_PER_BUTTON - 1; ++k) {
-          keybindings[binding_player][binding_button][k]
-            = keybindings[binding_player][binding_button][k+1];
+          binding[k] = binding[k+1];
         }
-        keybindings[binding_player][binding_button][MAX_KEYS_PER_BUTTON-1]
-          = evt.key.keysym.scancode;
+        binding[MAX_KEYS_PER_BUTTON-1] = evt.key.keysym.scancode;
         binding_player = -1;
         return true;
       }
@@ -317,6 +339,16 @@ bool Controller::filterEvent(SDL_Event& evt) {
             for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
               if(evt.key.keysym.scancode == keybindings[p][b][k]) {
                 buttonsPressed[p][b] = evt.type == SDL_KEYDOWN;
+                return true;
+              }
+            }
+          }
+        }
+        if(evt.type == SDL_KEYDOWN) {
+          for(int b = 0; b < NUM_EMULATOR_BUTTONS; ++b) {
+            for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
+              if(evt.key.keysym.scancode == emukeybindings[b][k]) {
+                handleEmulatorButtonPress(static_cast<EmulatorButton>(b));
                 return true;
               }
             }
@@ -359,9 +391,11 @@ std::string ARS::Controller::getNameOfHardKey(int player, int button) {
 std::string ARS::Controller::getNamesOfBoundKeys(int player, int button) {
   std::string ret = getNameOfHardKey(player, button);
   for(int k = 0; k < MAX_KEYS_PER_BUTTON; ++k) {
-    if(keybindings[player][button][k] != NO_SCANCODE) {
+    int& binding = player < NUM_PLAYERS ? keybindings[player][button][k]
+      : emukeybindings[button][k];
+    if(binding != NO_SCANCODE) {
       if(!ret.empty()) ret += sn.Get("MULTI_KEY_BINDING_SEP"_Key);
-      ret += getScancodeName(keybindings[player][button][k]);
+      ret += getScancodeName(binding);
     }
   }
   if(ret.empty()) return sn.Get("NO_KEY_BINDING"_Key);
