@@ -170,7 +170,7 @@ namespace {
             }
             else {
               std::string nextarg = argv[n++];
-              port1type = Controller::TypeFromString(nextarg);
+              port1type = Controller::typeFromString(nextarg);
               if(port1type == Controller::Type::INVALID) {
                 sn.Out(std::cout, "UNKNOWN_CONTROLLER_TYPE"_Key, {nextarg});
                 valid = false;
@@ -184,7 +184,7 @@ namespace {
             }
             else {
               std::string nextarg = argv[n++];
-              port2type = Controller::TypeFromString(nextarg);
+              port2type = Controller::typeFromString(nextarg);
               if(port2type == Controller::Type::INVALID) {
                 sn.Out(std::cout, "UNKNOWN_CONTROLLER_TYPE"_Key, {nextarg});
                 valid = false;

@@ -681,7 +681,7 @@ bool ARS::Controller::keyIsBeingBound() {
   return binding_player >= 0;
 }
 
-Controller::Type Controller::TypeFromString(const std::string& str) {
+Controller::Type Controller::typeFromString(const std::string& str) {
   if(str == "none") return Type::NONE;
   else if(str == "auto") return Type::AUTO;
   else if(str == "gamepad" || str == "controller") return Type::GAMEPAD;

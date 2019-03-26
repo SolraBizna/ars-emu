@@ -25,7 +25,7 @@ namespace ARS {
     enum class Type {
       INVALID, AUTO, NONE, GAMEPAD, KEYBOARD, MOUSE, LIGHT_PEN, LIGHT_GUN
     };
-    static Type TypeFromString(const std::string&);
+    static Type typeFromString(const std::string&);
     virtual ~Controller() {}
     virtual void output(uint8_t d);
     virtual uint8_t input();
