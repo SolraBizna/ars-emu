@@ -4,6 +4,7 @@
 #include "ars-emu.hh"
 #include "gamefolder.hh"
 #include "memory.hh"
+#include "controller.hh"
 
 #include <unordered_map>
 
@@ -26,6 +27,8 @@ namespace ARS {
     virtual uint8_t getPowerOnBank() { return 0; }
     virtual uint8_t getBS() { return 0; }
     static std::unique_ptr<Cartridge> load(GameFolder& gamefolder,
+                                           Controller::Type& port1,
+                                           Controller::Type& port2,
                                            std::string language_override = "");
   };
   extern std::unique_ptr<Cartridge> cartridge;

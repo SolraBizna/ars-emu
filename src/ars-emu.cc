@@ -324,7 +324,7 @@ namespace {
                {rom_path, true_path});
         rom_path = true_path;
       }
-      ARS::cartridge = ARS::Cartridge::load(*gamefolder);
+      ARS::cartridge = ARS::Cartridge::load(*gamefolder, port1type, port2type);
     }
     catch(std::string& reason) {
       std::string death = sn.Get("CARTRIDGE_LOADING_FAIL"_Key, {reason});

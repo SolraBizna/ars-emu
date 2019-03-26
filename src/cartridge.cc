@@ -57,11 +57,14 @@ const std::unordered_map<std::string, std::function<std::unique_ptr<Cartridge>(b
 };
 
 std::unique_ptr<Cartridge> Cartridge::load(GameFolder& gamefolder,
+                                           Controller::Type& port1,
+                                           Controller::Type& port2,
                                            std::string language_override) {
   std::vector<std::string> overrode { language_override };
   const std::vector<std::string>& languages
     = language_override.empty() ? GetUILanguageList() : overrode;
-  auto board = LocalizedQuery(gamefolder.getManifest().query("board"),
+  auto&& manifest = gamefolder.getManifest();
+  auto board = LocalizedQuery(manifest.query("board"),
                               languages);
   while(*board) {
     auto c = board->query("id");
@@ -70,6 +73,22 @@ std::unique_ptr<Cartridge> Cartridge::load(GameFolder& gamefolder,
   }
   if(!*board) throw sn.Get("NO_ETARS_BOARD_FOUND_IN_MANIFEST"_Key);
   std::unordered_map<std::string, std::unique_ptr<Memory> > memories;
+  // Input specs
+  for(auto&& module : LocalizedQuery(board->query("input"), languages)) {
+    std::string port_number = module.query("port").data("");
+    Controller::Type* port;
+    if(port_number == "1") port = &port1;
+    else if(port_number == "2") port = &port2;
+    else continue;
+    if(*port != Controller::Type::AUTO) continue;
+    for(auto&& child : byuuML::node_in_document(module.get_node(), manifest)) {
+      Controller::Type type = Controller::typeFromString(child.get_name());
+      if(type != Controller::Type::AUTO && type != Controller::Type::INVALID) {
+        *port = type;
+        break;
+      }
+    }
+  }
   // ROM modules
   for(auto&& module : LocalizedQuery(board->query("rom"), languages)) {
     std::string id = module.query("id").data("");
