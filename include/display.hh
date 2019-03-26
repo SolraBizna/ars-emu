@@ -20,6 +20,8 @@ namespace ARS {
     virtual void update(const ARS::PPU::raw_screen& src) = 0;
     // return true if the event was fully handled
     virtual bool filterEvent(SDL_Event&);
+    // return true if the coordinates are "in frame"
+    virtual bool windowSpaceToVirtualScreenSpace(int& x, int& y) = 0;
     static std::unique_ptr<Display> makeConfiguredDisplay();
     static std::unique_ptr<Display> makeSafeModeDisplay();
     static const std::vector<const DisplayDescriptor*>& getAvailableDisplays();

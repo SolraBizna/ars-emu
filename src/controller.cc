@@ -1,6 +1,7 @@
 #include "ars-emu.hh"
 #include "teg.hh"
 #include "controller.hh"
+#include "display.hh"
 
 #include "prefs.hh"
 #include "config.hh"
@@ -19,6 +20,93 @@ namespace {
     int oid;
   } bound_gamepads[NUM_PLAYERS];
   int binding_player = -1, binding_button;
+  uint8_t mouseButtons = 0;
+  uint8_t mouseButtonStick = 0; // to ensure that every press lasts at least one poll
+  uint16_t mouseXRel = 0x80;
+  uint16_t mouseYRel = 0x80;
+  uint8_t mouseX = 255, mouseY = 255;
+  int mouseScroll = 0;
+  bool mouseInFrame = false;
+  const std::unordered_map<SDL_Scancode, uint8_t> scancodemap = {
+    {SDL_SCANCODE_LSHIFT, 0x01},
+    {SDL_SCANCODE_LALT, 0x02},
+    {SDL_SCANCODE_LGUI, 0x03},
+    {SDL_SCANCODE_LCTRL, 0x04},
+    {SDL_SCANCODE_RCTRL, 0x04},
+    {SDL_SCANCODE_RSHIFT, 0x05},
+    {SDL_SCANCODE_RALT, 0x06},
+    {SDL_SCANCODE_RGUI, 0x07},
+    {SDL_SCANCODE_ESCAPE, 0x08},
+    {SDL_SCANCODE_BACKSPACE, 0x09},
+    {SDL_SCANCODE_DELETE, 0x0A},
+    {SDL_SCANCODE_INSERT, 0x0B},
+    {SDL_SCANCODE_PAUSE, 0x0C},
+    {SDL_SCANCODE_CLEAR, 0x0C},
+    {SDL_SCANCODE_HOME, 0x0D},
+    {SDL_SCANCODE_END, 0x0E},
+    {SDL_SCANCODE_PAGEUP, 0x0F},
+    {SDL_SCANCODE_PAGEDOWN, 0x10},
+    {SDL_SCANCODE_LEFT, 0x11},
+    {SDL_SCANCODE_UP, 0x12},
+    {SDL_SCANCODE_RIGHT, 0x13},
+    {SDL_SCANCODE_DOWN, 0x14},
+    {SDL_SCANCODE_RETURN, 0x15},
+    {SDL_SCANCODE_TAB, 0x16},
+    {SDL_SCANCODE_SPACE, 0x17},
+    {SDL_SCANCODE_GRAVE, 0x18},
+    {SDL_SCANCODE_1, 0x19},
+    {SDL_SCANCODE_Q, 0x1A},
+    {SDL_SCANCODE_A, 0x1B},
+    {SDL_SCANCODE_Z, 0x1C},
+    {SDL_SCANCODE_2, 0x1D},
+    {SDL_SCANCODE_W, 0x1E},
+    {SDL_SCANCODE_S, 0x1F},
+    {SDL_SCANCODE_X, 0x20},
+    {SDL_SCANCODE_3, 0x21},
+    {SDL_SCANCODE_E, 0x22},
+    {SDL_SCANCODE_D, 0x23},
+    {SDL_SCANCODE_C, 0x24},
+    {SDL_SCANCODE_4, 0x25},
+    {SDL_SCANCODE_R, 0x26},
+    {SDL_SCANCODE_F, 0x27},
+    {SDL_SCANCODE_V, 0x28},
+    {SDL_SCANCODE_5, 0x29},
+    {SDL_SCANCODE_T, 0x2A},
+    {SDL_SCANCODE_G, 0x2B},
+    {SDL_SCANCODE_B, 0x2C},
+    {SDL_SCANCODE_6, 0x2D},
+    {SDL_SCANCODE_Y, 0x2E},
+    {SDL_SCANCODE_H, 0x2F},
+    {SDL_SCANCODE_N, 0x30},
+    {SDL_SCANCODE_7, 0x31},
+    {SDL_SCANCODE_U, 0x32},
+    {SDL_SCANCODE_J, 0x33},
+    {SDL_SCANCODE_M, 0x34},
+    {SDL_SCANCODE_8, 0x35},
+    {SDL_SCANCODE_I, 0x36},
+    {SDL_SCANCODE_K, 0x37},
+    {SDL_SCANCODE_COMMA, 0x38},
+    {SDL_SCANCODE_9, 0x39},
+    {SDL_SCANCODE_O, 0x3A},
+    {SDL_SCANCODE_L, 0x3B},
+    {SDL_SCANCODE_PERIOD, 0x3C},
+    {SDL_SCANCODE_0, 0x3D},
+    {SDL_SCANCODE_P, 0x3E},
+    {SDL_SCANCODE_SEMICOLON, 0x3F},
+    {SDL_SCANCODE_SLASH, 0x40},
+    {SDL_SCANCODE_MINUS, 0x41},
+    {SDL_SCANCODE_LEFTBRACKET, 0x42},
+    {SDL_SCANCODE_APOSTROPHE, 0x43},
+    {SDL_SCANCODE_BACKSLASH, 0x44},
+    {SDL_SCANCODE_NONUSBACKSLASH, 0x44},
+    {SDL_SCANCODE_EQUALS, 0x45},
+    {SDL_SCANCODE_RIGHTBRACKET, 0x46},
+  };
+  const int NUM_SCANCODES = 0x46;
+  const int MIN_SCANCODE = 0x01;
+  uint8_t scancode_statuses[NUM_SCANCODES] = {};
+  std::vector<uint8_t> keyboard_events;
+  size_t keyboard_event_front = 0;
   const int DEFAULT_KEYBINDINGS[NUM_PLAYERS][NUM_BUTTONS][MAX_KEYS_PER_BUTTON]
   = {
     /* P1 */
@@ -165,6 +253,112 @@ namespace {
   public:
     StandardController(int player) : player(player) {}
   };
+  class KeyboardController : public Controller {
+    uint8_t onStrobeFall(uint8_t curData) override {
+      switch(curData&0x80) {
+      case 0x00: {
+        if(!keyboard_events.empty()) {
+          uint8_t ret = keyboard_events[keyboard_event_front++];
+          if(keyboard_event_front >= keyboard_events.size()) {
+            keyboard_event_front = 0;
+            keyboard_events.clear();
+          }
+          return ret;
+        }
+        else return 0;
+      }
+      default:
+        /* NOTREACHED */
+      case 0x80:
+        return 0x02;
+      }
+    }
+  public:
+    KeyboardController(int) {}
+  };
+  class MouseController : public Controller {
+    uint8_t onStrobeFall(uint8_t curData) override {
+      switch(curData&0xC0) {
+      case 0x00: {
+        uint8_t ret = (mouseButtons | mouseButtonStick) & 3;
+        mouseButtonStick = 0;
+        return ret;
+      }
+      default:
+        /* NOTREACHED */
+      case 0x80:
+        return 0x03;
+      case 0x40: {
+        uint8_t ret = mouseXRel >> 8;
+        mouseXRel &= 255;
+        return ret;
+      }
+      case 0xC0: {
+        uint8_t ret = mouseYRel >> 8;
+        mouseYRel &= 255;
+        return ret;
+      }
+      }
+    }
+  public:
+    MouseController(int) {
+      if(SDL_SetRelativeMouseMode(SDL_TRUE)) {
+        // TODO: warn when this failure happens
+      }
+    }
+  };
+  class LightPenController : public Controller {
+    uint8_t onStrobeFall(uint8_t curData) override {
+      switch(curData&0xC0) {
+      case 0x00: {
+        uint8_t ret = ((mouseButtons | mouseButtonStick) & 3) | (mouseInFrame ? 128 : 0);
+        mouseButtonStick = 0;
+        return ret;
+      }
+      default:
+        /* NOTREACHED */
+      case 0x80:
+        return 0x04;
+      case 0x40: return mouseX;
+      case 0xC0: return mouseY;
+      }
+    }
+  public:
+    LightPenController(int) {}
+  };
+  class LightGunController : public Controller {
+    const int player;
+    int selector = 3;
+    uint8_t onStrobeFall(uint8_t curData) override {
+      int newSelector = selector + mouseScroll;
+      mouseScroll = 0;
+      if(newSelector > 3) newSelector = 3;
+      else if(newSelector < 0) newSelector = 0;
+      if(newSelector != selector) {
+        selector = newSelector;
+          std::string player_name = TEG::format("CONTROLLER_P%i_NAME",player+1);
+          SN::ConstKey player_key(player_name.data(), player_name.length());
+          std::string selector_name = TEG::format("LIGHT_GUN_SELECTOR_%i",selector);
+          SN::ConstKey selector_key(selector_name.data(), selector_name.length());
+          ui << sn.Get("LIGHT_GUN_SELECTOR_CHANGED"_Key, {sn.Get(player_key), sn.Get(selector_key)}) << ui;
+      }
+      switch(curData&0xC0) {
+      case 0x00: {
+        uint8_t ret = ((mouseButtons | mouseButtonStick) & 7) | (8 << selector) | (mouseInFrame ? 128 : 0);
+        mouseButtonStick = 0;
+        return ret;
+      }
+      default:
+        /* NOTREACHED */
+      case 0x80:
+        return 0x04;
+      case 0x40: return mouseX;
+      case 0xC0: return mouseY;
+      }
+    }
+  public:
+    LightGunController(int player) : player(player) {}
+  };
   std::string getScancodeName(int code) {
     SDL_Keycode key = SDL_GetKeyFromScancode(static_cast<SDL_Scancode>(code));
     if(key == SDLK_UNKNOWN) return sn.Get("UNKNOWN_SCANCODE"_Key,
@@ -268,6 +462,43 @@ bool Controller::filterEvent(SDL_Event& evt) {
       }
     }
     break;
+  case SDL_WINDOWEVENT:
+    switch(evt.window.event) {
+    case SDL_WINDOWEVENT_LEAVE: mouseInFrame = false; break;
+    }
+    break;
+  case SDL_MOUSEBUTTONDOWN:
+    switch(evt.button.button) {
+    case SDL_BUTTON_LEFT: mouseButtons |= 1; mouseButtonStick |= 1; break;
+    case SDL_BUTTON_RIGHT: mouseButtons |= 2; mouseButtonStick |= 2; break;
+    case SDL_BUTTON_MIDDLE: mouseButtons |= 4; mouseButtonStick |= 4; break;
+    case SDL_BUTTON_X1: mouseScroll -= 1; break;
+    case SDL_BUTTON_X2: mouseScroll += 1; break;
+    }
+    break;
+  case SDL_MOUSEBUTTONUP:
+    switch(evt.button.button) {
+    case SDL_BUTTON_LEFT: mouseButtons &= ~1; break;
+    case SDL_BUTTON_RIGHT: mouseButtons &= ~2; break;
+    case SDL_BUTTON_MIDDLE: mouseButtons &= ~4; break;
+    }
+    break;
+  case SDL_MOUSEMOTION: {
+    int x = evt.motion.x;
+    int y = evt.motion.y;
+    mouseInFrame = display->windowSpaceToVirtualScreenSpace(x, y);
+    if(mouseInFrame) {
+      mouseX = x;
+      mouseY = y;
+    }
+    mouseXRel += evt.motion.xrel * 64;
+    mouseYRel += evt.motion.yrel * 64;
+    break;
+  }
+  case SDL_MOUSEWHEEL: {
+    mouseScroll += evt.wheel.y;
+    break;
+  }
   case SDL_KEYDOWN:
   case SDL_KEYUP:
     if(keyIsBeingBound()) {
@@ -318,6 +549,22 @@ bool Controller::filterEvent(SDL_Event& evt) {
       }
     }
     else {
+      if(!evt.key.repeat) {
+        auto it = scancodemap.find(evt.key.keysym.scancode);
+        if(it != scancodemap.end()) {
+          int ent = it->second - MIN_SCANCODE;
+          if(evt.key.state == SDL_PRESSED) {
+            if(scancode_statuses[ent]++ == 0) {
+              keyboard_events.push_back(it->second);
+            }
+          }
+          else {
+            if(--scancode_statuses[ent] == 0) {
+              keyboard_events.push_back(it->second | 0x80);
+            }
+          }
+        }
+      }
       switch(evt.key.keysym.scancode) {
       case SDL_SCANCODE_RETURN:
         buttonsPressed[0][Buttons::A] = evt.type == SDL_KEYDOWN;
@@ -365,9 +612,28 @@ bool Controller::filterEvent(SDL_Event& evt) {
   return false;
 }
 
-void Controller::initControllers() {
-  map_expansion(0x240, std::make_unique<StandardController>(P1));
-  map_expansion(0x241, std::make_unique<StandardController>(P2));
+std::unique_ptr<Controller> make_controller(int player, Controller::Type type) {
+  switch(type) {
+  case Controller::Type::NONE:
+    return std::make_unique<UnpluggedController>();
+  case Controller::Type::AUTO: case Controller::Type::GAMEPAD:
+    return std::make_unique<StandardController>(player);
+  case Controller::Type::KEYBOARD:
+    return std::make_unique<KeyboardController>(player);
+  case Controller::Type::MOUSE:
+    return std::make_unique<MouseController>(player);
+  case Controller::Type::LIGHT_PEN:
+    return std::make_unique<LightPenController>(player);
+  case Controller::Type::LIGHT_GUN:
+    return std::make_unique<LightGunController>(player);
+  default:
+    die("Controller type not implemented yet");
+  }
+}
+
+void Controller::initControllers(Type port1, Type port2) {
+  map_expansion(0x240, make_controller(P1, port1));
+  map_expansion(0x241, make_controller(P2, port2));
   for(int jid = 0; jid < SDL_NumJoysticks(); ++jid) {
     if(SDL_IsGameController(jid)) {
       SDL_Event evt;
@@ -413,4 +679,15 @@ void ARS::Controller::startBindingKey(int player, int button) {
 
 bool ARS::Controller::keyIsBeingBound() {
   return binding_player >= 0;
+}
+
+Controller::Type Controller::TypeFromString(const std::string& str) {
+  if(str == "none") return Type::NONE;
+  else if(str == "auto") return Type::AUTO;
+  else if(str == "gamepad" || str == "controller") return Type::GAMEPAD;
+  else if(str == "keyboard") return Type::KEYBOARD;
+  else if(str == "mouse") return Type::MOUSE;
+  else if(str == "light-pen") return Type::LIGHT_PEN;
+  else if(str == "light-gun") return Type::LIGHT_GUN;
+  else return Type::INVALID;
 }

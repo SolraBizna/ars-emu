@@ -235,7 +235,7 @@ The Overlay is a 32x28 tilemap. The first and last rows are repeated to produce 
 The controller ports use a DA-12 connector. Looking at the (female) controller plug, pins are numbered starting in the upper left and going left to right, top to bottom. There should be two rows of six pins, with the upper row offset to the right of the lower row.
 
 1. Vcc (+5V)
-2. NC
+2. Blank
 3. D7#
 4. D6#
 5. D5#
@@ -249,23 +249,23 @@ The controller ports use a DA-12 connector. Looking at the (female) controller p
 
 Note that Dx# are active-low. The D pins are pulled high (logic 0), and driven low (logic 1).
 
+The Blank pin is used by the light pen and light gun to synchronize with a CRT display; other controllers leave it unconnected. It's driven to a *positive* voltage when the PPU is *not* outputting video, and (almost) to zero volts when it *is*. The voltages vary wildly depending on temperature, phase of the moon, etc. but are usually in the [-0.1, +0.2] volt range in frame and [+0.9, +1.5] volt range out of frame. Somehow, this was enough for pretty reliable phase lock...
+
 ## Access
 
 `$0240`: Controller port 1  
 `$0241`: Controller port 2
 
-Writing to a port drives Strobe to +5V and any active Dx pins to 0V. "Output" pins may be either 0 or 1. "Input" pins should be 0, _or_ the read should be performed twice to allow the driven 1s to drain out.
+Writing to a port drives Strobe to +5V and any active Dx pins to 0V. Reading from a port drives Strobe to 0V and returns what is currently sensed on the Dx# pins. The read should be performed twice to allow console-driven 1s to drain out and to allow time for the controller to drive the lines.
 
-Reading from a port drives Strobe to 0V and returns what is currently sensed on the Dx# pins. This will be the logical OR of whatever was last written to the port and whatever the controller is driving. If full duplex communication is required, reading from the port twice consecutively _should_ allow the console-driven 1s to "drain out".
-
-The standard controller returns a fixed ID when `$80` is written. (Don't forget to mask out that high bit on read!) Other controllers presumably would have returned a different ID. ET games give a "no controller" message if `$00` is read, or "wrong controller" if something other than `$01` is read.
+Controllers return a fixed ID when `$80` is written. ET games give a "no controller" message if `$00` is read, or "wrong controller" if something other than `$01` is read.
 
 In theory, this interface can be used to provide ~1.5MB/s transfers under CPU control.
 
 ## Standard controller
 
-`write $00`: Subsequent reads return button state as of the time `$00` was written  
-`write $80`: Subsequent reads return controller ID (`$01` for the standard controller; will read as `$81` on first read, `$01` on subsequent reads)
+`write $00`: Get button state  
+`write $80`: Get controller ID (`$01` for the standard controller)
 
 Button state:
 
@@ -279,6 +279,189 @@ Button state:
 - (Bit 7 always 0)
 
 Pause button asserts all Hat bits (bits 3-6).
+
+## Keyboard
+
+A 70-key keyboard with mechanical switches. Apart from a few oddities (like Control's placement and the twin delete keys), this is remarkably similar to a modern PC keyboard. I find it pretty pleasant to type on.
+
+Keyboards are normally plugged into the first port (`$0240`).
+
+`write $00`: Get next key press/release  
+`write $80`: Get controller ID (`$02` for a keyboard)
+
+- Bit 0-6: Key scancode
+- Bit 7: 0 ("positive") for press, 1 ("negative") for release
+
+<figure>
+<figcaption>Keyboard layout with key caps</figcaption>
+<img src="img/keyboard.svg">
+</figure>
+
+<figure>
+<figcaption>Keyboard layout with scancodes</figcaption>
+<img src="img/keycodes.svg">
+</figure>
+
+Scancode table:
+
+- `$01`: Left Shift
+- `$02`: Left Alt
+- `$03`: Left Meta
+- `$04`: Control
+- `$05`: Right Shift
+- `$06`: Right Alt
+- `$07`: Right Meta
+- `$08`: Escape
+- `$09`: Backward Delete
+- `$0A`: Forward Delete
+- `$0B`: Insert
+- `$0C`: Break
+- `$0D`: Home
+- `$0E`: End
+- `$0F`: Page Up
+- `$10`: Page Down
+- `$11`: Left Arrow
+- `$12`: Up Arrow
+- `$13`: Right Arrow
+- `$14`: Down Arrow
+- `$15`: Enter
+- `$16`: Tab
+- `$17`: Space
+- `$18`: \` ~
+- `$19`: 1 !
+- `$1A`: Q
+- `$1B`: A
+- `$1C`: Z
+- `$1D`: 2 @
+- `$1E`: W
+- `$1F`: S
+- `$20`: X
+- `$21`: 3 #
+- `$22`: E
+- `$23`: D
+- `$24`: C
+- `$25`: 4 #
+- `$26`: R
+- `$27`: F
+- `$28`: V
+- `$29`: 5 %
+- `$2A`: T
+- `$2B`: G
+- `$2C`: B
+- `$2D`: 6 ^
+- `$2E`: Y
+- `$2F`: H
+- `$30`: N
+- `$31`: 7 &amp;
+- `$32`: U
+- `$33`: J
+- `$34`: M
+- `$35`: 8 *
+- `$36`: I
+- `$37`: K
+- `$38`: , &lt;
+- `$39`: 9 (
+- `$3A`: O
+- `$3B`: L
+- `$3C`: . &gt;
+- `$3D`: 0 )
+- `$3E`: P
+- `$3F`: ; :
+- `$40`: / ?
+- `$41`: - _
+- `$42`: [ {
+- `$43`: ' "
+- `$44`: \ |
+- `$45`: = +
+- `$46`: ] }
+
+## Mouse
+
+Mice are normally plugged into the second port (`$0241`).
+
+`write $00`: Get button state  
+`write $40`: Get (and reset) the X movement counter  
+`write $80`: Get controller ID (`$03` for a mouse)
+`write $C0`: Get (and reset) the Y movement counter  
+
+Button state:
+
+- Bit 0: Left button
+- Bit 1: Right button
+- (Bit 2-7 always 0)
+
+X/Y movement is an 8-bit two's complement integer.
+
+Example simplified read procedure (cursor bounding logic is left out):
+
+```6502
+    ; Read button state
+    STZ $0241
+    LDA $0241
+    STA g_MouseButtons
+    ; Read X movement
+    LDA #$40
+    STA $0241
+    LDA $0241 ; (garbage read)
+    LDA $0241
+    ; ...and add it to the cursor position
+    CLC
+    ADC g_CursorX
+    STA g_CursorX
+    ; Read Y movement
+    LDA #$C0
+    STA $0241
+    LDA $0241 ; (garbage read)
+    LDA $0241
+    ; ...and add it to the cursor position
+    CLC
+    ADC g_CursorY
+    STA g_CursorY
+```
+
+## Light pen
+
+Same ID as the light gun. Button bits 3-6 are always 0 on the light pen; this lets you tell it apart from the light gun.
+
+Light pens are normally plugged into the second port (`$0241`).
+
+`write $00`: Get button state
+`write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
+`write $80`: Get controller ID (`$04`)  
+`write $C0`: Get Y position in frame, 0-239. Only valid if the in-frame bit is 1.
+
+Button state:
+
+- Bit 0: "Press" registered
+- Bit 1: Grip button is currently held ("eraser mode"?)
+- (Bit 2-6 always 0)
+- Bit 7: In-frame
+
+## Light gun
+
+A needlessly realistic (and heavy) accessory that looks way too much like an M16A2 assault rifle...
+
+Same ID as the light pen. Button bits 3-6 are always 0 on the light pen; this lets you tell it apart from the light gun.
+
+Light guns are normally plugged into the second port (`$0241`).
+
+`write $00`: Get button state
+`write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
+`write $80`: Get controller ID (`$04`)  
+`write $C0`: Get Y position in frame, 0-239. Only valid if the in-frame bit is 1.
+
+Button state:
+
+- Bit 0: Main trigger
+- Bit 1: Underbarrel trigger
+- Bit 2: Thumb button (reload)
+- Bit 3: Auto selected
+- Bit 4: Burst selected
+- Bit 5: Single selected
+- Bit 6: Safe selected
+- Bit 7: In-frame
+
+Exactly one of bits 3-6 is normally 1. Reading all four as 0, or more than one as 1, means you should reuse the read from the previous frame for debounce purposes.
 
 # Developer cartridge
 

@@ -22,10 +22,14 @@ namespace ARS {
     Controller() : strobeIsHigh(true) {}
     virtual uint8_t onStrobeFall(uint8_t curData) = 0;
   public:
+    enum class Type {
+      INVALID, AUTO, NONE, GAMEPAD, KEYBOARD, MOUSE, LIGHT_PEN, LIGHT_GUN
+    };
+    static Type TypeFromString(const std::string&);
     virtual ~Controller() {}
     virtual void output(uint8_t d);
     virtual uint8_t input();
-    static void initControllers();
+    static void initControllers(Type port1, Type port2);
     /* returns true if the event was fully handled, false if the event needs
        further handling (it may have been modified in the mean time) */
     static bool filterEvent(SDL_Event&);

@@ -45,8 +45,9 @@ namespace {
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* frametexture = nullptr;
-    // size of the region we care about
+    // the region we care about
     unsigned int visible_width, visible_height;
+    unsigned int visible_left, visible_top, visible_right, visible_bottom;
     // upscaled region: size of the texture we get after applying the upscaler
     unsigned int upscaled_width, upscaled_height;
     // output region: area of the upscaled texture we want to see
@@ -65,7 +66,6 @@ namespace {
         visible_width = ARS::PPU::CONVENIENT_OVERSCAN_WIDTH * ARS::PPU::LIVE_SCREEN_HEIGHT / ARS::PPU::CONVENIENT_OVERSCAN_HEIGHT;
         visible_height = ARS::PPU::LIVE_SCREEN_HEIGHT;
       }
-      unsigned int visible_left, visible_top, visible_right, visible_bottom;
       visible_left = (ARS::PPU::TOTAL_SCREEN_WIDTH-visible_width)/2;
       visible_right = visible_left + visible_width;
       visible_top = (ARS::PPU::TOTAL_SCREEN_HEIGHT-visible_height)/2;
@@ -230,6 +230,17 @@ namespace {
         break;
       }
       return false;
+    }
+    bool windowSpaceToVirtualScreenSpace(int& x, int& y) override {
+      if(x >= dstrect.x && x < dstrect.x + dstrect.w
+         && y >= dstrect.y && y < dstrect.y + dstrect.h) {
+        x = (x - dstrect.x) * visible_width / dstrect.w + visible_left - ARS::PPU::LIVE_SCREEN_LEFT;
+        y = (y - dstrect.y) * visible_height / dstrect.h + visible_top;
+        return x >= 0 && x < ARS::PPU::LIVE_SCREEN_WIDTH && y >= 0 && y < ARS::PPU::LIVE_SCREEN_HEIGHT;
+      }
+      else {
+        return false;
+      }
     }
   };
   ARS::DisplayDescriptor

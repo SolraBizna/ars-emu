@@ -50,6 +50,8 @@ namespace {
   bool rom_path_specified = false;
   std::unique_ptr<CPU>(*makeCPU)(const std::string&) = makeScanlineCPU;
   bool experiencing_temporal_anomaly = true;
+  Controller::Type port1type = Controller::Type::AUTO;
+  Controller::Type port2type = Controller::Type::AUTO;
   int64_t logic_frame;
   decltype(std::chrono::high_resolution_clock::now()) epoch;
   bool window_visible = true, window_minimized = false, quit = false,
@@ -161,6 +163,34 @@ namespace {
         while(*arg) {
           switch(*arg++) {
           case '?': printUsage(); return false;
+          case '1':
+            if(n >= argc) {
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-1"});
+              valid = false;
+            }
+            else {
+              std::string nextarg = argv[n++];
+              port1type = Controller::TypeFromString(nextarg);
+              if(port1type == Controller::Type::INVALID) {
+                sn.Out(std::cout, "UNKNOWN_CONTROLLER_TYPE"_Key, {nextarg});
+                valid = false;
+              }
+            }
+            break;
+          case '2':
+            if(n >= argc) {
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-2"});
+              valid = false;
+            }
+            else {
+              std::string nextarg = argv[n++];
+              port2type = Controller::TypeFromString(nextarg);
+              if(port2type == Controller::Type::INVALID) {
+                sn.Out(std::cout, "UNKNOWN_CONTROLLER_TYPE"_Key, {nextarg});
+                valid = false;
+              }
+            }
+            break;
           case 't':
             if(n >= argc) {
               sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-t"});
@@ -523,7 +553,7 @@ extern "C" int teg_main(int argc, char** argv) {
     window_title = sn.Get("WINDOW_TITLE"_Key, {rom_path});
     display = safe_mode ? Display::makeSafeModeDisplay()
       : Display::makeConfiguredDisplay();
-    Controller::initControllers();
+    Controller::initControllers(port1type, port2type);
     quit = false;
     cpu = makeCPU(rom_path);
     fillDramWithGarbage(dram, sizeof(dram));

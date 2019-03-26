@@ -29,6 +29,16 @@ Known options:
       fast_debug: Scanline-based renderer, built-in (English only) debugger.
       fast_intprof: Scanline-based renderer. Does some simple performance
         profiling of the emulated code and outputs it on stdout.
+-1: Specify controller type in port 1
+-2: Specify controller type in port 2
+    Known controller types:
+      auto: Use the controller setup recommended by the game. (default)
+      gamepad: Standard controller. Four buttons and a hat switch.
+      keyboard: 70-key keyboard.
+      mouse: Two-button ball mouse.
+      light-pen: Light pen with "press sensor" and a grip button.
+      light-gun: Light gun with two triggers, a button, and a four-position
+        fire mode + safety switch.
 -j: Specify the number of hardware threads to use for graphical effects. A
     value of 1 disables multithreaded effects processing, and a value of 0 (the
     default) tries to automatically detect the number of hardware threads
@@ -58,6 +68,14 @@ Error: Option $1 requires an argument
 : $1: The parameter of -c.
 UNKNOWN_CORE
 Error: Unknown core: $1
+
+.
+
+: Written to stderr, followed by USAGE, when -1 or -2 are given a parameter
+: that doesn't match any of the available controller types.
+: $1: The parameter of -1/-2.
+UNKNOWN_CONTROLLER_TYPE
+Error: Unknown controller type: $1
 
 .
 
@@ -375,6 +393,34 @@ display type. Error details
 were written to stderr.
 Currently active display type:
 $1
+.
+
+: Displayed if the player is using an emulated light gun and manipulates the
+: fire select switch.
+: $1: CONTROLLER_P1_NAME or CONTROLLER_P2_NAME
+: $2: LIGHT_GUN_SELECTOR_n
+LIGHT_GUN_SELECTOR_CHANGED
+$1 gun mode: $2
+.
+
+: Short name of the "full auto" position on the light gun fire select switch.
+LIGHT_GUN_SELECTOR_0
+Full Auto
+.
+
+: Short name of the "burst" position on the light gun fire select switch.
+LIGHT_GUN_SELECTOR_1
+Burst
+.
+
+: Short name of the "single" position on the light gun fire select switch.
+LIGHT_GUN_SELECTOR_2
+Single
+.
+
+: Short name of the "safe" position on the light gun fire select switch.
+LIGHT_GUN_SELECTOR_3
+Safe
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

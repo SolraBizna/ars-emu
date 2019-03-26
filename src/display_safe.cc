@@ -69,6 +69,12 @@ namespace {
       SDL_RenderCopy(renderer, frametexture, nullptr, nullptr);
       SDL_RenderPresent(renderer);
     }
+    bool windowSpaceToVirtualScreenSpace(int& x, int& y) override {
+      bool ret = x >= 0 && x < VISIBLE_WIDTH && y >= 0 && y < VISIBLE_HEIGHT;
+      x += VISIBLE_LEFT - ARS::PPU::LIVE_SCREEN_LEFT;
+      y += VISIBLE_TOP - ARS::PPU::LIVE_SCREEN_TOP;
+      return ret;
+    }
   };
   ARS::DisplayDescriptor
   _("safe", "DISPLAY_NAME_SAFE"_Key, 0,

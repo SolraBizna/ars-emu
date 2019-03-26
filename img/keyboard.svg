@@ -1,0 +1,319 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     version="1.1"
+     viewBox="-3 -3 191 56"
+     width="800px">
+  <style>
+    rect { stroke: black; stroke-width: 0.5; fill: none; }
+    text { font-family: Helvetica, "Liberation Sans", sans; font-size: 2.5px; }
+    text.big { font-size: 4px; }
+    text.center { text-anchor: middle; }
+  </style>
+  <!-- number row -->
+  <g transform="translate(0,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">~</text>
+    <text x="2" y="8">`</text>
+  </g>
+  <g transform="translate(10,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">!</text>
+    <text x="2" y="8">1</text>
+  </g>
+  <g transform="translate(20,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">@</text>
+    <text x="2" y="8">2</text>
+  </g>
+  <g transform="translate(30,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">#</text>
+    <text x="2" y="8">3</text>
+  </g>
+  <g transform="translate(40,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">$</text>
+    <text x="2" y="8">4</text>
+  </g>
+  <g transform="translate(50,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">%</text>
+    <text x="2" y="8">5</text>
+  </g>
+  <g transform="translate(60,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">^</text>
+    <text x="2" y="8">6</text>
+  </g>
+  <g transform="translate(70,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">&amp;</text>
+    <text x="2" y="8">7</text>
+  </g>
+  <g transform="translate(80,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">*</text>
+    <text x="2" y="8">8</text>
+  </g>
+  <g transform="translate(90,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">(</text>
+    <text x="2" y="8">9</text>
+  </g>
+  <g transform="translate(100,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">)</text>
+    <text x="2" y="8">0</text>
+  </g>
+  <g transform="translate(110,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">_</text>
+    <text x="2" y="8">-</text>
+  </g>
+  <g transform="translate(120,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">+</text>
+    <text x="2" y="8">=</text>
+  </g>
+  <g transform="translate(130,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">←</text>
+    <text x="2" y="8">Del</text>
+  </g>
+  <g transform="translate(140,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">→</text>
+    <text x="2" y="8">Del</text>
+  </g>
+  <!-- QWERT... -->
+  <g transform="translate(0,10)">
+    <rect x="0.5" y="0.5" width="14" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Tab</text>
+  </g>
+  <g transform="translate(15,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">Q</text>
+  </g>
+  <g transform="translate(25,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">W</text>
+  </g>
+  <g transform="translate(35,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">E</text>
+  </g>
+  <g transform="translate(45,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">R</text>
+  </g>
+  <g transform="translate(55,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">T</text>
+  </g>
+  <g transform="translate(65,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">Y</text>
+  </g>
+  <g transform="translate(75,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">U</text>
+  </g>
+  <g transform="translate(85,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">I</text>
+  </g>
+  <g transform="translate(95,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">O</text>
+  </g>
+  <g transform="translate(105,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">P</text>
+  </g>
+  <g transform="translate(115,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">{</text>
+    <text x="2" y="8">[</text>
+  </g>
+  <g transform="translate(125,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">}</text>
+    <text x="2" y="8">]</text>
+  </g>
+  <g transform="translate(135,10)">
+    <rect x="0.5" y="0.5" width="14" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">|</text>
+    <text x="2" y="8">\</text>
+  </g>
+  <!-- ASDF... -->
+  <g transform="translate(0,20)">
+    <rect x="0.5" y="0.5" width="17" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Control</text>
+  </g>
+  <g transform="translate(18,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">A</text>
+  </g>
+  <g transform="translate(28,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">S</text>
+  </g>
+  <g transform="translate(38,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">D</text>
+  </g>
+  <g transform="translate(48,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">F</text>
+  </g>
+  <g transform="translate(58,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">G</text>
+  </g>
+  <g transform="translate(68,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">H</text>
+  </g>
+  <g transform="translate(78,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">J</text>
+  </g>
+  <g transform="translate(88,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">K</text>
+  </g>
+  <g transform="translate(98,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">L</text>
+  </g>
+  <g transform="translate(108,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">:</text>
+    <text x="2" y="8">;</text>
+  </g>
+  <g transform="translate(118,20)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">"</text>
+    <text x="2" y="8">'</text>
+  </g>
+  <g transform="translate(128,20)">
+    <rect x="0.5" y="0.5" width="21" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Enter</text>
+  </g>
+  <!-- ZXCV... -->
+  <g transform="translate(0,30)">
+    <rect x="0.5" y="0.5" width="23" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Shift</text>
+  </g>
+  <g transform="translate(24,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">Z</text>
+  </g>
+  <g transform="translate(34,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">X</text>
+  </g>
+  <g transform="translate(44,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">C</text>
+  </g>
+  <g transform="translate(54,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">V</text>
+  </g>
+  <g transform="translate(64,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">B</text>
+  </g>
+  <g transform="translate(74,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">N</text>
+  </g>
+  <g transform="translate(84,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="big" x="2" y="5">M</text>
+  </g>
+  <g transform="translate(94,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">&lt;</text>
+    <text x="2" y="8">,</text>
+  </g>
+  <g transform="translate(104,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">&gt;</text>
+    <text x="2" y="8">.</text>
+  </g>
+  <g transform="translate(114,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="4">?</text>
+    <text x="2" y="8">/</text>
+  </g>
+  <g transform="translate(124,30)">
+    <rect x="0.5" y="0.5" width="25" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Shift</text>
+  </g>
+  <!-- Space row -->
+  <g transform="translate(0,40)">
+    <rect x="0.5" y="0.5" width="13" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Meta</text>
+  </g>
+  <g transform="translate(14,40)">
+    <rect x="0.5" y="0.5" width="13" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Alt</text>
+  </g>
+  <g transform="translate(28,40)">
+    <rect x="0.5" y="0.5" width="83" height="9" rx="1" ry="1"/>
+  </g>
+  <g transform="translate(112,40)">
+    <rect x="0.5" y="0.5" width="13" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Alt</text>
+  </g>
+  <g transform="translate(126,40)">
+    <rect x="0.5" y="0.5" width="13" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Meta</text>
+  </g>
+  <g transform="translate(140,40)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text x="2" y="6">Esc</text>
+  </g>
+  <!-- side row -->
+  <g transform="translate(155,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">Insert</text>
+  </g>
+  <g transform="translate(165,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">Home</text>
+  </g>
+  <g transform="translate(175,0)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">PgUp</text>
+  </g>
+  <g transform="translate(155,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">Break</text>
+  </g>
+  <g transform="translate(165,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">End</text>
+  </g>
+  <g transform="translate(175,10)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">PgDn</text>
+  </g>
+  <g transform="translate(165,30)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">↑</text>
+  </g>
+  <g transform="translate(155,40)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">←</text>
+  </g>
+  <g transform="translate(165,40)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">↓</text>
+  </g>
+  <g transform="translate(175,40)">
+    <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
+    <text class="center" x="5" y="6">→</text>
+  </g>
+</svg>

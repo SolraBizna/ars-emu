@@ -126,10 +126,11 @@ The effective address of a fetch is `(B << (23-(bs-unshift))) | (A & (0x7FFF>>(b
 `input` tags are optional, and denote recommended input configuration for playing this game. A `port` child denotes which controller port this `input` tag applies to, `1` or `2`. Presence of the following children indicates support of the given device type in the given port:
 
 - `none`: This port may be unconnected.
-- `controller`: Standard controller, with 3+1 buttons and a hat switch.
-- `light-gun`: Light gun.
-- `keyboard`: Keyboard.
+- `gamepad` or `controller`: Standard controller.
+- `keyboard`: 70-key keyboard.
+- `mouse:`: Two-button mouse.
 - `light-pen`: Light pen.
+- `light-gun`: Light gun.
 
 Example: `input port=1 controller keyboard` indicates that the game is designed to be played with either a standard controller or a keyboard plugged into controller port 1
 
