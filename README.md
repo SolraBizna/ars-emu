@@ -134,11 +134,6 @@ The included version of GNU Unifont is 9.0.06, and is copyright (C) 2016 Roman C
 ## Input
 
 - Support for physical controllers outside the SDL Game Controller API
-- Support alternative controller setups
-- Additional controller types
-    - Light pen
-    - Light gun
-    - Keyboard
 
 ## Hardware
 
