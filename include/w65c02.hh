@@ -665,8 +665,6 @@ namespace W65C02 {
         // TODO: make this less clunky but still pass tests
         int al = (a & 0xF) - (red & 0xF) - ((p & P_C) ? 0 : 1);
         val = a - red - ((p & P_C) ? 0 : 1);
-        if(val >= 0x80 && val < 0xFF80) p |= P_V;
-        else p &= ~P_V;
         if((a ^ val) & (red ^ 0xFF ^ val) & 0x80) p |= P_V;
         else p &= ~P_V;
         if(val & 0x8000) {
