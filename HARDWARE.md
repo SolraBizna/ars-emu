@@ -381,8 +381,8 @@ Mice are normally plugged into the second port (`$0241`).
 
 `write $00`: Get button state  
 `write $40`: Get (and reset) the X movement counter  
-`write $80`: Get controller ID (`$03` for a mouse)
-`write $C0`: Get (and reset) the Y movement counter  
+`write $80`: Get controller ID (`$03` for a mouse)  
+`write $C0`: Get (and reset) the Y movement counter
 
 Button state:
 
@@ -593,7 +593,7 @@ Invert bits stack. e.g. if bit 0 and 1 are set, this results in an inverted 12.5
 
 Some useful waveforms:
 
-- `$40`: Simple square wave (1/2 rate)
+- `$10`: Simple square wave (1/2 rate)
 - `$01`: 12.5% duty cycle pulse wave, like NES duty cycle 0 (1x rate)
 - `$02`: 25% duty cycle pulse wave, like NES duty cycle 1 (1x rate)
 - `$04`: Simple square wave, like NES duty cycle 2 (1x rate)
