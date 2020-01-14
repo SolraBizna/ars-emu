@@ -46,6 +46,9 @@ namespace {
       else
         memset(memory_buffer, pad, size);
     }
+    void write(uint32_t address, uint8_t value) override {
+      memory_buffer[address&mask] = value;
+    }
     ~PadRAM() { delete[] memory_buffer; }
   };
 }
