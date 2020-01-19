@@ -290,7 +290,7 @@ namespace {
         if(out_color != 0 && show_overlay) {
           /* Non-zero overlay pixels always take priority */
           out_color = static_cast<uint8_t>
-            (cram[((ARS::Regs().olBasePalette << 3)
+            (cram[(((ARS::Regs().olBasePalette & 0x1F) << 3)
                    | (((overlay_attr>>((~column>>3)&7))&1)<<2)
                    | out_color)] + ARS::Regs().colorMod);
         }
