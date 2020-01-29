@@ -52,7 +52,7 @@ Ways in which the ARS's limitations are typical of 8-bit systems:
 - Simple controller (hat switch, three face buttons, and a pause button)
 - Limited audio synthesis (7 simple waveform channels and a noise channel)
 - Restricted color palette (loosely based on the NTSC NES palette)
-- Small video resolution (approximately 240x224 usable area)
+- Small video resolution (approximately 256x224 usable area)
 - One scrollable background layer, with a limited palette
 - 64 sprites on screen, 8 pixels wide
 - 8-bit CPU (a 65C02)
