@@ -940,6 +940,7 @@ namespace W65C02 {
     }
     void reset() {
       state = State::RECOVERING_FROM_RESET;
+      nmi_pending = nmi_edge = false;
       s = 0;
       p = P_1|P_I;
     }

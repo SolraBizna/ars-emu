@@ -52,7 +52,7 @@ namespace {
   bool experiencing_temporal_anomaly = true;
   Controller::Type port1type = Controller::Type::AUTO;
   Controller::Type port2type = Controller::Type::AUTO;
-  int64_t logic_frame;
+  int64_t logic_frame = 0;
   decltype(std::chrono::high_resolution_clock::now()) epoch;
   bool window_visible = true, window_minimized = false, quit = false,
     quit_on_stop = false, stop_has_been_detected = false, need_reset = true;
@@ -77,11 +77,14 @@ namespace {
       need_reset = false;
       cartridge->handleReset();
       PPU::handleReset();
+      cpu->setNMI(false);
+      cpu->setIRQ(false);
       cpu->handleReset();
       secure_config_port_checked = false;
-      for(size_t n = 0; n < sizeof(bankMap); ++n)
+      for(size_t n = 0; n < sizeof(bankMap) / sizeof(*bankMap); ++n)
         bankMap[n] = cartridge->getPowerOnBank();
       epoch = std::chrono::high_resolution_clock::now();
+      logic_frame = -1;
     }
     ++logic_frame;
     auto now = std::chrono::high_resolution_clock::now();
