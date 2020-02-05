@@ -574,7 +574,7 @@ namespace {
     void silently_write(uint16_t addr, uint8_t value) {
       return ARS::write(addr, value);
     }
-    void loadSymbols(std::istream& f) {
+    void loadSymbols(std::istream& f, uint8_t mask = 0) {
       char line[128];
       enum class sec {
         LABELS, DEFINITIONS, OTHER
@@ -603,7 +603,7 @@ namespace {
               continue;
             }
             try {
-              uint16_t bank = parse_address(matchResult[1]);
+              uint16_t bank = parse_address(matchResult[1]) | mask;
               uint16_t addr = parse_address(matchResult[2]);
               uint32_t mapped = (static_cast<uint32_t>(bank)<<16)|addr;
               if(name[0] == '_') tryDelocalizeName(name, mapped);
@@ -681,14 +681,25 @@ namespace {
     void cmd_load_symbols(std::vector<std::string>& args) {
       if(args.empty()) {
         std::cout << "usage: load-symbols path/to/symbols.sym"
-          " [path/to/more/symbols.sym ...]\n";
+          " [starting bank number]\n";
       }
       else {
-        for(auto& path : args) {
-          auto symfile = IO::OpenRawPathForRead(path);
-          if(symfile && *symfile)
-            loadSymbols(*symfile);
+        auto& path = args[0];
+        uint8_t mask = 0;
+        if(args.size() > 1) {
+          uint32_t o;
+          if(!eval(args[1],
+                   std::bind(&CPU_ScanlineDebug::get_symbol, this,
+                             std::placeholders::_1,
+                             std::placeholders::_2),
+                   std::bind(&CPU_ScanlineDebug::read_address, this,
+                             std::placeholders::_1),
+                   o)) return;
+          mask = o;
         }
+        auto symfile = IO::OpenRawPathForRead(path);
+        if(symfile && *symfile)
+          loadSymbols(*symfile, mask);
       }
     }
     void cmd_dump_sprite_memory(std::vector<std::string>&) {
