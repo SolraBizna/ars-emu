@@ -7,7 +7,8 @@ using namespace ARS;
 bool ARS::always_allow_config_port = false,
   ARS::allow_secure_config_port = true,
   ARS::secure_config_port_checked = false,
-  ARS::allow_debug_port = false;
+  ARS::allow_debug_port = false,
+  ARS::mapped_debug_port = false;
 std::unique_ptr<ARS::Expansion> ARS::expansions[8];
 
 namespace {
@@ -59,6 +60,10 @@ namespace {
       cpu->setSO(true);
       cpu->setSO(false);
       return 0xFF;
+    }
+  public:
+    DebugPort() {
+      mapped_debug_port = true;
     }
   };
   class NullPort : public ARS::Expansion {

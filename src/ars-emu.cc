@@ -290,7 +290,6 @@ namespace {
       printUsage();
       return false;
     }
-    bool mapped_debug_port = false;
     try {
       std::unique_ptr<GameFolder> gamefolder;
       std::string true_path = rom_path;

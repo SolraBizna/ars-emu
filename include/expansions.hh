@@ -15,7 +15,7 @@ namespace ARS {
   void map_expansion(uint16_t addr, const std::string& type);
   void map_expansion(uint16_t addr, std::unique_ptr<Expansion>);
   extern bool always_allow_config_port, allow_secure_config_port,
-    secure_config_port_checked, allow_debug_port;
+    secure_config_port_checked, allow_debug_port, mapped_debug_port;
 }
 
 #endif
