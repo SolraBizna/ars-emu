@@ -20,7 +20,7 @@ namespace {
      TokenType::BANKED_ADDR},
     {std::regex("\\$([0-9A-Fa-f]{1,8})"), TokenType::HEX_LITERAL},
     {std::regex("[0-9]{1,10}"), TokenType::DEC_LITERAL},
-    {std::regex("[_a-zA-Z][_a-zA-Z0-9:]*"), TokenType::SYMBOL},
+    {std::regex("[@_a-zA-Z][@_a-zA-Z0-9:]*"), TokenType::SYMBOL},
   };
   const struct binop {
     std::string token;
