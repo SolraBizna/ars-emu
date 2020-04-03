@@ -85,12 +85,12 @@ namespace {
     std::string repeat_command;
     bool get_symbol(const std::string& string, uint32_t& out) {
       if(string.length() > 0 && string[0] == '_') {
-        if(string == "_A") { out = core.read_a(); return true; }
-        else if(string == "_X") { out = core.read_x(); return true; }
-        else if(string == "_Y") { out = core.read_y(); return true; }
-        else if(string == "_P") { out = core.read_p(); return true; }
-        else if(string == "_S") { out = core.read_s(); return true; }
-        else if(string == "_PC") { out = core.read_pc(); return true; }
+        if(string == "@A") { out = core.read_a(); return true; }
+        else if(string == "@X") { out = core.read_x(); return true; }
+        else if(string == "@Y") { out = core.read_y(); return true; }
+        else if(string == "@P") { out = core.read_p(); return true; }
+        else if(string == "@S") { out = core.read_s(); return true; }
+        else if(string == "@PC") { out = core.read_pc(); return true; }
       }
       auto it = symdef_to_addr_map.find(string);
       if(it == symdef_to_addr_map.end()) return false;
@@ -240,7 +240,8 @@ namespace {
         }
         do {
           out << (!have_outputted_alternate?" (":", ")
-              << it->second << "+" << (addr-found);
+              << it->second;
+          if(addr != found) out << "+" << (addr-found);
           have_outputted_alternate = true;
           ++it;
         } while(it != addr_to_label_map.end() && it->first == found);
@@ -269,6 +270,7 @@ namespace {
         throw std::out_of_range("out of range 0000-ffff");
       return addr;
     }
+#if 0 // this misfeature predates @'s use for local labels in WLA-DX
     void tryDelocalizeName(std::string& name, uint32_t addr) {
       SDL_assert(name.length() > 0 && name[0] == '_');
       auto it = addr_to_label_map.upper_bound(addr);
@@ -305,6 +307,7 @@ namespace {
         }
       }
     }
+#endif
     /* Does what Cartridge::map_addr used to do; map a memory address to a
        symbol address */
     uint32_t map_addr(uint16_t addr, bool OL = false, bool VPB = false,
@@ -606,7 +609,9 @@ namespace {
               uint16_t bank = parse_address(matchResult[1]) | mask;
               uint16_t addr = parse_address(matchResult[2]);
               uint32_t mapped = (static_cast<uint32_t>(bank)<<16)|addr;
+#if 0
               if(name[0] == '_') tryDelocalizeName(name, mapped);
+#endif
               if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()) {
                 std::cout << "Ignoring duplicate symbol "<<name<<"\n";
                 continue;
@@ -1131,7 +1136,7 @@ namespace {
      "Whether to trace the stranger bus cycles not covered by the above.",
      &CPU_ScanlineDebug::cmd_trace_other_accesses},
     {"eval",
-     "Evaluates expressions. Symbol names and registers (_A, _X, _Y, ...) may\n"
+     "Evaluates expressions. Symbol names and registers (@A, @X, @Y, ...) may\n"
      "participate in expressions. Many of the normal C integer operators are\n"
      "available. The 8@, 16@, and 24@ operators read the indicated number of bits.\n"
      "Example: eval 8@fruitcake+4 (retrieves a byte at the `fruitcake` pointer, and\n"
