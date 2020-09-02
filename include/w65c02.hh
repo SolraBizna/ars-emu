@@ -988,8 +988,9 @@ namespace W65C02 {
           read_byte(read_pc(), ReadType::OPERAND);
           push(pc>>8);
           push(pc);
-          push(p);
+          push(p&~P_B);
           p &= ~P_D;
+          p |= P_I;
           pc = system.fetch_vector_byte(NMI_VECTOR);
           pc |= system.fetch_vector_byte(NMI_VECTOR+1)<<8;
         }
