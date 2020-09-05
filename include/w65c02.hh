@@ -360,7 +360,6 @@ namespace W65C02 {
         // Cycle 5
         this->ea |= core.read_byte((uint8_t)(indexed_addr+1),
                                    ReadType::POINTER) << 8;
-        // TODO: is this right, or can we read $00FF,$0100 like this?
       }
     };
     // 13a, 13b
