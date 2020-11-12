@@ -15,6 +15,7 @@
 #include "fx.hh"
 #include "display.hh"
 #include "expansions.hh"
+#include "floppy.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -153,6 +154,9 @@ namespace {
   }
   void printUsage() {
     sn.Out(std::cout, "USAGE"_Key);
+#ifndef DISALLOW_FLOPPY
+    sn.Out(std::cout, "FLOPPY_USAGE"_Key);
+#endif
   }
   bool parseCommandLine(int argc, const char** argv) {
     int n = 1;
@@ -166,6 +170,21 @@ namespace {
         while(*arg) {
           switch(*arg++) {
           case '?': printUsage(); return false;
+#ifndef DISALLOW_FLOPPY
+          case 'f':
+            if(n >= argc) {
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-1"});
+              valid = false;
+            }
+            else {
+              std::string nextarg = argv[n++];
+              if(!mount_floppy(nextarg)) valid = false;
+            }
+            break;
+          case 'F':
+            fast_floppy_mode = true;
+            break;
+#endif
           case '1':
             if(n >= argc) {
               sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-1"});

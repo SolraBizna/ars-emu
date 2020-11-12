@@ -1,6 +1,7 @@
 #include "expansions.hh"
 #include "configurator.hh"
 #include "cpu.hh"
+#include "floppy.hh"
 
 using namespace ARS;
 
@@ -86,6 +87,14 @@ void ARS::map_expansion(uint16_t addr, const std::string& type) {
       map_expansion(addr, std::make_unique<ConfigPort>());
     else map_expansion(addr, std::make_unique<NullPort>());
   }
+  else if(type == "floppies") {
+#ifndef DISALLOW_FLOPPY
+    if(addr == 0) addr = 0x242;
+    map_expansion(addr, make_floppy_expansion());
+#else
+    die(sn.Get("FLOPPY_NOT_SUPPORTED_ERROR"_Key));
+#endif
+  }
 }
 
 void ARS::map_expansion(uint16_t addr, std::unique_ptr<Expansion> p) {
@@ -94,4 +103,10 @@ void ARS::map_expansion(uint16_t addr, std::unique_ptr<Expansion> p) {
   if(expansions[addr&7])
     throw sn.Get("BOARD_EXPANSION_ADDRESS_CONFLICT"_Key);
   expansions[addr&7] = std::move(p);
+}
+
+void ARS::tell_expansions_about_frame() {
+  for(auto&& expansion : expansions) {
+    if(expansion) expansion->on_frame();
+  }
 }

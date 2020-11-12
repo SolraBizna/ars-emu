@@ -114,6 +114,10 @@ The emulator includes a compiled version of GNU Unifont. The source repository f
 
 The included version of GNU Unifont is 9.0.06, and is copyright (C) 2016 Roman Czyborra, Paul Hardy, Qianqian Fang, Andrew Miller, et al. It is licensed under the GNU General Public License version 2 or later, with the GNU Font Embedding Exception.
 
+## Floppy sounds
+
+The emulator includes some floppy drive sounds. They have been modified from their original form, to save memory and to adapt them to the emulator's requirements. The much higher quality original source audio from which these sounds were extracted was recorded by [MrAuralization](https://freesound.org/people/MrAuralization/), and can be  [downloaded on freesound.org](https://freesound.org/people/MrAuralization/packs/15891/). They are included in ars-emu under the Creative Commons Attribution 3.0 Unported license.
+
 # Missing, Planned Features
 
 ## Video

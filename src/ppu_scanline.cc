@@ -4,6 +4,7 @@
 #include "windower.hh"
 #include "cpu.hh"
 #include "ppu.hh"
+#include "expansions.hh"
 
 using namespace ARS::PPU;
 
@@ -365,6 +366,7 @@ void ARS::PPU::renderFrame(raw_screen& out) {
   }
   ARS::cpu->setNMI(true);
   renderMessages(out);
+  tell_expansions_about_frame();
 }
 
 void ARS::PPU::renderInvisible() {
@@ -389,4 +391,5 @@ void ARS::PPU::renderInvisible() {
   updateScanline(LIVE_SCREEN_HEIGHT);
   ARS::cpu->setNMI(true);
   cycleMessages();
+  tell_expansions_about_frame();
 }

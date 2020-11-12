@@ -89,6 +89,7 @@ The value of the `expansion` tag is the type of expansion hardware. Each `expans
 
 Valid values:
 
+- `floppy`: The floppy controller from the DOS cartridge, default address `0x242`. (Later, support will be added for specifying floppy disk contents in a Game Folder.)
 - `ham`: The Homebrew Achievements Module, default address `0x245`.
 - `config`: The emulator configuration port, default address `0x246`.
 - `debug`: The serial port from the developer cartridge, default address `0x247`.

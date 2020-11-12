@@ -24,7 +24,7 @@ LDFLAGS=-pthread
 LDFLAGS_DEBUG=-ggdb
 LDFLAGS_RELEASE=-Ofast -ffast-math -flto
 # Libraries.
-LIBS=`sdl2-config --libs` -lpng -lz -llua5.3
+LIBS=`sdl2-config --libs` -lpng -lz -llua5.3 -lboost_filesystem -lboost_system
 
 # Extension for executables.
 EXE=

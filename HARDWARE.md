@@ -97,7 +97,7 @@ Note on registers: Writes to register space write both to the register and to Wo
 `$0216`: SAM access index.  
 `$0217`: [HO]SAM access port.  
 `$0218`: VRAM access byte; low 8 bits of access location. Write the access page _first_ if you intend to write both.  
-`$0219`: IRQ scanline number. During H-blank/scan-out, IRQB# wil be asserted if the upcoming/current (respectively) scanline number is greater than or equal to this register's value. A value of 240 will signal IRQ during the entire vblank period. (This is probably not an intentional feature, and has no known use.) Values of 241 and above effectively disable scanline IRQ. Values < 128 will _not_ signal for scanline numbers ≥ 128, as a special case; among other things, this allows a clean scanline 0 IRQ.  
+`$0219`: IRQ scanline number. During H-blank/scan-out, IRQB# wil be asserted if the upcoming/current (respectively) scanline number is greater than or equal to this register's value. A value of 240 will signal IRQ during the entire vblank period. (This is used by ARS DOS to get a maskable vblank interrupt.) Values of 241 and above effectively disable scanline IRQ. Values < 128 will _not_ signal for scanline numbers ≥ 128, as a special case; among other things, this allows a clean scanline 0 IRQ.  
 `$021A`: [HO]VRAM DMA. Write `xx` to this, and the PPU will copy `$xx00-$xxFF` as if it were written to `$0211`. This takes 257 cycles, not counting the write to `$021A`.  
 `$021B`: [HO]VRAM "splat" DMA. Write `xx` to this, and the PPU will do a "splat copy". Takes 1025 cycles. (See information on BG mode 2.)  
 `$021C`: [HO]CRAM DMA. As `$021A`, but writes to CRAM (as if via `$0213`).  
@@ -284,7 +284,7 @@ Pause button asserts all Hat bits (bits 3-6).
 
 A 70-key keyboard with mechanical switches. Apart from a few oddities (like Control's placement and the twin delete keys), this is remarkably similar to a modern PC keyboard. I find it pretty pleasant to type on.
 
-Keyboards are normally plugged into the first port (`$0240`).
+ARS DOS only handles keyboard plugged into the second port (`$0241`).
 
 `write $00`: Get next key press/release  
 `write $80`: Get controller ID (`$02` for a keyboard)
@@ -377,7 +377,7 @@ Scancode table:
 
 ## Mouse
 
-Mice are normally plugged into the second port (`$0241`).
+Mice are normally plugged into the first port (`$0240`) when used with a keyboard.
 
 `write $00`: Get button state  
 `write $40`: Get (and reset) the X movement counter  
@@ -423,7 +423,7 @@ Example simplified read procedure (cursor bounding logic is left out):
 
 Same ID as the light gun. Button bits 3-6 are always 0 on the light pen; this lets you tell it apart from the light gun.
 
-Light pens are normally plugged into the second port (`$0241`).
+Light pens are normally plugged into the second port (`$0241`) when used with a controller, or the first port (`$0240`) when used with a keyboard.
 
 `write $00`: Get button state
 `write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
@@ -443,7 +443,7 @@ A needlessly realistic (and heavy) accessory that looks way too much like an M16
 
 Same ID as the light pen. Button bits 3-6 are always 0 on the light pen; this lets you tell it apart from the light gun.
 
-Light guns are normally plugged into the second port (`$0241`).
+Light guns are normally plugged into the second port (`$0241`) when used with a controller, or the first port (`$0240`) when used with a keyboard.
 
 `write $00`: Get button state
 `write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
@@ -695,6 +695,68 @@ When reset falls, all Bank Select registers are initialized to the value current
 ## The Technical Truth
 
 Internally, the ARS always uses Bank Select 0 for `$8xxx`, Bank Select 1 for `$9xxx`, etc. The BSx pins actually control the granularity of writes to the Bank Select registers. With a value of 0, for example, writing any address from `$0248-$024F` actually writes that value to all eight Bank Select registers. With a value of 1, writing an address from `$0248-024B` writes Bank Select registers 0 through 3, etc. This starts to become noticeable if you have BSx other than 3, and write to the "missing" Bank Select registers.
+
+# ARS DOS cartridge
+
+If you are writing a game and want to use the floppies, you should probably use ARS DOS instead of talking to the floppy controller directly. Not only does it have an API for disk access, it comes with some handy bonus routines.
+
+I don't have any physical examples of this hardware. The following information is pieced together mainly from a copy of the ARS DOS ROM that found its way into a couple official cartridge-based games, most likely because of its bitmap font and its math routines.
+
+The ARS DOS cartridge contained a small BIOS ROM, a SIMM slot, and a self-contained floppy controller much like the VIC-1541. Communication with the floppy controller is via a synchronous IO port mapped at `$0242`. Like the debug port, the floppy IO port uses the Set Overflow pin for flow control. To write a byte to the port, you use a loop like:
+
+```6502
+-   CLV
+    LDX $0242   ; Check that nothing unexpected has shown up
+    BVS +       ; No error if no byte
+    BEQ +       ; No error if a raw zero was read
+    BRA @Error  ; Something unexpected, probably an error
++   CLV         ; Clear the overflow flag
+    STA $0242   ; Try writing the byte
+    BVS -       ; If overflow, start over
+```
+
+To read from the port, use a simpler loop:
+
+```6502
+-   CLV         ; Clear the overflow flag
+    LDA $0242   ; Try reading the byte
+    BVS -       ; If overflow, start over
+```
+
+Like the VIC-1541, the main CPU uses a simple, high-level interface that abstracts away details of the filesystem and physical layer. Unfortunately, this means that I don't know anything at all about the filesystem or the physical layer. I don't even know how big the floppies were. 3.5"? 5.25"? 8"?! The only thing I do know is that sectors are apparently 256 bytes, and that floppies could store more than 64K.
+
+The floppy controller apparently spams zero whenever it is not executing a command, and aborts the reading of a command if it reads a zero. ARS DOS sends a zero, then reads repeatedly until it gets at least one zero, before sending any command, and expects to read one more zero byte before receiving the reply. When sending data, `$00` and `$FF` are sent as `$FF $01` and `$FF $80`, respectively—and, when sending a command from the ARS to DOS, `$0A` is sent as `$FF $0A`.
+
+## Commands
+
+Commands are started by a single character, and terminated by a newline. The response is either `E` (short for error?), or `O` (short for OK?) followed by a reply.
+
+A `<drive>` is either A or B, and designates which floppy drive to use. A `<name>` is a space-padded, capitalized, 8.3 filename without the dot (always 11 bytes). DOS heavily restricts the allowed characters, and ars-emu respects those restrictions. A `<handle>` is a single character used as a handle to an open file. DOS will mostly refuse to deal with handles that aren't ASCII decimal digits. A `<size>` is 24-bit, big-endian. A `<sector>` is 16-bit, big-endian.
+
+- `Q`: After the SIMM check, DOS sends this command. If it doesn't get an `E` reply, it hangs.
+- `s<drive>`: Drive status. `E` is a major failure. `O0` means no disk. `O1` means disk present and writable. `O2` means disk present but write protected. Any other byte causes DOS to prompt if you want to format the disk.
+- `F<drive>`: Erase and format a disk. The DOS `FORMAT` command does this. ars-emu implements this, but in a very fake way that doesn't erase anything.
+- `K<drive>`: Check the disk. I guess. The DOS `CHECK` command does this. ars-emu just waits ten seconds or so and then replies `O` on any valid, mounted drive, which satisfies `CHECK`.
+- `c<source drive><dest drive>`: Create a block-for-block copy of the source disk. The DOS `CLONE` command does this. ars-emu doesn't implement this.
+- `M<drive><source name><destination name>`: Rename (move) a file. ARS DOS deletes the destination file before attempting this, but on some platforms, ars-emu will silently overwrite an existing destination. (Note that this command doesn't support cross-drive operation; when ARS DOS wants to do a cross-drive `move`, it emulates it by copying the file and deleting the source.)
+- `D<drive><name>`: Delete a file. ARS DOS seems to expect this to fail on nonexistent files, so ars-emu does so.
+- `l<drive>`: List all files on drive. Response is below.
+- `(<drive><name>`: Open an existing file. A successful response includes a handle for the new file.
+- `C<drive><name>`: Create a new file. A successful response includes a handle for the new file. ARS DOS seems to think this will fail if the file already exists.
+- `)<handle>`: Close an open handle. DOS sends a lot of these, and ignores errors when doing so.
+- `R<handle>`: Read a sector and advance the file pointer. Always reads a whole sector. When reading the last sector of *any* file, *including a non-sector-sized one*, DOS assumes this will *not* advance the file pointer.
+- `W<handle>`: Write a sector and advance the file pointer. The data to write will follow the newline. Always write a whole sector. If DOS believes a file is going to expand, it does a `T` before beginning the write, so presumably a `W` will never grow the file on its own. When writing the last sector of *any* file, *including a non-sector-sized one*, DOS assumes this will *not* advance the file pointer.
+- `T<handle><size>`: Truncate or grow a file to the given size. This appears to be the only way to alter a file's size. DOS assumes that this will leave the file pointer at the last sector which exists; e.g. truncating a file to 511 or 512 bytes sets the file pointer to sector 1, while truncating it to 513 sets it to sector 2.
+- `S<handle><sector>`: Seek the file pointer. Note that you can only seek to a sector boundary.
+- `L<handle>`: Reports the size of a file. Gives a 24-bit size in bytes.
+- `P<handle>`: Reports the file pointer. Gives a 16-bit sector number. (Not a "real" command; ars-emu provides it, but whether the real cartridge had a command like this is not known as ARS DOS doesn't use it)
+- `Z`: DOS sends this command on shutdown. I guess it's supposed to give the controller a chance to flush any buffers it might have, and/or maybe it puts it into a low-power mode?
+
+If there are any other commands, I don't know about them because DOS doesn't use them. If it's like the VIC-1541 there should be commands to write and/or read directly from the controller's internal memory, but I don't have to emulate them because DOS doesn't need them! Hahahahaha!
+
+I have no idea how fast the real floppy drive is. ars-emu delays every read/write operation by one frame, giving a throughput of about 15 kilobytes per second. It also has rudimentary seek time emulation. These are tuned to provide approximately the experience I remember from dealing with floppy drives of that era.
+
+File listing response is a 16-bit `<sector>` indicating number of free sectors, followed by one or more `<name><size>` indicating a file with the given size. The DOS `LIST` command doesn't contain sorting logic, so presumably any sorting would have been done on the controller. ars-emu does sort the response alphabetically. You'll know when the list is over because the controller will start spamming zeroes again.
 
 # "Fake" hardware
 

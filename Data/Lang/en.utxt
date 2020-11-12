@@ -55,11 +55,36 @@ Known options:
 
 .
 
+: Written to stderr after USAGE if floppy support is built into this version.
+FLOPPY_USAGE
+-f: Mount a floppy in one of the two drives.
+-F: Make all floppy IO occur instantly.
+
+A floppy specification starts with "A" or "B", denoting which drive to mount
+the floppy in. This is followed by "-" or "+", indicating whether writes are
+forbidden or allowed. This is followed by the path to the directory containing
+the floppy disk's files. Examples:
+
+  -f A-/mnt/floppy
+  (mount a read-only floppy in drive A, whose files are in /mnt/floppy)
+
+  -f B+C:\\ARS-Floppy
+  (mount a writable floppy in drive B, whose files are in C:\\ARS-Floppy)
+
+.
+
 : Written to stderr, followed by USAGE, when an option that requires an
 : argument is not given an argument.
 : $1: The option that was missing its argument, including a leading `-`
 MISSING_COMMAND_LINE_ARGUMENT
 Error: Option $1 requires an argument
+
+.
+
+: Written to stderr, followed by USAGE, when an invalid floppy specification is
+: passed to -f.
+INVALID_FLOPPY_SPEC_ERROR
+Error: Invalid floppy specification
 
 .
 
@@ -233,6 +258,21 @@ The Font file is corrupted. Please redownload ARS-emu.
 THREAD_CREATION_ERROR
 Unable to create a worker thread:
 $1
+.
+
+: Displayed when the cartridge requests a floppy controller, but floppy support
+: was not built into ARS-emu.
+FLOPPY_NOT_SUPPORTED_ERROR
+This Game Folder requires floppy disk support, but floppy disk support was not
+built into this version of the emulator.
+.
+
+: Written to stderr if attempting to load a floppy sound clip failed.
+:
+: $1: The path of the sample that didn't load
+FLOPPY_SOUND_CLIP_MISSING
+Unable to load floppy sound clip: $1
+
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

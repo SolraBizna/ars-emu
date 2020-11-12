@@ -6,10 +6,12 @@
 #include "audiocvt.hh"
 #include "windower.hh"
 #include "menu.hh"
+#include "io.hh"
 
 #include <cmath>
 #include <array>
 #include <atomic>
+#include <deque>
 
 namespace {
 #if !NO_DEBUG_CORES
@@ -18,6 +20,53 @@ namespace {
   SDL_Window* debugwindow = nullptr;
   SDL_Renderer* debugrenderer;
 #endif
+  std::vector<int8_t> floppy_sound_clips[(size_t)ARS::FloppySoundType::NUM_FLOPPY_SOUNDS];
+  class FloppyDriveSounder {
+    struct qel {
+      int clip;
+      unsigned int delay_till_next;
+      qel(int clip, unsigned int delay_till_next) : clip(clip), delay_till_next(delay_till_next) {}
+    };
+    std::deque<qel> queue;
+    int cur_clip = -1;
+    size_t sample_n = 0;
+  public:
+    FloppyDriveSounder() {}
+    void queue_sound(ARS::FloppySoundType snd, unsigned int min_delay_till_next) {
+      if(queue.empty() && queue.size() < 5) {
+        if(!floppy_sound_clips[(int)snd].empty()) {
+          cur_clip = (int)snd;
+          sample_n = 0;
+        }
+      }
+      queue.emplace_back((int)snd, min_delay_till_next);
+    }
+    bool is_active() {
+      return cur_clip >= 0 || !queue.empty();
+    }
+    float get_next_sample() {
+      if(!queue.empty()) {
+        auto&& front = queue.front();
+        --front.delay_till_next;
+        if(front.delay_till_next == 0) {
+          queue.pop_front();
+          if(!queue.empty()) {
+            if(!floppy_sound_clips[queue.front().clip].empty()) {
+              cur_clip = queue.front().clip;
+              sample_n = 0;
+            }
+          }
+        }
+      }
+      if(cur_clip < 0) return 0.0f;
+      auto raw = floppy_sound_clips[cur_clip][sample_n];
+      ++sample_n;
+      if(sample_n >= floppy_sound_clips[cur_clip].size()) {
+        cur_clip = -1;
+      }
+      return (float)raw / 1024.0f;
+    }
+  } floppy_drive_sounders[2];
   enum { SYNC_NONE=0, SYNC_STATIC, SYNC_DYNAMIC, NUM_SYNC_TYPES };
   // Of setups that require a given number of channels, the "most standard"
   // setup should go first. Stereo should precede Headphones, and Quadraphonic
@@ -333,7 +382,14 @@ namespace {
   // ET209 output: Center, Right, Left, Boost
   void get_frame(float* out_frame) {
     int16_t raw_frame[4];
+    float floppy_frame = 0.0f;
     ARS::apu.output_frame(raw_frame);
+    for(auto&& drive : floppy_drive_sounders) {
+      if(drive.is_active()) {
+        floppy_frame += drive.get_next_sample();
+      }
+    }
+    // floppy_frame will be added to the center channel after the filter
     switch(REQUIRED_SOURCE_CHANNELS[active_sound_type]) {
     case 1:
       // preserve volumes
@@ -341,6 +397,7 @@ namespace {
         * ET209_OUTPUT_TO_FLOAT_SAMPLE * 0.5f;
       prev_frame[0] =
         out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
+      out_frame[0] += floppy_frame;
       break;
     case 2:
       // do exactly what a "real" ARS would do
@@ -352,6 +409,8 @@ namespace {
         out_frame[0] += (prev_frame[0] - out_frame[0]) *DAC_FILTER_COEFFICIENT;
       prev_frame[1] =
         out_frame[1] += (prev_frame[1] - out_frame[1]) *DAC_FILTER_COEFFICIENT;
+      out_frame[0] += floppy_frame;
+      out_frame[1] += floppy_frame;
       break;
     case 3:
       // let's start rearranging things with tweezers now
@@ -365,6 +424,7 @@ namespace {
         out_frame[1] += (prev_frame[1] - out_frame[1]) *DAC_FILTER_COEFFICIENT;
       prev_frame[2] =
         out_frame[2] += (prev_frame[2] - out_frame[2]) *DAC_FILTER_COEFFICIENT;
+      out_frame[2] += floppy_frame;
       break;
     case 4:
       // the onion has blossomed
@@ -382,6 +442,7 @@ namespace {
         out_frame[2] += (prev_frame[2] - out_frame[2]) *DAC_FILTER_COEFFICIENT;
       prev_frame[3] =
         out_frame[3] += (prev_frame[3] - out_frame[3]) *LFE_FILTER_COEFFICIENT;
+      out_frame[2] += floppy_frame;
       break;
     }
   }
@@ -937,4 +998,30 @@ std::shared_ptr<Menu> Menu::createAudioMenu() {
   items.emplace_back(new Menu::Divider());
   items.emplace_back(new Menu::BackButton(sn.Get("GENERIC_MENU_FINISHED_LABEL"_Key)));
   return std::make_shared<Menu>(sn.Get("AUDIO_MENU_TITLE"_Key), items);
+}
+
+static const char* sound_clip_paths[(size_t)ARS::FloppySoundType::NUM_FLOPPY_SOUNDS] = {
+  "Floppy/short_seek.raw",
+  "Floppy/long_seek_1.raw",
+  "Floppy/long_seek_2.raw",
+};
+void ARS::setup_floppy_sounds() {
+  for(size_t n = 0; n < (size_t)ARS::FloppySoundType::NUM_FLOPPY_SOUNDS; ++n) {
+    floppy_sound_clips[n].clear();
+    auto f = IO::OpenDataFileForRead(sound_clip_paths[n]);
+    if(!f) {
+      sn.Out(std::cerr, "FLOPPY_SOUND_CLIP_MISSING"_Key, {sound_clip_paths[n]});
+      continue;
+    }
+    // ??? seems to work
+    // https://stackoverflow.com/questions/4761529/efficient-way-of-reading-a-file-into-an-stdvectorchar
+    floppy_sound_clips[n].assign(std::istreambuf_iterator<char>(*f),
+                                 std::istreambuf_iterator<char>());
+  }
+}
+
+void ARS::queue_floppy_sound(unsigned int drive, FloppySoundType snd,
+                             unsigned int min_delay_till_next) {
+  if(drive >= 2) return;
+  floppy_drive_sounders[drive].queue_sound(snd, min_delay_till_next * 798);
 }

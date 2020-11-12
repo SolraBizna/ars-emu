@@ -27,7 +27,7 @@ The main processor of the ARS is a [W65C02](https://en.wikipedia.org/wiki/WDC_65
 
 ## Memory<a name="memory">
 
-The ARS is commonly quoted as containing 30.5KB of "Work RAM". In practice, nearly a full 32KiB can be used. It also contains 64KiB of Video RAM, 256 bytes of Sprite State Memory, and 64 bytes of Sprite Attribute Memory.
+The ARS is commonly quoted as containing 30.5KB of "Work RAM". In practice, nearly a full 32KiB can be used. It also contains 64KiB of Video RAM, 256 bytes of Sprite State Memory, and 64 bytes of Sprite Attribute Memory. Cartridges could include extra RAM; the ARS DOS cartridge (see below) apparently included a SIMM slot allowing up to 1MiB of extra RAM.
 
 The console contains a simple bank-based memory mapper. Depending on the way the cartridge is wired, it gives access to between 1MiB and 8MiB of address space for cartridge data and hardware.
 
@@ -49,15 +49,19 @@ The PPU also supports 64 hardware sprites. Each sprite can use one of eight regi
 
 Finally, there is the overlay. It is a non-scrollable 32x28 tilemap, which is always "on top of" the other layers. It is usually used for on-screen text, and stationary interface elements during gameplay. The first and last row are repeated to make it 32x30; this is usually not visible due to overscan. When the overlay is enabled, it "steals" cycles from the main CPU to fetch its data, effectively slowing down the CPU by about 11.25%.
 
-## Audio
+## Audio<a name="audio">
 
 The ARS contains a custom "digital synthesizer" chip. It theoretically outputs at just over 47940Hz&mdash;the main clock divided by 256. It supports seven "voices", each of which can be a square, sawtooth, triangle, pulse, or strange hybrid wave. It also has a noise generator that can output white or periodic noise at various bandwidths. It has limited stereo capability; each voice can either be Center, Left, Right, or Boosted. (Noise is always Boosted.)
 
-## Controller
+## Controller<a name="controller">
 
-The console has two DA-12 controller ports. They are very flexible, but ET never sold any controller-port devices other than the standard controller. They had developed a light gun, a keyboard, and even a light pen, but these were never released in retail.
+The console has two DA-12 controller ports. They are very flexible, but ET never sold any controller-port devices other than the standard controller. They had developed a light gun, a light pen, a keyboard, a mouse, and even a modem, but these were never released in retail.
 
 Unlike the console and its cartridges, the standard controller is cheap and internally simple. It has an eight-way hat switch, three face buttons (A, B, C), and a Pause button.
+
+## ARS DOS<a name="dos">
+
+An ARS DOS cartridge was developed, which contained a simple "DOS ROM", a SIMM slot supporting up to 1MiB of expansion RAM, and an interface for two floppy drives. No examples of this hardware or documentation for it are known to have survived, except that complete copies of the DOS ROM are incorporated into some first-party games; this was because, in addition to routines for dealing with disks, the DOS ROM included useful math routines and an 8x8 bitmap font. Reverse engineering of the disk routines in this ROM gave enough information for modern emulator authors to create a compatible disk interface.
 
 # Problems<a name="problems">
 
@@ -79,4 +83,4 @@ Most long-term users of the ARS modify their consoles, attaching large heatsinks
 
 At launch, the ARS came bundled with one of several games made in-house at Eiling Technologies. Unfortunately, most of ET's engineers were neither experienced nor particularly talented when it came to game design. While there were a few decent games, the majority of first party games were awful.
 
-After several months of lackluster sales, ET offered development tools and expertise to any developer who asked, even resorting to cold calling to recruit developers. The few third-party games that were eventually released came far too late a date to save the console or the company.
+After several months of lackluster sales, ET offered development tools and expertise to any developer who asked, even resorting to cold calling to recruit developers. The few third-party games that were eventually released came far too late to save the console or the company.
