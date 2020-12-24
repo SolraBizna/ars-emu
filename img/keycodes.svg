@@ -258,19 +258,19 @@
   </g>
   <g transform="translate(165,0)">
     <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
-    <text x="5" y="5">0C</text>
+    <text x="5" y="5">0D</text>
   </g>
   <g transform="translate(175,0)">
     <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
-    <text x="5" y="5">0D</text>
+    <text x="5" y="5">0F</text>
   </g>
   <g transform="translate(155,10)">
     <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
-    <text x="5" y="5">0E</text>
+    <text x="5" y="5">0C</text>
   </g>
   <g transform="translate(165,10)">
     <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
-    <text x="5" y="5">0F</text>
+    <text x="5" y="5">0E</text>
   </g>
   <g transform="translate(175,10)">
     <rect x="0.5" y="0.5" width="9" height="9" rx="1" ry="1"/>
