@@ -23,6 +23,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
+#include <fstream>
 
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
@@ -245,6 +246,23 @@ namespace {
             break;
           case 'd':
             allow_debug_port = true;
+            debug_port_file = nullptr;
+            break;
+          case 'D':
+            if(n >= argc) {
+              sn.Out(std::cout, "MISSING_COMMAND_LINE_ARGUMENT"_Key, {"-D"});
+              valid = false;
+            }
+            else {
+              std::string nextarg = argv[n++];
+              allow_debug_port = true;
+              debug_port_file = std::make_unique<std::ofstream>(nextarg);
+              if(!debug_port_file || !*debug_port_file) {
+                sn.Out(std::cout, "DEBUG_PORT_OUTPUT_FILE_FAILED_TO_OPEN"_Key,
+                       {nextarg});
+                valid = false;
+              }
+            }
             break;
           case 'A':
             debugging_audio = true;

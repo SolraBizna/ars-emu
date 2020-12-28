@@ -47,6 +47,7 @@ Known options:
 -z: Never allow access to emulator configuration features, even for embedded
     copies of SimpleConfig
 -d: Allow the cartridge to print to stderr (for debugging purposes)
+-D: As -d, but write the debug port output to the given file, instead of stderr
 -q: Quit when STP is executed
 -S: Use safe video and sound settings (for recovering from bad configurations)
 -A: Enable additional (English only) audio debugging output (useful only when
@@ -141,6 +142,12 @@ AUDIO_BUFFER_SIZE_MISMATCH
 Requested a $1-frame audio buffer, but got a $2-frame one instead.
 (This is probably harmless.)
 
+.
+
+: Written to stderr if we weren't able to open the file passed to -D.
+: $1: The file path.
+DEBUG_PORT_OUTPUT_FILE_FAILED_TO_OPEN
+Unable to open the file $1
 .
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

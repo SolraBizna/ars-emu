@@ -18,6 +18,7 @@ namespace ARS {
   void tell_expansions_about_frame();
   extern bool always_allow_config_port, allow_secure_config_port,
     secure_config_port_checked, allow_debug_port, mapped_debug_port;
+  extern std::unique_ptr<std::ostream> debug_port_file;
 }
 
 #endif

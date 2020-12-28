@@ -10,6 +10,7 @@ bool ARS::always_allow_config_port = false,
   ARS::secure_config_port_checked = false,
   ARS::allow_debug_port = false,
   ARS::mapped_debug_port = false;
+std::unique_ptr<std::ostream> ARS::debug_port_file = nullptr;
 std::unique_ptr<ARS::Expansion> ARS::expansions[8];
 
 namespace {
@@ -55,7 +56,10 @@ namespace {
   };
   class DebugPort : public ARS::Expansion {
     void output(uint8_t value) override {
-      std::cerr << value;
+      if(debug_port_file)
+        *debug_port_file << value;
+      else
+        std::cerr << value;
     }
     uint8_t input() override {
       cpu->setSO(true);
