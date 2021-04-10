@@ -425,7 +425,7 @@ Same ID as the light gun. Button bits 3-6 are always 0 on the light pen; this le
 
 Light pens are normally plugged into the second port (`$0241`) when used with a controller, or the first port (`$0240`) when used with a keyboard.
 
-`write $00`: Get button state
+`write $00`: Get button state  
 `write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
 `write $80`: Get controller ID (`$04`)  
 `write $C0`: Get Y position in frame, 0-239. Only valid if the in-frame bit is 1.
@@ -445,7 +445,7 @@ Same ID as the light pen. Button bits 3-6 are always 0 on the light pen; this le
 
 Light guns are normally plugged into the second port (`$0241`) when used with a controller, or the first port (`$0240`) when used with a keyboard.
 
-`write $00`: Get button state
+`write $00`: Get button state  
 `write $40`: Get X position in frame, 0-255. Only valid if the in-frame bit is 1.  
 `write $80`: Get controller ID (`$04`)  
 `write $C0`: Get Y position in frame, 0-239. Only valid if the in-frame bit is 1.
@@ -770,7 +770,7 @@ The emulator will load a cartridge which contains a HAM, but will always ignore 
 
 Provides generic access to emulator configuration. Homebrew games can use this to provide in-game configuration menus. The built-in configuration system for the emulator (SimpleConfig) uses this.
 
-If (and ONLY if) the Configuration port is enabled on the command line, *and* the ROM image has bit 7 set in its expansion hardware flags, will the port be fully enabled. If the port is neither enabled nor disabled on the command line, and bit 7 is set in the expansion hardware flags, the port will be enabled in "secure" mode. (See below.)
+If (and ONLY if) the Configuration port is enabled on the command line, *and* the Game Folder lists the config port in its expansion hardware, will the port be fully enabled. If the port is neither enabled nor disabled on the command line, and the Game Folder requests it, the port will still be enabled, but in "secure" mode. (See below.)
 
 When the port is enabled, a cold read (no other command in progress), returns `$EC`, and whenever a byte is written to the port, any previous command result is discarded.
 
