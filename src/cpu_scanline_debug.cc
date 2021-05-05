@@ -529,12 +529,24 @@ namespace {
         output_addr(std::cout, addr, false, true);
         std::cout << " (vector pull, ";
         switch(addr) {
-        case core.NMI_VECTOR: std::cout << "NMI low"; break;
-        case core.NMI_VECTOR+1: std::cout << "NMI high"; break;
-        case core.RESET_VECTOR: std::cout << "RESET low"; break;
-        case core.RESET_VECTOR+1: std::cout << "RESET high"; break;
-        case core.IRQ_VECTOR: std::cout << "IRQ low"; break;
-        case core.IRQ_VECTOR+1: std::cout << "IRQ high"; break;
+        case W65C02::Core<CPU_ScanlineDebug>::NMI_VECTOR:
+          std::cout << "NMI low";
+          break;
+        case W65C02::Core<CPU_ScanlineDebug>::NMI_VECTOR+1:
+          std::cout << "NMI high";
+          break;
+        case W65C02::Core<CPU_ScanlineDebug>::RESET_VECTOR:
+          std::cout << "RESET low";
+          break;
+        case W65C02::Core<CPU_ScanlineDebug>::RESET_VECTOR+1:
+          std::cout << "RESET high";
+          break;
+        case W65C02::Core<CPU_ScanlineDebug>::IRQ_VECTOR:
+          std::cout << "IRQ low";
+          break;
+        case W65C02::Core<CPU_ScanlineDebug>::IRQ_VECTOR+1:
+          std::cout << "IRQ high";
+          break;
         default: std::cout << "INVALID"; break;
         }
         std::cout << ") returns $"
