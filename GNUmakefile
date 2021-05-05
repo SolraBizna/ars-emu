@@ -22,13 +22,11 @@ all: gen all-data \
 	$(FULL_EXE_LIST)
 endif
 
-define define_exe =
-$(eval
-bin/$1-release$(EXE): obj/$1.o $2
+define define_exe
+bin/$(1)-release$(EXE): obj/$(1).o $(2)
 ifndef RELEASE_ONLY
-bin/$1-debug$(EXE): $(patsubst %.o,%.debug.o,obj/$1.o $2)
+bin/$(1)-debug$(EXE): $$(patsubst %.o,%.debug.o,obj/$(1).o $(2))
 endif
-)
 endef
 
 EXTRA_OBJECTS?=
@@ -42,11 +40,11 @@ FX_IMPLEMENTATIONS+=obj/fximp.normal.o
 # We include obj/lsx/lsx_bzero.o while making no attempt to prevent it from
 # being optimized out, because there is no sensitive data to "leak". The only
 # SimpleConfig image currently considered "secure" is publicly available.
-$(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o obj/audiocvt.o obj/windower.o obj/lsx/lsx_sha256.o obj/lsx/lsx_bzero.o obj/ppu_common.o obj/fx.o obj/messages.o obj/display.o obj/display_safe.o obj/display_sdl.o obj/upscale.o obj/gamefolder.o obj/gamearchive.o obj/byuuML/byuuML.o obj/barechip.o obj/devcart.o obj/expansions.o obj/floppy.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS))
+$(eval $(call define_exe,ars-emu,obj/ppu_scanline.o obj/cartridge.o obj/cpu_scanline.o obj/cpu_scanline_debug.o obj/cpu_scanline_intprof.o obj/eval.o obj/controller.o obj/apu.o obj/sn_core.o obj/sn_get_system_language.o obj/font.o obj/utfit.o obj/configurator.o obj/prefs.o obj/menu.o obj/menu_main.o obj/menu_fight.o obj/menu_keyboard.o obj/audiocvt.o obj/windower.o obj/lsx/lsx_sha256.o obj/lsx/lsx_bzero.o obj/ppu_common.o obj/fx.o obj/messages.o obj/display.o obj/display_safe.o obj/display_sdl.o obj/upscale.o obj/gamefolder.o obj/gamearchive.o obj/byuuML/byuuML.o obj/barechip.o obj/devcart.o obj/expansions.o obj/floppy.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS)))
 ifndef CROSS_COMPILE
-$(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS))
-$(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS))
-$(call define_exe,fxbench,obj/sn_core.o obj/fx.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS))
+$(eval $(call define_exe,compile-font,obj/sn_core.o $(TEG_OBJECTS)))
+$(eval $(call define_exe,pretty-string,obj/font.o obj/utfit.o obj/sn_core.o $(TEG_OBJECTS)))
+$(eval $(call define_exe,fxbench,obj/sn_core.o obj/fx.o $(FX_IMPLEMENTATIONS) $(TEG_OBJECTS) $(EXTRA_OBJECTS)))
 endif
 
 gen:
