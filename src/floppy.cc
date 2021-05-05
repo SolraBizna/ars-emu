@@ -6,6 +6,7 @@
 #include "apu.hh"
 
 #include <boost/filesystem.hpp>
+#include <array>
 
 using namespace ARS;
 using namespace boost::filesystem;
