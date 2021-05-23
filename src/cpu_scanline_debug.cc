@@ -10,6 +10,7 @@
 #include "cpu.hh"
 #include "apu.hh"
 #include "ppu.hh"
+#include "gamefolder.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -1225,20 +1226,12 @@ namespace {
 }
 
 std::unique_ptr<ARS::CPU>
-ARS::makeScanlineDebugCPU(const std::string& rom_path) {
+ARS::makeScanlineDebugCPU(const std::string&) {
   auto ret = std::make_unique<CPU_ScanlineDebug>();
-  auto it = std::find(rom_path.rbegin(), rom_path.rend(), '.');
-  if(it != rom_path.rend()) {
-    std::string sympath(rom_path.begin(),
-                        rom_path.begin()+rom_path.length()
-                        -(it-rom_path.rbegin())-1);
-    sympath += ".sym";
-    auto symfile = IO::OpenRawPathForRead(sympath);
-    if(!symfile || !*symfile)
-      std::cout << "Warning: Couldn't load symbol file. You must use the load-symbols command if\n"
-                << "you want symbols to be available.\n";
-    else
-      ret->loadSymbols(*symfile);
+  for(const auto& it : GameFolder::symbol_files_to_load) {
+    auto f = IO::OpenRawPathForRead(it.first);
+    if(f)
+      ret->loadSymbols(*f, it.second);
   }
   std::cout << "Debugger started.\n";
   return ret;

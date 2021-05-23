@@ -27,6 +27,8 @@ namespace ARS {
                   const uint8_t* initp = nullptr, size_t initsize = 0);
     const byuuML::document& getManifest() const { return *manifest; }
     static std::unique_ptr<GameFolder> open(std::string path);
+    static std::vector<std::pair<std::string, uint8_t>> symbol_files_to_load;
+    static bool load_debug_symbols;
   };
 };
 

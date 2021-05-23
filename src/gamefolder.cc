@@ -125,6 +125,25 @@ namespace {
         = std::make_unique<uint8_t[]>(size);
       size_t red = ARS::readFill(*f, contentpath, buf.get(), size);
       if(red < size) memset(buf.get()+red, pad, size-red);
+#ifndef NO_DEBUG_CORES
+      if(load_debug_symbols) {
+        std::string sympath = contentpath + ".sym";
+        bool symbols_present = false;
+        if(IO::OpenRawPathForRead(sympath)) symbols_present = true;
+        else {
+          sympath = contentpath;
+          while(sympath.size() > 0 && *sympath.crbegin() != '.'
+                && *sympath.crbegin() != *DIR_SEP) sympath.pop_back();
+          if(sympath.size() > 0 && *sympath.crbegin() == '.') {
+            sympath += "sym";
+            if(IO::OpenRawPathForRead(sympath)) symbols_present = true;
+          }
+        }
+        if(symbols_present) {
+          symbol_files_to_load.emplace_back(sympath, 0);
+        }
+      }
+#endif
       return std::make_unique<ARS::LoadedROMContent>(std::move(buf), size);
     }
     std::unique_ptr<ARS::WritableMemory>
@@ -289,3 +308,7 @@ size_t ARS::readFill(std::istream& in, const std::string& path,
   }
   return size - rem;
 }
+
+std::vector<std::pair<std::string, uint8_t>>
+ARS::GameFolder::symbol_files_to_load;
+bool ARS::GameFolder::load_debug_symbols = false;

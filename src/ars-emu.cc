@@ -221,10 +221,14 @@ namespace {
             }
             else {
               std::string nextarg = argv[n++];
+              GameFolder::load_debug_symbols = false;
               if(nextarg == "fast") makeCPU = makeScanlineCPU;
 #ifndef NO_DEBUG_CORES
               else if(nextarg == "fast_intprof") makeCPU = makeScanlineIntProfCPU;
-              else if(nextarg == "fast_debug") makeCPU = makeScanlineDebugCPU;
+              else if(nextarg == "fast_debug") {
+                makeCPU = makeScanlineDebugCPU;
+                GameFolder::load_debug_symbols = true;
+              }
 #endif
               else {
                 sn.Out(std::cout, "UNKNOWN_CORE"_Key, {nextarg});
