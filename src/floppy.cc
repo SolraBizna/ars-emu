@@ -349,7 +349,6 @@ namespace {
       response_buf.push_back('O');
     }
     std::unique_ptr<Handle> open_file(const std::string& name) {
-      error_code ec;
       auto path = base_path;
       path /= name;
       if(exists(path) && !is_regular_file(path)) {
@@ -363,7 +362,6 @@ namespace {
                                         fstream::in | fstream::binary);
     }
     std::unique_ptr<Handle> create_file(const std::string& name) {
-      error_code ec;
       auto path = base_path;
       path /= name;
       if(exists(path)) {
