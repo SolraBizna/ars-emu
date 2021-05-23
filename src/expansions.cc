@@ -15,7 +15,7 @@ std::unique_ptr<ARS::Expansion> ARS::expansions[8];
 
 namespace {
   bool config_port_access_is_secure(uint16_t pc) {
-    return pc >= 0xF000 || pc <= 0xF7FF;
+    return pc >= 0xF000 && pc <= 0xF7FF;
   }
   bool secure_config_port_available;
   class ConfigPort : public ARS::Expansion {
