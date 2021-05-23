@@ -11,6 +11,7 @@
 #include "apu.hh"
 #include "ppu.hh"
 #include "gamefolder.hh"
+#include "cartridge.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -85,7 +86,7 @@ namespace {
     uint16_t executing_pc = 0;
     std::string repeat_command;
     bool get_symbol(const std::string& string, uint32_t& out) {
-      if(string.length() > 0 && string[0] == '_') {
+      if(string.length() > 0 && string[0] == '@') {
         if(string == "@A") { out = core.read_a(); return true; }
         else if(string == "@X") { out = core.read_x(); return true; }
         else if(string == "@Y") { out = core.read_y(); return true; }
@@ -339,7 +340,11 @@ namespace {
       return addr | (ARS::getBankForAddr(addr)<<16);
     }
   public:
-    CPU_ScanlineDebug() : core(*this), disassembler(*this) {}
+    CPU_ScanlineDebug() : core(*this), disassembler(*this) {
+      symdef_to_addr_map.insert(std::make_pair("_sizeof_stdint", 68));
+      symdef_to_addr_map.insert(std::make_pair("_sizeof_nullinit", 2048));
+      symdef_to_addr_map.insert(std::make_pair("_sizeof_etinit", 2048));
+    }
     ~CPU_ScanlineDebug() {}
     void handleReset() override {
       if(trace_pins) {
@@ -648,7 +653,9 @@ namespace {
               if(name[0] == '_') tryDelocalizeName(name, mapped);
 #endif
               if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()) {
-                std::cout << "Ignoring duplicate symbol "<<name<<"\n";
+                // now that we trawl banks for ETinit fragments, this would get
+                // really annoying
+                //std::cout << "Ignoring duplicate symbol "<<name<<"\n";
                 continue;
               }
               addr_to_label_map.insert(std::make_pair(mapped, name));
@@ -664,16 +671,18 @@ namespace {
                               std::regex_constants::match_continuous)) {
             std::string name(matchResult[2]);
             if(name.length() == 0) {
-              std::cout << "Ignoring unnamed symbol\n"
+              std::cout << "Ignoring unnamed definition\n"
                 "(line was: \""<<line<<"\")\n";
               continue;
             }
-            else if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()){
-              std::cout << "Ignoring duplicate symbol "<<name<<"\n";
-              continue;
-            }
+            auto found = symdef_to_addr_map.find(name);
             try {
               uint32_t value = parse_big_value(matchResult[1]);
+              if(found != symdef_to_addr_map.end() && found->second != value) {
+                std::cout << "Ignoring duplicate definition of "<<name<<
+                  " with different value!\n";
+                continue;
+              }
               addr_to_definition_map.insert(std::make_pair(value, name));
               symdef_to_addr_map.insert(std::make_pair(name, value));
             }
@@ -1241,6 +1250,34 @@ namespace {
      "Quit the emulator.",
      &CPU_ScanlineDebug::cmd_quit},
   };
+  std::vector<uint8_t> load_data(const char* path) {
+    std::vector<uint8_t> ret;
+    auto f = IO::OpenDataFileForRead(path);
+    if(f) {
+      // thanks to SO #15138353
+      f->unsetf(std::ios::skipws);
+      f->seekg(0, std::ios::end);
+      ret.reserve(f->tellg());
+      f->seekg(0, std::ios::beg);
+      std::copy(std::istream_iterator<uint8_t>(*f),
+                std::istream_iterator<uint8_t>(),
+                std::back_inserter(ret));
+    }
+    else {
+      std::cout << "Unable to load optional data file: " << path << "\n";
+    }
+    return ret;
+  }
+  bool check_data(uint8_t bank, uint16_t base_addr,
+                  const std::vector<uint8_t>& target) {
+    if(target.size() == 0 || (base_addr + target.size()) > 65536) return false;
+    for(unsigned int n = 0; n < target.size(); ++n) {
+      if(ARS::cartridge->read(bank, base_addr+n) != target[n]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 std::unique_ptr<ARS::CPU>
@@ -1250,6 +1287,29 @@ ARS::makeScanlineDebugCPU(const std::string&) {
     auto f = IO::OpenRawPathForRead(it.first);
     if(f)
       ret->loadSymbols(*f, it.second);
+  }
+  std::vector<uint8_t> etinit_data = load_data("ROMs/etinit.bin");
+  std::vector<uint8_t> nullinit_data = load_data("ROMs/nullinit.bin");
+  std::vector<uint8_t> stdint_data = load_data("ROMs/stdint.bin");
+  for(unsigned int bank = 0; bank < 256; ++bank) {
+    if(check_data(bank, 0xF800, etinit_data)) {
+      auto f = IO::OpenDataFileForRead("ROMs/etinit.sym");
+      if(f) ret->loadSymbols(*f, bank);
+      else std::cout << "Warning: Unable to load symbols from " <<
+             "ROMs/etinit.sym" << "\n";
+    }
+    else if(check_data(bank, 0xF800, nullinit_data)) {
+      auto f = IO::OpenDataFileForRead("ROMs/nullinit.sym");
+      if(f) ret->loadSymbols(*f, bank);
+      else std::cout << "Warning: Unable to load symbols from " <<
+             "ROMs/nullinit.sym" << "\n";
+    }
+    else if(check_data(bank, 0xFFBC, stdint_data)) {
+      auto f = IO::OpenDataFileForRead("ROMs/stdint.sym");
+      if(f) ret->loadSymbols(*f, bank);
+      else std::cout << "Warning: Unable to load symbols from " <<
+             "ROMs/stdint.sym" << "\n";
+    }
   }
   std::cout << "Debugger started.\n";
   return ret;

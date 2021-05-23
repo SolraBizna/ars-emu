@@ -1,0 +1,32 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "bin/etinit.bin".
+
+[labels]
+00:f800 etinit
+00:f800 etinit@licensed_text_start
+00:f990 etinit@licensed_tilemap_start
+00:f9dc etinit@licensed_text_end
+00:f9dc etinit@nmi
+00:f9e1 etinit@logoNMI
+00:f9ff etinit@bareRTI
+00:fa00 etinit@ETlogo_tiles_start
+00:fae0 etinit@ETlogo_sprite_base
+00:fcf0 etinit@ETlogo_tiles_end
+00:fcf0 etinit@ETlogo_palette
+00:fd01 etinit@reset
+00:fea6 etinit@reset@rezero
+00:ff16 etinit@reset@zeroAPUPPU
+00:ff25 etinit@reset@audioScript
+00:ff3d etinit@reset@tilemapScript
+00:ff4e etinit@reset@spriteScript
+00:ff62 etinit@reset@spriteAttrs
+00:ff67 etinit@irq
+00:ff78 etinit@irq@isBRK
+00:ff7d etinit@logoIRQ
+00:ff9b etinit@irqTable
+00:ffa6 etinit@copyright_notice
+00:ffc1 etinit@awaitNMI
+00:ffcb etinit@stdBRK
+00:ffdc etinit@stdBRK@brkMessage
+00:ffe3 etinit@mysterious_signature
+00:fffa etinit@vectors

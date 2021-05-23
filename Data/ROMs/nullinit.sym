@@ -1,0 +1,16 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "bin/nullinit.bin".
+
+[labels]
+00:f800 nullinit
+00:f800 nullinit@reset
+00:f893 nullinit@irq
+00:f8a4 nullinit@irq@isBRK
+00:f8a9 nullinit@nmi
+00:f8ae nullinit@bareRTI
+00:f8af nullinit@weeds
+00:ffc1 nullinit@awaitNMI
+00:ffcb nullinit@stdBRK
+00:ffdc nullinit@stdBRK@brkMessage
+00:ffe3 nullinit@weeds2
+00:fffa nullinit@vectors

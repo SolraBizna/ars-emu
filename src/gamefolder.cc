@@ -129,14 +129,14 @@ namespace {
       if(load_debug_symbols) {
         std::string sympath = contentpath + ".sym";
         bool symbols_present = false;
-        if(IO::OpenRawPathForRead(sympath)) symbols_present = true;
+        if(IO::OpenRawPathForRead(sympath, false)) symbols_present = true;
         else {
           sympath = contentpath;
           while(sympath.size() > 0 && *sympath.crbegin() != '.'
                 && *sympath.crbegin() != *DIR_SEP) sympath.pop_back();
           if(sympath.size() > 0 && *sympath.crbegin() == '.') {
             sympath += "sym";
-            if(IO::OpenRawPathForRead(sympath)) symbols_present = true;
+            if(IO::OpenRawPathForRead(sympath, false)) symbols_present = true;
           }
         }
         if(symbols_present) {

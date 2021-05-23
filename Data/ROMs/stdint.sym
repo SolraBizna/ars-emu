@@ -1,0 +1,13 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "bin/stdint.bin".
+
+[labels]
+00:ffbc stdint
+00:ffbc stdint@nmi
+00:ffc1 stdint@awaitNMI
+00:ffcb stdint@stdBRK
+00:ffdc stdint@stdBRK@brkMessage
+00:ffe3 stdint@irq
+00:fff4 stdint@irq@isBRK
+00:fff9 stdint@weed
+00:fffa stdint@vectors
