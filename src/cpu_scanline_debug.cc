@@ -240,18 +240,39 @@ namespace {
           if(it->first != found) { ++it; break; }
         }
         do {
-          out << (!have_outputted_alternate?" (":", ")
-              << it->second;
-          if(addr != found) out << "+" << (addr-found);
-          have_outputted_alternate = true;
+          bool symbol_size_okay = true;
+          std::string outer_def_name = it->second;
+          auto p = outer_def_name.find("@");
+          if(p != std::string::npos) {
+            outer_def_name.resize(p);
+          }
+          auto outer_def = symdef_to_addr_map.find(outer_def_name);
+          if(outer_def == symdef_to_addr_map.end()) {}
+          else if(outer_def->second > addr) {} // assume spurious
+          else {
+            std::string sizeof_def_name = "_sizeof_" + outer_def_name;
+            auto size_def = symdef_to_addr_map.find(sizeof_def_name);
+            if(size_def != symdef_to_addr_map.end()
+               && (addr - outer_def->second) >= size_def->second) {
+              symbol_size_okay = false;
+            }
+          }
+          if(symbol_size_okay) {
+            out << (!have_outputted_alternate?" (":", ")
+                << it->second;
+            if(addr != found) out << "+" << (addr-found);
+            have_outputted_alternate = true;
+          }
           ++it;
         } while(it != addr_to_label_map.end() && it->first == found);
       }
       it = addr_to_definition_map.find(addr);
       if(it != addr_to_definition_map.end()) {
         do {
-          out << (!have_outputted_alternate?" (":", ") << it->second;
-          have_outputted_alternate = true;
+          if(it->second.rfind("_sizeof_", 0) != 0) {
+            out << (!have_outputted_alternate?" (":", ") << it->second;
+            have_outputted_alternate = true;
+          }
           ++it;
         } while(it != addr_to_label_map.end() && it->first == addr);
       }
@@ -595,7 +616,7 @@ namespace {
       enum class sec {
         LABELS, DEFINITIONS, OTHER
       } curSec = sec::OTHER;
-      std::regex label_regex("^([0-9A-Fa-f]{1,4}):([0-9A-Fa-f]{1,4}) (.*)$");
+      std::regex label_regex("^([0-9A-Fa-f]{1,2}):([0-9A-Fa-f]{1,4}) (.*)$");
       std::regex definition_regex("^([0-9A-Fa-f]{1,8}) (.*)$");
       std::cmatch matchResult;
       while(f) {
@@ -623,6 +644,7 @@ namespace {
               uint16_t addr = parse_address(matchResult[2]);
               uint32_t mapped = (static_cast<uint32_t>(bank)<<16)|addr;
 #if 0
+              // Hubris old-style locals are deprecated
               if(name[0] == '_') tryDelocalizeName(name, mapped);
 #endif
               if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()) {
@@ -644,10 +666,6 @@ namespace {
             if(name.length() == 0) {
               std::cout << "Ignoring unnamed symbol\n"
                 "(line was: \""<<line<<"\")\n";
-              continue;
-            }
-            else if(!name.compare(0, 8, "_sizeof_")) {
-              // skip sizeof definitions
               continue;
             }
             else if(symdef_to_addr_map.find(name) != symdef_to_addr_map.end()){
