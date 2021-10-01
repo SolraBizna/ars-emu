@@ -3,7 +3,7 @@
      viewBox="-3 -3 191 56"
      width="800px">
   <style>
-    rect { stroke: black; stroke-width: 0.5; fill: none; }
+    rect { stroke: black; stroke-width: 0.5; fill: #eee; }
     text { font-family: "Monaco", "Liberation Mono", mono; font-size: 4px; text-anchor: middle; }
   </style>
   <!-- number row -->
